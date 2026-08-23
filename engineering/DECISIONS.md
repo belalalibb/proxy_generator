@@ -1,0 +1,195 @@
+# DECISIONS — Architecture Decision Records
+
+Format: context → decision → alternatives considered → consequence.
+An ADR is added whenever the architecture changes; the resume prompt requires it.
+
+---
+
+## ADR-001 — Build `atlas/` as a clean parallel package, do not refactor the legacy scripts in place
+
+**Phase:** P00 · **Status:** ACCEPTED
+
+**Context.** 2 454 LOC across 6 files, of which 3 (`v1.py`, `v3.py`, `proxy_generator_v2.py`) are
+near-duplicates sharing ~70 % of their source lists. 23 silent exception handlers, 0 tests,
+0 type hints (`engineering/raw/bug_scan.json`). The legacy control flow is built around blocking
+`requests` inside `ThreadPoolExecutor`, and its state is a mutable text file.
+
+**Decision.** Build `atlas/` fresh, and *mine* the legacy tree for logic that measurement proves
+valuable (see `MIGRATION_LEDGER.md`, 80 features mapped).
+
+**Alternatives.**
+1. *Incremental refactor of `proxy_generator_v2.py`.* Rejected: the file's core loop is
+   synchronous-threaded and its state model is `proxy.txt`. Both must go; nothing of the
+   skeleton would survive.
+2. *Keep `v3.py` and bolt on an API.* Rejected: no atomic consumption is achievable on top of a
+   text file, so H3 (no double delivery) could not be satisfied at all.
+
+**Consequence.** Legacy files remain untouched and runnable, so the baseline stays reproducible.
+Cost: the source lists must be re-expressed as data (done — that is `sources.json`).
+
+---
+
+## ADR-002 — Sources are data (`data/sources/sources.json`), never Python literals
+
+**Phase:** P00 · **Status:** ACCEPTED (mandated by §4)
+
+**Context.** 257 hardcoded URL literals, 123 unique. Adding a source needed a code edit; a dead
+source could not be cooled down; and yield could not be attributed — the legacy log credits
+`raw.githubusercontent.com` with 649 404 proxies across roughly 50 *different* repositories
+(`ANALYSIS.md` §5).
+
+**Decision.** A source is a record with a stable `id`, a declarative `parser` + `parser_args`,
+and its own mutable `stats` block. Hot-reload; adding one at runtime joins the next cycle.
+
+**Alternatives.**
+1. *Python list of dicts with callable parsers* (what `v2.py:21-72` does). Rejected: parsers as
+   bound methods cannot be serialised, so per-source state can't round-trip to disk.
+2. *One file per source.* Rejected: 60+ tiny files, no atomic multi-source update.
+
+**Consequence.** Parsers must be a closed, declarative set (`line_ipport`, `json_path`,
+`csv_columns`, `html_table`, `regex`). A genuinely bespoke site needs a new parser *type* — an
+acceptable, explicit cost.
+
+---
+
+## ADR-003 — Admission decided on **p95 of k=5 samples**, never on a single measurement or `min`
+
+**Phase:** P00 · **Status:** ACCEPTED (mandated by §8; justified by measurement)
+
+**Context.** The legacy gate was `status == 200 and len(text) > 1000` with one sample
+(`proxy_generator_v2.py:380`). Its own recorded output shows what that admitted:
+p50 **6 359.5 ms**, p95 **15 903 ms**, max **19 035 ms**, with **95.8 %** of accepted proxies over
+1 500 ms and **56.8 %** over 5 000 ms (`BASELINE.json` §A).
+
+**Decision.** k=5 samples per candidate → p50, p95, mean, stdev, `jitter = stdev/p50`,
+`success_ratio`, throughput. The gate uses **p95**.
+
+**Alternatives.**
+1. *Keep 1 sample (cheap).* Rejected: this is precisely the defect that makes the legacy pool
+   unusable, and it is the `LIVE ≠ GOOD` violation H7 forbids.
+2. *Use `min` (flattering).* Rejected: `min` measures the best moment, not the experience; §8
+   explicitly calls it "تجميل" (cosmetic).
+3. *k=10.* Rejected for now: 2× the probe budget for a modest confidence gain. k is configurable
+   and will be revisited during P06 calibration against real data.
+
+**Consequence.** ~5× the probe cost per candidate. Mitigated by the cheap `S2 TCP` triage first
+(v3's idea, `v3.py:393`), so k=5 is only paid by candidates that already passed a handshake.
+
+---
+
+## ADR-004 — SQLite (WAL) is the source of truth; text files are derived, atomically-replaced exports
+
+**Phase:** P00 · **Status:** ACCEPTED
+
+**Context.** H3 requires that a proxy is never handed to two concurrent requests, and H8 requires
+survival of `SIGKILL`. `proxy.txt` cannot express a `LEASED` state, and `save()` truncates with
+`open(...,'w')` (`proxy_generator_v2.py:467`) — a kill mid-write destroys the working set (B-04).
+
+**Decision.** SQLite in WAL mode with `busy_timeout`. Consumption is a `BEGIN IMMEDIATE`
+compare-and-set (`UPDATE ... WHERE state='READY' ... RETURNING`), never read-then-write. Exports
+are written `.tmp` then `os.replace()` (atomic rename).
+
+**Alternatives.**
+1. *Postgres/Redis.* Rejected: an external service for a single-node tool; Redis alone is not
+   durable enough for lease bookkeeping without extra work.
+2. *File locks over JSON.* Rejected: no transactions, and B-05 shows the legacy read-modify-write
+   race this reproduces.
+
+**Consequence.** Single-writer-ish throughput. Acceptable: the workload is dominated by network
+probes, not DB writes. WAL permits concurrent readers, so `/pool` and `/stats` never block leasing.
+
+---
+
+## ADR-005 — Protocol is discovered empirically; the source's label is a hint only
+
+**Phase:** P00 · **Status:** ACCEPTED (mandated by §7 S3)
+
+**Context.** Proof from the legacy list itself: `TheSpeedX/SOCKS-List/master/http.txt`
+(`proxy_generator_v2.py:69`) is a **SOCKS** repository whose file is named `http.txt`. It measured
+ALIVE with **2 853 unique** candidates — every one of which the legacy code tested as HTTP
+(`proxy_dict = {'http': ..., 'https': ...}`) and therefore discarded (B-12).
+
+**Decision.** `S3 PROTOCOL` probes http / https-CONNECT / socks4 / socks5, writes the discovered
+protocol back to the record, and emits `PROTO_MISMATCH` when the label was wrong.
+
+**Alternatives.** *Trust the label* — rejected, demonstrably loses thousands of working SOCKS
+proxies. *Try all protocols on every candidate* — rejected as the default (4× cost); the discovered
+protocol is cached per fingerprint and only re-probed on failure.
+
+---
+
+## ADR-006 — One failed fetch must not kill a source; cooldown requires *consecutive* failures
+
+**Phase:** P00 · **Status:** ACCEPTED
+
+**Context.** Discovered by accident during Phase 0, and it changed the design. The GeoNode API
+returned **230 067 bytes of valid JSON**, then **659 bytes of non-JSON ~2 s later**, which the
+re-probe filed as `TRULY_EMPTY`. A third, direct fetch returned **230 019 bytes → 500 unique
+proxies** (`engineering/raw/geonode_body.txt`). The middle reading was **our own throttling**, not
+a dead source. Corroborating evidence in the same sweep: 2 × HTTP 429 and 3 × 403 from hosts the
+legacy code hammers with 100-150 threads (B-08).
+
+**Decision.** (a) per-host rate limiting in addition to the global semaphore; (b) `ETag` /
+`If-Modified-Since` so unchanged lists are not refetched; (c) `consecutive_failures` drives an
+exponential cooldown `base * 2^n` capped at 1 h — a single failure never disables a source;
+(d) a throttled/short body is a distinct reason-code, not "empty".
+
+**Consequence.** Slower per-cycle source coverage, materially better source longevity — and we
+stop being the cause of our own 429s.
+
+---
+
+## ADR-007 — No CAPTCHA/WAF/auth circumvention will be ported, and no default target will exist
+
+**Phase:** P00 · **Status:** ACCEPTED (mandated by H5/§20)
+
+**Context.** `bebo.py:11-28` contains a working 2captcha client (10 mechanical matches for
+`captcha`). `v1.py:29`/`v3.py:30` default to probing `instagram.com` — a login-walled,
+bot-hostile third party — thousands of times per run.
+
+**Decision.** Both refused. Three `RETIRED_PROHIBITED` rows in `MIGRATION_LEDGER.md` with **no
+replacement**. The target becomes a required, per-request, allow-policy-checked parameter.
+
+**Alternatives.** *Port the CAPTCHA code but leave it disabled* — rejected; shipping the capability
+is the violation. *Keep a "safe" default target* — rejected; any default means the operator
+probes a third party they never named. `example.com` was used **only** for the Phase-0 baseline
+measurement, where a fixed target is required for comparability.
+
+**Consequence.** `GET /api/proxies` without `url` is an error, by design. This also removes the
+legacy conflation of *target difficulty* with *proxy quality* — the 0.68 % legacy success rate
+largely measured Instagram's defences.
+
+---
+
+## ADR-008 — `example.com` for the Phase-0 baseline, not a "realistic" site
+
+**Phase:** P00 · **Status:** ACCEPTED
+
+**Context.** The baseline must re-run the legacy algorithm *verbatim* to be a fair comparison, but
+the legacy default target is prohibited (ADR-007).
+
+**Decision.** `https://example.com` — the IANA-designated test domain. Legacy timing parameters
+kept byte-for-byte (timeout 10 s, 2 retries, 100 workers, `status==200 and len(body)>1000`),
+sample seeded (`random.seed(1337)`) for reproducibility.
+
+**Consequence.** The measured 3.0 % live rate is a *floor* — the legacy accept-rule required
+`len(body) > 1000` and `example.com` returns ~1 256 bytes, so the rule still applies, but a
+heavier page would fail more proxies on bandwidth. Recorded honestly here rather than presented as
+a universal figure. Comparison against v4 will use the *same* target for symmetry.
+
+---
+
+## ADR-009 — Survivorship bias in the "measured now" baseline is disclosed, not hidden
+
+**Phase:** P00 · **Status:** ACCEPTED
+
+**Context.** Re-testing `proxy.txt` today yields p95 **1 464 ms** — *better* than what v4 must
+admit at first glance. But that list is ~9 months old: the slow proxies died and were never
+recorded as deaths, so the survivors look artificially fast (n = 9).
+
+**Decision.** Report **both** numbers and name the bias explicitly: the honest measure of what the
+legacy gate *admitted* is the historical distribution (p50 6 359.5 ms, p95 15 903 ms, n = 102),
+not the survivor distribution (n = 9).
+
+**Consequence.** `FINAL_AUDIT.md` must compare v4 against the *historical admitted* distribution
+and state n for every figure. A comparison against n=9 survivors would be a fabricated victory (H2).
