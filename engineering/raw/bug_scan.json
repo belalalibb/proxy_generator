@@ -1,0 +1,1781 @@
+{
+  "files": {
+    "bebo.py": {
+      "loc": 70,
+      "counts": {
+        "captcha": 10,
+        "except_broad": 1,
+        "hardcoded_http_url": 3,
+        "open_append": 1,
+        "open_write_truncate": 1,
+        "time_sleep": 1
+      },
+      "hits": {
+        "hardcoded_http_url": [
+          {
+            "line": 5,
+            "text": "apiURL = f'https://api.telegram.org/bot{TELEGRAM_API_TOKEN}/sendMessage'"
+          },
+          {
+            "line": 13,
+            "text": "f\"http://2captcha.com/in.php?key={api_key}&method=userrecaptcha&googlekey={site_key}&pageurl={page_url}\""
+          },
+          {
+            "line": 23,
+            "text": "result = requests.get(f\"http://2captcha.com/res.php?key={api_key}&action=get&id={captcha_id}\")"
+          }
+        ],
+        "except_broad": [
+          {
+            "line": 8,
+            "text": "except Exception as e:"
+          }
+        ],
+        "captcha": [
+          {
+            "line": 12,
+            "text": "captcha_id_response = requests.post("
+          },
+          {
+            "line": 13,
+            "text": "f\"http://2captcha.com/in.php?key={api_key}&method=userrecaptcha&googlekey={site_key}&pageurl={page_url}\""
+          },
+          {
+            "line": 16,
+            "text": "captcha_id = captcha_id_response.text.split('|')[1]"
+          },
+          {
+            "line": 17,
+            "text": "return captcha_id"
+          },
+          {
+            "line": 19,
+            "text": "def get_cap_sol(api_key,captcha_id):"
+          },
+          {
+            "line": 20,
+            "text": "captcha_solution = None"
+          },
+          {
+            "line": 21,
+            "text": "while captcha_solution is None:"
+          },
+          {
+            "line": 23,
+            "text": "result = requests.get(f\"http://2captcha.com/res.php?key={api_key}&action=get&id={captcha_id}\")"
+          },
+          {
+            "line": 25,
+            "text": "captcha_solution = result.text.split('|')[1]"
+          },
+          {
+            "line": 26,
+            "text": "return captcha_solution"
+          }
+        ],
+        "time_sleep": [
+          {
+            "line": 22,
+            "text": "time.sleep(5)"
+          }
+        ],
+        "open_write_truncate": [
+          {
+            "line": 48,
+            "text": "with open(file_path, 'w') as file:"
+          }
+        ],
+        "open_append": [
+          {
+            "line": 59,
+            "text": "with open(file_name, 'a') as file:"
+          }
+        ]
+      }
+    },
+    "proxychecker.py": {
+      "loc": 31,
+      "counts": {
+        "bare_except": 1,
+        "hardcoded_http_url": 5
+      },
+      "hits": {
+        "hardcoded_http_url": [
+          {
+            "line": 11,
+            "text": "\"http\":  \"http://\" + proxy_url,"
+          },
+          {
+            "line": 12,
+            "text": "\"https\": \"http://\" + proxy_url"
+          },
+          {
+            "line": 15,
+            "text": "response = requests.get(\"https://httpbin.org/ip\", proxies=proxy_dict, timeout=5)"
+          },
+          {
+            "line": 25,
+            "text": "pr_url =\"http://\" + pr"
+          },
+          {
+            "line": 28,
+            "text": "bebo.store_in_text(\"clend_proxy.txt\", \"http://\" + pr)"
+          }
+        ],
+        "bare_except": [
+          {
+            "line": 18,
+            "text": "except:"
+          }
+        ]
+      }
+    },
+    "proxy_generator_v2.py": {
+      "loc": 569,
+      "counts": {
+        "disable_warnings": 1,
+        "except_broad": 9,
+        "except_pass": 9,
+        "hardcoded_http_url": 94,
+        "max_workers_literal": 2,
+        "open_append": 1,
+        "open_write_truncate": 2,
+        "time_sleep": 4,
+        "verify_false": 3
+      },
+      "hits": {
+        "disable_warnings": [
+          {
+            "line": 17,
+            "text": "urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)"
+          }
+        ],
+        "hardcoded_http_url": [
+          {
+            "line": 41,
+            "text": "TARGET_URL = \"https://www.media.io/\""
+          },
+          {
+            "line": 42,
+            "text": "FALLBACK_TEST = \"https://www.media.io/\""
+          },
+          {
+            "line": 63,
+            "text": "\"https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt\","
+          },
+          {
+            "line": 64,
+            "text": "\"https://raw.githubusercontent.com/mmpx12/proxy-list/master/https.txt\","
+          },
+          {
+            "line": 65,
+            "text": "\"https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt\","
+          },
+          {
+            "line": 66,
+            "text": "\"https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt\","
+          },
+          {
+            "line": 67,
+            "text": "\"https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt\","
+          },
+          {
+            "line": 68,
+            "text": "\"https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/https.txt\","
+          },
+          {
+            "line": 69,
+            "text": "\"https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt\","
+          },
+          {
+            "line": 70,
+            "text": "\"https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt\","
+          },
+          {
+            "line": 71,
+            "text": "\"https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt\","
+          },
+          {
+            "line": 72,
+            "text": "\"https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/https/data.txt\","
+          },
+          {
+            "line": 73,
+            "text": "\"https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt\","
+          },
+          {
+            "line": 74,
+            "text": "\"https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/http.txt\","
+          },
+          {
+            "line": 75,
+            "text": "\"https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-https.txt\","
+          },
+          {
+            "line": 76,
+            "text": "\"https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt\","
+          },
+          {
+            "line": 77,
+            "text": "\"https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/http.txt\","
+          },
+          {
+            "line": 78,
+            "text": "\"https://raw.githubusercontent.com/B4RC0DE-TM/proxy-list/main/HTTP.txt\","
+          },
+          {
+            "line": 79,
+            "text": "\"https://raw.githubusercontent.com/HyperBeats/proxy-list/main/http.txt\","
+          },
+          {
+            "line": 80,
+            "text": "\"https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt\","
+          },
+          {
+            "line": 81,
+            "text": "\"https://raw.githubusercontent.com/RX4096/proxy-list/main/online/http.txt\","
+          },
+          {
+            "line": 82,
+            "text": "\"https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt\","
+          },
+          {
+            "line": 83,
+            "text": "\"https://raw.githubusercontent.com/UptimerBot/proxy-list/main/proxies/http.txt\","
+          },
+          {
+            "line": 84,
+            "text": "\"https://raw.githubusercontent.com/Zaeem20/FREE_PROXIES_LIST/master/http.txt\","
+          },
+          {
+            "line": 85,
+            "text": "\"https://raw.githubusercontent.com/manuGMG/proxy-365/main/HTTP.txt\","
+          },
+          {
+            "line": 86,
+            "text": "\"https://raw.githubusercontent.com/prxchk/proxy-list/main/http.txt\","
+          },
+          {
+            "line": 87,
+            "text": "\"https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies/http.txt\","
+          },
+          {
+            "line": 88,
+            "text": "\"https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies_anonymous/http.txt\","
+          },
+          {
+            "line": 89,
+            "text": "\"https://raw.githubusercontent.com/saschazesiger/Free-Proxies/master/proxies/http.txt\","
+          },
+          {
+            "line": 90,
+            "text": "\"https://raw.githubusercontent.com/zevtyardt/proxy-list/main/http.txt\","
+          },
+          {
+            "line": 91,
+            "text": "\"https://raw.githubusercontent.com/vakhov/fresh-proxy-list/master/http.txt\","
+          },
+          {
+            "line": 92,
+            "text": "\"https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/http/http.txt\","
+          },
+          {
+            "line": 93,
+            "text": "\"https://raw.githubusercontent.com/runarbu/ProxyMaid/master/lists/proxies.txt\","
+          },
+          {
+            "line": 94,
+            "text": "\"https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS.txt\","
+          },
+          {
+            "line": 96,
+            "text": "\"https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/http_proxies.txt\","
+          },
+          {
+            "line": 97,
+            "text": "\"https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt\","
+          },
+          {
+            "line": 98,
+            "text": "\"https://raw.githubusercontent.com/zloi-user/hideip.me/main/http.txt\","
+          },
+          {
+            "line": 99,
+            "text": "\"https://raw.githubusercontent.com/zloi-user/hideip.me/main/https.txt\","
+          },
+          {
+            "line": 100,
+            "text": "\"https://raw.githubusercontent.com/im-razvan/proxy_list/main/http.txt\","
+          },
+          {
+            "line": 101,
+            "text": "\"https://raw.githubusercontent.com/ObcbO/getproxy/master/http.txt\","
+          },
+          {
+            "line": 102,
+            "text": "\"https://raw.githubusercontent.com/ObcbO/getproxy/master/https.txt\","
+          },
+          {
+            "line": 103,
+            "text": "\"https://raw.githubusercontent.com/yemixzy/proxy-list/main/proxies/http.txt\","
+          },
+          {
+            "line": 104,
+            "text": "\"https://raw.githubusercontent.com/Bardiafa/Proxy-Starter/main/http.txt\","
+          },
+          {
+            "line": 105,
+            "text": "\"https://raw.githubusercontent.com/Bardiafa/Proxy-Starter/main/https.txt\","
+          },
+          {
+            "line": 106,
+            "text": "\"https://raw.githubusercontent.com/aslisk/proxyhttps/main/https.txt\","
+          },
+          {
+            "line": 107,
+            "text": "\"https://raw.githubusercontent.com/saisuiu/Lionkings-Http-Proxys-Proxies/main/free.txt\","
+          },
+          {
+            "line": 108,
+            "text": "\"https://raw.githubusercontent.com/Tsprnay/Proxy-lists/master/proxies/http.txt\","
+          },
+          {
+            "line": 109,
+            "text": "\"https://raw.githubusercontent.com/Tsprnay/Proxy-lists/master/proxies/https.txt\","
+          },
+          {
+            "line": 110,
+            "text": "\"https://raw.githubusercontent.com/yoannchb-pro/https-proxies/main/proxies.txt\","
+          },
+          {
+            "line": 111,
+            "text": "\"https://raw.githubusercontent.com/Vann-Dev/proxy-list/main/proxies/http.txt\","
+          },
+          {
+            "line": 112,
+            "text": "\"https://raw.githubusercontent.com/Vann-Dev/proxy-list/main/proxies/https.txt\","
+          },
+          {
+            "line": 113,
+            "text": "\"https://raw.githubusercontent.com/berkay-digital/Proxy-Starter/main/http.txt\","
+          },
+          {
+            "line": 115,
+            "text": "\"https://api.openproxylist.xyz/http.txt\","
+          },
+          {
+            "line": 116,
+            "text": "\"https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http\","
+          },
+          {
+            "line": 117,
+            "text": "\"https://api.proxyscrape.com/v2/?request=displayproxies&protocol=https\","
+          },
+          {
+            "line": 118,
+            "text": "\"https://api.proxyscrape.com/v3/free-proxy-list/get?request=displayproxies&proxy_format=protocolipport&format="
+          },
+          {
+            "line": 119,
+            "text": "\"https://www.proxy-list.download/api/v1/get?type=http\","
+          },
+          {
+            "line": 120,
+            "text": "\"https://www.proxy-list.download/api/v1/get?type=https\","
+          },
+          {
+            "line": 121,
+            "text": "\"https://proxyspace.pro/http.txt\","
+          },
+          {
+            "line": 122,
+            "text": "\"https://proxyspace.pro/https.txt\","
+          },
+          {
+            "line": 123,
+            "text": "\"https://spys.me/proxy.txt\","
+          },
+          {
+            "line": 124,
+            "text": "\"https://multiproxy.org/txt_all/proxy.txt\","
+          },
+          {
+            "line": 126,
+            "text": "\"https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/all/data.txt\","
+          },
+          {
+            "line": 127,
+            "text": "\"https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt\","
+          },
+          {
+            "line": 128,
+            "text": "\"https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt\","
+          },
+          {
+            "line": 130,
+            "text": "\"https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/http_proxies.txt\","
+          },
+          {
+            "line": 131,
+            "text": "\"https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/https_proxies.txt\","
+          },
+          {
+            "line": 132,
+            "text": "\"https://raw.githubusercontent.com/caliphdev/Proxy-List/master/http.txt\","
+          },
+          {
+            "line": 133,
+            "text": "\"https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/http.txt\","
+          },
+          {
+            "line": 134,
+            "text": "\"https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/https.txt\","
+          },
+          {
+            "line": 135,
+            "text": "\"https://raw.githubusercontent.com/Hendrikbgr/Free-Proxy-Repo/master/proxy_list.txt\","
+          },
+          {
+            "line": 136,
+            "text": "\"https://raw.githubusercontent.com/Kitsun3Sec/ProxyList/main/http.txt\","
+          },
+          {
+            "line": 137,
+            "text": "\"https://raw.githubusercontent.com/Zeller-A/Proxy-Scraping/main/http.txt\","
+          },
+          {
+            "line": 138,
+            "text": "\"https://raw.githubusercontent.com/Zeller-A/Proxy-Scraping/main/https.txt\","
+          },
+          {
+            "line": 139,
+            "text": "\"https://raw.githubusercontent.com/mertguvencli/http-proxy-list/main/proxy-list/data.txt\","
+          },
+          {
+            "line": 140,
+            "text": "\"https://raw.githubusercontent.com/proxy4parsing/proxy-list/main/http.txt\","
+          },
+          {
+            "line": 141,
+            "text": "\"https://raw.githubusercontent.com/tuanminpay/live-proxy/master/http.txt\","
+          },
+          {
+            "line": 142,
+            "text": "\"https://api.proxyscrape.com/?request=getproxies&proxytype=http&timeout=10000&country=all&ssl=yes&anonymity=al"
+          },
+          {
+            "line": 146,
+            "text": "\"https://free-proxy-list.net/\","
+          },
+          {
+            "line": 147,
+            "text": "\"https://free-proxy-list.net/anonymous-proxy.html\","
+          },
+          {
+            "line": 148,
+            "text": "\"https://www.sslproxies.org/\","
+          },
+          {
+            "line": 149,
+            "text": "\"https://www.us-proxy.org/\","
+          },
+          {
+            "line": 150,
+            "text": "\"https://www.proxy-list.download/HTTPS\","
+          },
+          {
+            "line": 151,
+            "text": "\"https://www.proxy-list.download/HTTP\","
+          },
+          {
+            "line": 152,
+            "text": "\"https://advanced.name/freeproxy\","
+          },
+          {
+            "line": 153,
+            "text": "\"https://advanced.name/freeproxy?type=https\","
+          },
+          {
+            "line": 154,
+            "text": "\"https://geonode.com/free-proxy-list\","
+          },
+          {
+            "line": 155,
+            "text": "\"https://list.proxylistplus.com/SSL-proxy\","
+          },
+          {
+            "line": 156,
+            "text": "\"https://proxybros.com/free-proxy-list/\","
+          },
+          {
+            "line": 157,
+            "text": "\"https://www.freeproxy.world/\","
+          },
+          {
+            "line": 158,
+            "text": "\"https://www.proxynova.com/proxy-server-list/\","
+          },
+          {
+            "line": 159,
+            "text": "\"https://freeproxylist.org/\","
+          },
+          {
+            "line": 163,
+            "text": "GEONODE_API = \"https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=des"
+          },
+          {
+            "line": 368,
+            "text": "proxy_dict = {'http': f'http://{proxy}', 'https': f'http://{proxy}'}"
+          }
+        ],
+        "max_workers_literal": [
+          {
+            "line": 43,
+            "text": "MAX_WORKERS_COLLECT = 20"
+          },
+          {
+            "line": 44,
+            "text": "MAX_WORKERS_TEST = 100"
+          }
+        ],
+        "verify_false": [
+          {
+            "line": 231,
+            "text": "verify=False, allow_redirects=True)"
+          },
+          {
+            "line": 245,
+            "text": "r = requests.get(url, headers=rand_headers(), timeout=TIMEOUT_COLLECT, verify=False)"
+          },
+          {
+            "line": 375,
+            "text": "verify=False,"
+          }
+        ],
+        "except_pass": [
+          {
+            "line": 237,
+            "text": "except Exception:"
+          },
+          {
+            "line": 281,
+            "text": "except Exception:"
+          },
+          {
+            "line": 301,
+            "text": "except Exception:"
+          },
+          {
+            "line": 318,
+            "text": "except Exception:"
+          },
+          {
+            "line": 329,
+            "text": "except Exception:"
+          },
+          {
+            "line": 349,
+            "text": "except Exception:"
+          },
+          {
+            "line": 388,
+            "text": "except Exception:"
+          },
+          {
+            "line": 452,
+            "text": "except Exception:"
+          },
+          {
+            "line": 529,
+            "text": "except Exception:"
+          }
+        ],
+        "except_broad": [
+          {
+            "line": 237,
+            "text": "except Exception:"
+          },
+          {
+            "line": 281,
+            "text": "except Exception:"
+          },
+          {
+            "line": 301,
+            "text": "except Exception:"
+          },
+          {
+            "line": 318,
+            "text": "except Exception:"
+          },
+          {
+            "line": 329,
+            "text": "except Exception:"
+          },
+          {
+            "line": 349,
+            "text": "except Exception:"
+          },
+          {
+            "line": 388,
+            "text": "except Exception:"
+          },
+          {
+            "line": 452,
+            "text": "except Exception:"
+          },
+          {
+            "line": 529,
+            "text": "except Exception:"
+          }
+        ],
+        "time_sleep": [
+          {
+            "line": 384,
+            "text": "time.sleep(0.3)"
+          },
+          {
+            "line": 387,
+            "text": "time.sleep(0.3)"
+          },
+          {
+            "line": 428,
+            "text": "time.sleep(1)"
+          },
+          {
+            "line": 533,
+            "text": "time.sleep(pause)"
+          }
+        ],
+        "open_append": [
+          {
+            "line": 448,
+            "text": "with open(self.proxy_file, 'a') as f:"
+          }
+        ],
+        "open_write_truncate": [
+          {
+            "line": 467,
+            "text": "with open(filename, 'w', encoding='utf-8') as f:"
+          },
+          {
+            "line": 561,
+            "text": "with open(out, 'w') as f:"
+          }
+        ]
+      }
+    },
+    "v1.py": {
+      "loc": 728,
+      "counts": {
+        "disable_warnings": 1,
+        "except_broad": 10,
+        "hardcoded_http_url": 75,
+        "input_call": 1,
+        "instagram_target": 1,
+        "max_workers_literal": 1,
+        "open_write_truncate": 2,
+        "time_sleep": 4,
+        "verify_false": 3
+      },
+      "hits": {
+        "disable_warnings": [
+          {
+            "line": 24,
+            "text": "urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)"
+          }
+        ],
+        "max_workers_literal": [
+          {
+            "line": 27,
+            "text": "MAX_WORKERS = 150"
+          }
+        ],
+        "instagram_target": [
+          {
+            "line": 29,
+            "text": "TEST_URL = \"https://www.instagram.com\""
+          }
+        ],
+        "hardcoded_http_url": [
+          {
+            "line": 29,
+            "text": "TEST_URL = \"https://www.instagram.com\""
+          },
+          {
+            "line": 67,
+            "text": "\"https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt\","
+          },
+          {
+            "line": 68,
+            "text": "\"https://raw.githubusercontent.com/mmpx12/proxy-list/master/https.txt\","
+          },
+          {
+            "line": 69,
+            "text": "\"https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt\","
+          },
+          {
+            "line": 70,
+            "text": "\"https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt\","
+          },
+          {
+            "line": 71,
+            "text": "\"https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt\","
+          },
+          {
+            "line": 72,
+            "text": "\"https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt\","
+          },
+          {
+            "line": 73,
+            "text": "\"https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt\","
+          },
+          {
+            "line": 74,
+            "text": "\"https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt\","
+          },
+          {
+            "line": 75,
+            "text": "\"https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/https/data.txt\","
+          },
+          {
+            "line": 76,
+            "text": "\"https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt\","
+          },
+          {
+            "line": 77,
+            "text": "\"https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/http.txt\","
+          },
+          {
+            "line": 78,
+            "text": "\"https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-https.txt\","
+          },
+          {
+            "line": 79,
+            "text": "\"https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt\","
+          },
+          {
+            "line": 80,
+            "text": "\"https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/http.txt\","
+          },
+          {
+            "line": 81,
+            "text": "\"https://raw.githubusercontent.com/B4RC0DE-TM/proxy-list/main/HTTP.txt\","
+          },
+          {
+            "line": 82,
+            "text": "\"https://raw.githubusercontent.com/HyperBeats/proxy-list/main/http.txt\","
+          },
+          {
+            "line": 83,
+            "text": "\"https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt\","
+          },
+          {
+            "line": 84,
+            "text": "\"https://raw.githubusercontent.com/RX4096/proxy-list/main/online/http.txt\","
+          },
+          {
+            "line": 85,
+            "text": "\"https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt\","
+          },
+          {
+            "line": 86,
+            "text": "\"https://raw.githubusercontent.com/UptimerBot/proxy-list/main/proxies/http.txt\","
+          },
+          {
+            "line": 87,
+            "text": "\"https://raw.githubusercontent.com/Zaeem20/FREE_PROXIES_LIST/master/http.txt\","
+          },
+          {
+            "line": 88,
+            "text": "\"https://raw.githubusercontent.com/manuGMG/proxy-365/main/HTTP.txt\","
+          },
+          {
+            "line": 89,
+            "text": "\"https://raw.githubusercontent.com/prxchk/proxy-list/main/http.txt\","
+          },
+          {
+            "line": 90,
+            "text": "\"https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies/http.txt\","
+          },
+          {
+            "line": 91,
+            "text": "\"https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies_anonymous/http.txt\","
+          },
+          {
+            "line": 92,
+            "text": "\"https://raw.githubusercontent.com/saschazesiger/Free-Proxies/master/proxies/http.txt\","
+          },
+          {
+            "line": 93,
+            "text": "\"https://raw.githubusercontent.com/zevtyardt/proxy-list/main/http.txt\","
+          },
+          {
+            "line": 94,
+            "text": "\"https://raw.githubusercontent.com/vakhov/fresh-proxy-list/master/http.txt\","
+          },
+          {
+            "line": 95,
+            "text": "\"https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/http/http.txt\","
+          },
+          {
+            "line": 98,
+            "text": "\"https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS.txt\","
+          },
+          {
+            "line": 99,
+            "text": "\"https://raw.githubusercontent.com/mmpx12/proxy-list/master/https.txt\","
+          },
+          {
+            "line": 100,
+            "text": "\"https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-https.txt\","
+          },
+          {
+            "line": 103,
+            "text": "\"https://api.openproxy.space/lists/http\","
+          },
+          {
+            "line": 104,
+            "text": "\"https://api.openproxylist.xyz/http.txt\","
+          },
+          {
+            "line": 105,
+            "text": "\"https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http\","
+          },
+          {
+            "line": 106,
+            "text": "\"https://api.proxyscrape.com/v3/free-proxy-list/get?request=displayproxies&proxy_format=protocolipport&format="
+          },
+          {
+            "line": 107,
+            "text": "\"https://www.proxy-list.download/api/v1/get?type=http\","
+          },
+          {
+            "line": 108,
+            "text": "\"https://www.proxy-list.download/api/v1/get?type=https\","
+          },
+          {
+            "line": 109,
+            "text": "\"https://proxy-list.download/api/v1/get?type=http\","
+          },
+          {
+            "line": 110,
+            "text": "\"https://proxy-list.download/api/v1/get?type=https\","
+          },
+          {
+            "line": 111,
+            "text": "\"https://proxyspace.pro/http.txt\","
+          },
+          {
+            "line": 112,
+            "text": "\"https://proxyspace.pro/https.txt\","
+          },
+          {
+            "line": 115,
+            "text": "\"https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/all/data.txt\","
+          },
+          {
+            "line": 116,
+            "text": "\"https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt\","
+          },
+          {
+            "line": 117,
+            "text": "\"https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt\","
+          },
+          {
+            "line": 120,
+            "text": "\"https://raw.githubusercontent.com/runarbu/ProxyMaid/master/lists/proxies.txt\","
+          },
+          {
+            "line": 121,
+            "text": "\"http://www.boys-here.com/newtest2/list0.txt\","
+          },
+          {
+            "line": 126,
+            "text": "\"https://free-proxy-list.net/\","
+          },
+          {
+            "line": 127,
+            "text": "\"https://free-proxy-list.net/en/ssl-proxy.html\","
+          },
+          {
+            "line": 128,
+            "text": "\"https://proxyscrape.com/free-proxy-list\","
+          },
+          {
+            "line": 129,
+            "text": "\"https://advanced.name/freeproxy\","
+          },
+          {
+            "line": 130,
+            "text": "\"https://advanced.name/freeproxy?type=https\","
+          },
+          {
+            "line": 131,
+            "text": "\"https://hide.mn/en/proxy-list/\","
+          },
+          {
+            "line": 132,
+            "text": "\"https://spys.one/en/https-ssl-proxy/\","
+          },
+          {
+            "line": 133,
+            "text": "\"https://proxydb.net/\","
+          },
+          {
+            "line": 134,
+            "text": "\"https://proxydb.net/?protocol=https\","
+          },
+          {
+            "line": 135,
+            "text": "\"https://geonode.com/free-proxy-list\","
+          },
+          {
+            "line": 136,
+            "text": "\"https://fineproxy.org/free-proxy/\","
+          },
+          {
+            "line": 137,
+            "text": "\"https://proxy-tools.com/proxy/https\","
+          },
+          {
+            "line": 138,
+            "text": "\"https://list.proxylistplus.com/SSL-proxy\","
+          },
+          {
+            "line": 139,
+            "text": "\"https://proxybros.com/free-proxy-list/\","
+          },
+          {
+            "line": 140,
+            "text": "\"https://iproyal.com/free-proxy-list/\","
+          },
+          {
+            "line": 141,
+            "text": "\"https://www.freeproxy.world/\","
+          },
+          {
+            "line": 142,
+            "text": "\"https://www.proxynova.com/proxy-server-list/\","
+          },
+          {
+            "line": 143,
+            "text": "\"https://databay.com/free-proxy-list\","
+          },
+          {
+            "line": 144,
+            "text": "\"https://openproxylist.com/proxy/\","
+          },
+          {
+            "line": 145,
+            "text": "\"http://free-proxy.cz/en/\","
+          },
+          {
+            "line": 146,
+            "text": "\"https://www.sslproxies.org/\","
+          },
+          {
+            "line": 147,
+            "text": "\"https://www.us-proxy.org/\","
+          },
+          {
+            "line": 148,
+            "text": "\"https://freeproxylist.org/\","
+          },
+          {
+            "line": 149,
+            "text": "\"https://proxy5.net/free-proxy\","
+          },
+          {
+            "line": 150,
+            "text": "\"https://hasdata.com/free-proxy-list\""
+          },
+          {
+            "line": 422,
+            "text": "'http': f\"http://{proxy}\","
+          },
+          {
+            "line": 423,
+            "text": "'https': f\"http://{proxy}\""
+          }
+        ],
+        "verify_false": [
+          {
+            "line": 237,
+            "text": "verify=False,"
+          },
+          {
+            "line": 261,
+            "text": "response = requests.get(url, headers=headers, timeout=15, verify=False)"
+          },
+          {
+            "line": 437,
+            "text": "verify=False,"
+          }
+        ],
+        "except_broad": [
+          {
+            "line": 250,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 287,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 320,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 346,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 375,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 387,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 473,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 535,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 607,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 684,
+            "text": "except Exception as e:"
+          }
+        ],
+        "time_sleep": [
+          {
+            "line": 463,
+            "text": "time.sleep(0.5)"
+          },
+          {
+            "line": 471,
+            "text": "time.sleep(0.5)"
+          },
+          {
+            "line": 475,
+            "text": "time.sleep(0.5)"
+          },
+          {
+            "line": 511,
+            "text": "time.sleep(1)"
+          }
+        ],
+        "open_write_truncate": [
+          {
+            "line": 551,
+            "text": "with open('proxy.txt', 'w', encoding='utf-8') as f:"
+          },
+          {
+            "line": 582,
+            "text": "with open('proxy_details.json', 'w', encoding='utf-8') as f:"
+          }
+        ],
+        "input_call": [
+          {
+            "line": 718,
+            "text": "input(\"اضغط Enter للبدء أو Ctrl+C للإلغاء...\")"
+          }
+        ]
+      }
+    },
+    "v2.py": {
+      "loc": 407,
+      "counts": {
+        "bare_except": 7,
+        "except_broad": 3,
+        "hardcoded_http_url": 10,
+        "input_call": 1,
+        "open_write_truncate": 1
+      },
+      "hits": {
+        "hardcoded_http_url": [
+          {
+            "line": 24,
+            "text": "'url': 'https://www.proxy-list.download/HTTPS',"
+          },
+          {
+            "line": 29,
+            "text": "'url': 'https://proxydb.net/?protocol=https&country=',"
+          },
+          {
+            "line": 34,
+            "text": "'url': 'https://free-proxy-list.net/',"
+          },
+          {
+            "line": 39,
+            "text": "'url': 'https://api.proxyscrape.com/v2/?request=get&protocol=http&timeout=10000&country=all&ssl=yes&anonymity="
+          },
+          {
+            "line": 44,
+            "text": "'url': 'https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc&proto"
+          },
+          {
+            "line": 49,
+            "text": "'url': 'https://www.proxy11.com/api/demoweb/proxy.json?key=free-demo&country=&city=&port=&type=https',"
+          },
+          {
+            "line": 54,
+            "text": "'url': 'https://openproxy.space/list/https',"
+          },
+          {
+            "line": 59,
+            "text": "'url': 'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/https.txt',"
+          },
+          {
+            "line": 64,
+            "text": "'url': 'https://api.openproxylist.xyz/https.txt',"
+          },
+          {
+            "line": 69,
+            "text": "'url': 'https://www.proxies24.com/proxy-list/https-proxies',"
+          }
+        ],
+        "bare_except": [
+          {
+            "line": 193,
+            "text": "except:"
+          },
+          {
+            "line": 211,
+            "text": "except:"
+          },
+          {
+            "line": 228,
+            "text": "except:"
+          },
+          {
+            "line": 252,
+            "text": "except:"
+          },
+          {
+            "line": 304,
+            "text": "except:"
+          },
+          {
+            "line": 327,
+            "text": "except:"
+          },
+          {
+            "line": 398,
+            "text": "except:"
+          }
+        ],
+        "except_broad": [
+          {
+            "line": 291,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 344,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 362,
+            "text": "except Exception as e:"
+          }
+        ],
+        "open_write_truncate": [
+          {
+            "line": 338,
+            "text": "with open(filename, 'w') as f:"
+          }
+        ],
+        "input_call": [
+          {
+            "line": 396,
+            "text": "choice = input(\"\\nEnter choice (1 or 2): \").strip()"
+          }
+        ]
+      }
+    },
+    "v3.py": {
+      "loc": 653,
+      "counts": {
+        "bare_except": 1,
+        "disable_warnings": 1,
+        "except_broad": 10,
+        "except_pass": 1,
+        "hardcoded_http_url": 70,
+        "input_call": 1,
+        "instagram_target": 1,
+        "max_workers_literal": 1,
+        "open_write_truncate": 2,
+        "time_sleep": 4,
+        "verify_false": 3
+      },
+      "hits": {
+        "disable_warnings": [
+          {
+            "line": 25,
+            "text": "urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)"
+          }
+        ],
+        "max_workers_literal": [
+          {
+            "line": 28,
+            "text": "MAX_WORKERS = 100"
+          }
+        ],
+        "instagram_target": [
+          {
+            "line": 30,
+            "text": "TEST_URL = \"https://www.instagram.com\""
+          }
+        ],
+        "hardcoded_http_url": [
+          {
+            "line": 30,
+            "text": "TEST_URL = \"https://www.instagram.com\""
+          },
+          {
+            "line": 66,
+            "text": "\"https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt\","
+          },
+          {
+            "line": 67,
+            "text": "\"https://raw.githubusercontent.com/mmpx12/proxy-list/master/https.txt\","
+          },
+          {
+            "line": 68,
+            "text": "\"https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt\","
+          },
+          {
+            "line": 69,
+            "text": "\"https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt\","
+          },
+          {
+            "line": 70,
+            "text": "\"https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt\","
+          },
+          {
+            "line": 71,
+            "text": "\"https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt\","
+          },
+          {
+            "line": 72,
+            "text": "\"https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt\","
+          },
+          {
+            "line": 73,
+            "text": "\"https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt\","
+          },
+          {
+            "line": 74,
+            "text": "\"https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/https/data.txt\","
+          },
+          {
+            "line": 75,
+            "text": "\"https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt\","
+          },
+          {
+            "line": 76,
+            "text": "\"https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/http.txt\","
+          },
+          {
+            "line": 77,
+            "text": "\"https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-https.txt\","
+          },
+          {
+            "line": 78,
+            "text": "\"https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt\","
+          },
+          {
+            "line": 79,
+            "text": "\"https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/http.txt\","
+          },
+          {
+            "line": 80,
+            "text": "\"https://raw.githubusercontent.com/B4RC0DE-TM/proxy-list/main/HTTP.txt\","
+          },
+          {
+            "line": 81,
+            "text": "\"https://raw.githubusercontent.com/HyperBeats/proxy-list/main/http.txt\","
+          },
+          {
+            "line": 82,
+            "text": "\"https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt\","
+          },
+          {
+            "line": 83,
+            "text": "\"https://raw.githubusercontent.com/RX4096/proxy-list/main/online/http.txt\","
+          },
+          {
+            "line": 84,
+            "text": "\"https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt\","
+          },
+          {
+            "line": 85,
+            "text": "\"https://raw.githubusercontent.com/UptimerBot/proxy-list/main/proxies/http.txt\","
+          },
+          {
+            "line": 86,
+            "text": "\"https://raw.githubusercontent.com/Zaeem20/FREE_PROXIES_LIST/master/http.txt\","
+          },
+          {
+            "line": 87,
+            "text": "\"https://raw.githubusercontent.com/manuGMG/proxy-365/main/HTTP.txt\","
+          },
+          {
+            "line": 88,
+            "text": "\"https://raw.githubusercontent.com/prxchk/proxy-list/main/http.txt\","
+          },
+          {
+            "line": 89,
+            "text": "\"https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies/http.txt\","
+          },
+          {
+            "line": 90,
+            "text": "\"https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies_anonymous/http.txt\","
+          },
+          {
+            "line": 91,
+            "text": "\"https://raw.githubusercontent.com/saschazesiger/Free-Proxies/master/proxies/http.txt\","
+          },
+          {
+            "line": 92,
+            "text": "\"https://raw.githubusercontent.com/zevtyardt/proxy-list/main/http.txt\","
+          },
+          {
+            "line": 93,
+            "text": "\"https://raw.githubusercontent.com/vakhov/fresh-proxy-list/master/http.txt\","
+          },
+          {
+            "line": 94,
+            "text": "\"https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/http/http.txt\","
+          },
+          {
+            "line": 95,
+            "text": "\"https://raw.githubusercontent.com/runarbu/ProxyMaid/master/lists/proxies.txt\","
+          },
+          {
+            "line": 98,
+            "text": "\"https://api.openproxy.space/lists/http\","
+          },
+          {
+            "line": 99,
+            "text": "\"https://api.openproxylist.xyz/http.txt\","
+          },
+          {
+            "line": 100,
+            "text": "\"https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http\","
+          },
+          {
+            "line": 101,
+            "text": "\"https://api.proxyscrape.com/v3/free-proxy-list/get?request=displayproxies&proxy_format=protocolipport&format="
+          },
+          {
+            "line": 102,
+            "text": "\"https://www.proxy-list.download/api/v1/get?type=http\","
+          },
+          {
+            "line": 103,
+            "text": "\"https://www.proxy-list.download/api/v1/get?type=https\","
+          },
+          {
+            "line": 104,
+            "text": "\"https://proxyspace.pro/http.txt\","
+          },
+          {
+            "line": 105,
+            "text": "\"https://proxyspace.pro/https.txt\","
+          },
+          {
+            "line": 108,
+            "text": "\"https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/all/data.txt\","
+          },
+          {
+            "line": 109,
+            "text": "\"https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt\","
+          },
+          {
+            "line": 110,
+            "text": "\"https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt\","
+          },
+          {
+            "line": 115,
+            "text": "\"https://free-proxy-list.net/\","
+          },
+          {
+            "line": 116,
+            "text": "\"https://free-proxy-list.net/uk-proxy.html\","
+          },
+          {
+            "line": 117,
+            "text": "\"https://free-proxy-list.net/anonymous-proxy.html\","
+          },
+          {
+            "line": 118,
+            "text": "\"https://www.sslproxies.org/\","
+          },
+          {
+            "line": 119,
+            "text": "\"https://www.us-proxy.org/\","
+          },
+          {
+            "line": 120,
+            "text": "\"https://www.proxy-list.download/HTTPS\","
+          },
+          {
+            "line": 121,
+            "text": "\"https://www.proxy-list.download/HTTP\","
+          },
+          {
+            "line": 122,
+            "text": "\"https://proxydb.net/\","
+          },
+          {
+            "line": 123,
+            "text": "\"https://proxydb.net/?protocol=https\","
+          },
+          {
+            "line": 124,
+            "text": "\"https://proxyscrape.com/free-proxy-list\","
+          },
+          {
+            "line": 125,
+            "text": "\"https://advanced.name/freeproxy\","
+          },
+          {
+            "line": 126,
+            "text": "\"https://advanced.name/freeproxy?type=https\","
+          },
+          {
+            "line": 127,
+            "text": "\"https://hide.mn/en/proxy-list/\","
+          },
+          {
+            "line": 128,
+            "text": "\"https://spys.one/en/https-ssl-proxy/\","
+          },
+          {
+            "line": 129,
+            "text": "\"https://geonode.com/free-proxy-list\","
+          },
+          {
+            "line": 130,
+            "text": "\"https://fineproxy.org/free-proxy/\","
+          },
+          {
+            "line": 131,
+            "text": "\"https://proxy-tools.com/proxy/https\","
+          },
+          {
+            "line": 132,
+            "text": "\"https://list.proxylistplus.com/SSL-proxy\","
+          },
+          {
+            "line": 133,
+            "text": "\"https://proxybros.com/free-proxy-list/\","
+          },
+          {
+            "line": 134,
+            "text": "\"https://iproyal.com/free-proxy-list/\","
+          },
+          {
+            "line": 135,
+            "text": "\"https://www.freeproxy.world/\","
+          },
+          {
+            "line": 136,
+            "text": "\"https://www.proxynova.com/proxy-server-list/\","
+          },
+          {
+            "line": 137,
+            "text": "\"https://databay.com/free-proxy-list\","
+          },
+          {
+            "line": 138,
+            "text": "\"https://openproxylist.com/proxy/\","
+          },
+          {
+            "line": 139,
+            "text": "\"https://freeproxylist.org/\","
+          },
+          {
+            "line": 140,
+            "text": "\"https://proxy5.net/free-proxy\""
+          },
+          {
+            "line": 411,
+            "text": "'http': f\"http://{proxy}\","
+          },
+          {
+            "line": 412,
+            "text": "'https': f\"http://{proxy}\""
+          }
+        ],
+        "verify_false": [
+          {
+            "line": 228,
+            "text": "verify=False,"
+          },
+          {
+            "line": 319,
+            "text": "response = requests.get(url, headers=headers, timeout=15, verify=False)"
+          },
+          {
+            "line": 426,
+            "text": "verify=False,"
+          }
+        ],
+        "except_broad": [
+          {
+            "line": 241,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 274,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 308,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 341,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 361,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 373,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 461,
+            "text": "except Exception:"
+          },
+          {
+            "line": 515,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 554,
+            "text": "except Exception as e:"
+          },
+          {
+            "line": 618,
+            "text": "except Exception as e:"
+          }
+        ],
+        "bare_except": [
+          {
+            "line": 402,
+            "text": "except:"
+          }
+        ],
+        "time_sleep": [
+          {
+            "line": 451,
+            "text": "time.sleep(0.5)"
+          },
+          {
+            "line": 459,
+            "text": "time.sleep(0.5)"
+          },
+          {
+            "line": 463,
+            "text": "time.sleep(0.5)"
+          },
+          {
+            "line": 491,
+            "text": "time.sleep(1)"
+          }
+        ],
+        "except_pass": [
+          {
+            "line": 461,
+            "text": "except Exception:"
+          }
+        ],
+        "open_write_truncate": [
+          {
+            "line": 531,
+            "text": "with open('proxy.txt', 'w', encoding='utf-8') as f:"
+          },
+          {
+            "line": 537,
+            "text": "with open('proxy_details.json', 'w', encoding='utf-8') as f:"
+          }
+        ],
+        "input_call": [
+          {
+            "line": 644,
+            "text": "input(\"Press Enter to start or Ctrl+C to cancel...\")"
+          }
+        ]
+      }
+    }
+  },
+  "totals": {
+    "bare_except": 9,
+    "captcha": 10,
+    "disable_warnings": 3,
+    "except_broad": 33,
+    "except_pass": 10,
+    "hardcoded_http_url": 257,
+    "input_call": 3,
+    "instagram_target": 2,
+    "max_workers_literal": 4,
+    "open_append": 2,
+    "open_write_truncate": 8,
+    "silent_handlers": 23,
+    "time_sleep": 13,
+    "verify_false": 9
+  },
+  "silent_handlers": [
+    {
+      "file": "bebo.py",
+      "line": 8,
+      "handler": "except Exception as e:",
+      "body": "pass"
+    },
+    {
+      "file": "proxychecker.py",
+      "line": 18,
+      "handler": "except:",
+      "body": "return False"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 191,
+      "handler": "except (ValueError, AttributeError):",
+      "body": "return False"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 237,
+      "handler": "except Exception:",
+      "body": "pass"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 281,
+      "handler": "except Exception:",
+      "body": "return set()"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 301,
+      "handler": "except Exception:",
+      "body": "pass"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 318,
+      "handler": "except Exception:",
+      "body": "pass"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 329,
+      "handler": "except Exception:",
+      "body": "pass"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 349,
+      "handler": "except Exception:",
+      "body": "pass"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 416,
+      "handler": "except FileNotFoundError:",
+      "body": "pass"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 529,
+      "handler": "except Exception:",
+      "body": "pass"
+    },
+    {
+      "file": "v1.py",
+      "line": 220,
+      "handler": "except (ValueError, IndexError, AttributeError):",
+      "body": "continue"
+    },
+    {
+      "file": "v1.py",
+      "line": 318,
+      "handler": "except ValueError:",
+      "body": "continue"
+    },
+    {
+      "file": "v1.py",
+      "line": 343,
+      "handler": "except ValueError:",
+      "body": "continue"
+    },
+    {
+      "file": "v2.py",
+      "line": 96,
+      "handler": "except (ValueError, AttributeError):",
+      "body": "return False"
+    },
+    {
+      "file": "v2.py",
+      "line": 193,
+      "handler": "except:",
+      "body": "return []"
+    },
+    {
+      "file": "v2.py",
+      "line": 211,
+      "handler": "except:",
+      "body": "return []"
+    },
+    {
+      "file": "v2.py",
+      "line": 228,
+      "handler": "except:",
+      "body": "return []"
+    },
+    {
+      "file": "v2.py",
+      "line": 252,
+      "handler": "except:",
+      "body": "return []"
+    },
+    {
+      "file": "v2.py",
+      "line": 304,
+      "handler": "except:",
+      "body": "return False"
+    },
+    {
+      "file": "v2.py",
+      "line": 327,
+      "handler": "except:",
+      "body": "pass"
+    },
+    {
+      "file": "v3.py",
+      "line": 186,
+      "handler": "except (ValueError, AttributeError):",
+      "body": "return False"
+    },
+    {
+      "file": "v3.py",
+      "line": 402,
+      "handler": "except:",
+      "body": "return False"
+    }
+  ],
+  "silent_handler_count": 23
+}
