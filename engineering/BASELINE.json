@@ -1,0 +1,192 @@
+{
+  "generated_by": "engineering/tools/measure_baseline.py",
+  "generated_at": "2026-08-23T23:37:55.285446+00:00",
+  "purpose": "Legacy performance baseline that ATLAS v4 must beat. All numbers are extracted from real files or real measurements (H2).",
+  "A_historical_from_legacy_artifacts": {
+    "proxy_details_json": {
+      "measurable": true,
+      "source_file": "proxy_details.json",
+      "scan_date": "2025-09-01T18:11:48.009891",
+      "total_sources": 67,
+      "total_collected": 15000,
+      "total_working": 102,
+      "reported_success_rate": "0.68%",
+      "scan_duration_s": 1418.98,
+      "working_latency_ms": {
+        "n": 102,
+        "min": 756,
+        "p50": 6359.5,
+        "p95": 15903,
+        "mean": 7145.1,
+        "max": 19035
+      },
+      "derived_throughput": {
+        "collected_per_min": 634.3,
+        "working_per_min": 4.31,
+        "minutes_to_produce_10_working": 2.32
+      }
+    },
+    "proxy_scraper_log": {
+      "measurable": true,
+      "source_file": "proxy_scraper.log",
+      "fetch_success_lines": 72,
+      "warning_lines": 20,
+      "warning_kinds": {
+        "http_404": 11,
+        "http_error": 6,
+        "other": 2,
+        "timeout": 1
+      },
+      "top_yield_hosts": [
+        [
+          "raw.githubusercontent.com",
+          649404
+        ],
+        [
+          "proxyspace.pro",
+          244623
+        ],
+        [
+          "api.openproxylist.xyz",
+          154290
+        ],
+        [
+          "api.proxyscrape.com",
+          109346
+        ],
+        [
+          "cdn.jsdelivr.net",
+          9807
+        ],
+        [
+          "www.proxy-list.download",
+          464
+        ],
+        [
+          "www.sslproxies.org",
+          200
+        ],
+        [
+          "free-proxy-list.net",
+          169
+        ]
+      ],
+      "working_latency_ms_from_log": {
+        "n": 118,
+        "min": 756,
+        "p50": 6092.5,
+        "p95": 15903,
+        "mean": 7032.3,
+        "max": 19035,
+        "over_1500ms_pct": 95.8,
+        "over_5000ms_pct": 56.8
+      }
+    },
+    "proxy_txt": {
+      "measurable": true,
+      "lines": 616,
+      "unique": 616,
+      "duplicate_lines": 0
+    }
+  },
+  "B_measured_now_with_legacy_algorithm": {
+    "measurable": true,
+    "method": "verbatim re-implementation of proxy_generator_v2.ProxyScraper.test_one",
+    "target": "https://example.com",
+    "legacy_params": {
+      "timeout_s": 10,
+      "retries": 2,
+      "workers": 100,
+      "accept_rule": "status==200 and len(body)>1000"
+    },
+    "pool_size_available": 616,
+    "sample_size": 300,
+    "live_count": 9,
+    "live_rate_pct": 3.0,
+    "wall_clock_s": 68.5,
+    "throughput_tested_per_s": 4.4,
+    "latency_ms": {
+      "n": 9,
+      "min": 297,
+      "p50": 1106,
+      "p95": 1464,
+      "max": 2157,
+      "mean": 1081.0,
+      "under_900ms_pct": 33.3,
+      "under_1500ms_pct": 88.9
+    },
+    "live_samples": [
+      {
+        "proxy": "16.51.148.102:50312",
+        "ok": true,
+        "ms": 1106,
+        "status": 200
+      },
+      {
+        "proxy": "16.51.148.102:26158",
+        "ok": true,
+        "ms": 1105,
+        "status": 200
+      },
+      {
+        "proxy": "43.209.173.229:9201",
+        "ok": true,
+        "ms": 1464,
+        "status": 200
+      },
+      {
+        "proxy": "13.244.203.188:33102",
+        "ok": true,
+        "ms": 2157,
+        "status": 200
+      },
+      {
+        "proxy": "18.170.25.193:132",
+        "ok": true,
+        "ms": 447,
+        "status": 200
+      },
+      {
+        "proxy": "40.177.99.164:35768",
+        "ok": true,
+        "ms": 297,
+        "status": 200
+      },
+      {
+        "proxy": "108.131.109.106:17249",
+        "ok": true,
+        "ms": 596,
+        "status": 200
+      },
+      {
+        "proxy": "18.142.95.213:9442",
+        "ok": true,
+        "ms": 1246,
+        "status": 200
+      },
+      {
+        "proxy": "54.255.249.161:41599",
+        "ok": true,
+        "ms": 1311,
+        "status": 200
+      }
+    ]
+  },
+  "v4_must_beat": {
+    "legacy_live_rate_pct": 3.0,
+    "legacy_p95_latency_ms": 1464,
+    "legacy_historical_success_rate_pct": 0.68,
+    "legacy_historical_minutes_to_10_working": 2.32,
+    "legacy_capabilities_absent": [
+      "no ready-pool guarantee (fire-and-forget list)",
+      "no atomic lease / consumption (same proxy handed out repeatedly)",
+      "no per-request target validation",
+      "no multi-sample latency or jitter measurement",
+      "no protocol discovery (trusts the source label)",
+      "no source health/rotation/cooldown",
+      "no crash recovery / durable state",
+      "no API",
+      "no tests"
+    ]
+  }
+}
