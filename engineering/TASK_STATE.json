@@ -1,0 +1,236 @@
+{
+  "version": "4.0.0",
+  "updated_at": "2026-08-23T00:00:00Z",
+  "current_phase": "P01_ARCHITECTURE",
+  "phase_gate_status": {
+    "P00": "PASSED",
+    "P01": "IN_PROGRESS",
+    "P02": "TODO",
+    "P03": "TODO",
+    "P04": "TODO",
+    "P05": "TODO",
+    "P06": "TODO",
+    "P07": "TODO",
+    "P08": "TODO",
+    "P09": "TODO",
+    "P10": "TODO",
+    "P11": "TODO",
+    "P12": "TODO",
+    "P13": "TODO",
+    "P14": "TODO"
+  },
+  "tasks": [
+    {
+      "id": "P00.T1",
+      "title": "Read every legacy file, assign verdict (ADOPT/ADAPT/REWRITE/RETIRE)",
+      "status": "DONE",
+      "evidence": ["engineering/ANALYSIS.md"],
+      "attempts": 1,
+      "notes": "9 files, 2454 LOC of Python. Table in ANALYSIS.md section 1."
+    },
+    {
+      "id": "P00.T2",
+      "title": "Extract every hardcoded source URL from legacy code (AST)",
+      "status": "DONE",
+      "evidence": [
+        "engineering/raw/legacy_urls.json",
+        "engineering/tools/extract_legacy_sources.py"
+      ],
+      "attempts": 1,
+      "notes": "123 unique URLs across 6 files; 257 total URL literals."
+    },
+    {
+      "id": "P00.T3",
+      "title": "Actually fetch all 123 legacy URLs and record real state",
+      "status": "DONE",
+      "evidence": [
+        "engineering/SOURCE_INVENTORY.json",
+        "engineering/tools/probe_legacy_sources.py"
+      ],
+      "attempts": 1,
+      "notes": "ALIVE 56, DEAD 35, EMPTY 25, ERROR 1, NOT_A_SOURCE 6. 93581 unique candidates in a 2.1s sweep."
+    },
+    {
+      "id": "P00.T4",
+      "title": "Re-probe EMPTY sources with structured parsers (regex under-detects JSON/HTML)",
+      "status": "DONE",
+      "evidence": [
+        "engineering/raw/reprobe_empty.json",
+        "engineering/tools/reprobe_empty.py"
+      ],
+      "attempts": 1,
+      "notes": "Recovered 6 ALIVE_HTML_TABLE. 18 TRULY_EMPTY (JS-rendered)."
+    },
+    {
+      "id": "P00.T5",
+      "title": "Correct the GeoNode misclassification with direct evidence",
+      "status": "DONE",
+      "evidence": [
+        "engineering/raw/geonode_body.txt",
+        "engineering/tools/verify_geonode_parser.py"
+      ],
+      "attempts": 1,
+      "notes": "Reprobe saw a 659-byte throttled body and filed TRULY_EMPTY. Fresh curl returned 230019 bytes valid JSON -> 500 unique proxies. Reclassified ALIVE_JSON. Lesson: per-host rate limiting + ETag mandatory; one bad fetch != dead source."
+    },
+    {
+      "id": "P00.T6",
+      "title": "Measure the legacy behavioural baseline (historical + re-run now)",
+      "status": "DONE",
+      "evidence": [
+        "engineering/BASELINE.json",
+        "engineering/tools/measure_baseline.py"
+      ],
+      "attempts": 1,
+      "notes": "Historical: 15000 collected -> 102 working (0.68%) in 1418.98s, accepted p50 6359.5ms p95 15903ms, 95.8% over 1500ms. Measured now: 9/300 live (3.0%), p95 1464ms, 68.5s."
+    },
+    {
+      "id": "P00.T7",
+      "title": "Mechanically scan legacy code for defect classes",
+      "status": "DONE",
+      "evidence": [
+        "engineering/raw/bug_scan.json",
+        "engineering/tools/verify_bug_lines.py",
+        "engineering/BUG_LEDGER.md"
+      ],
+      "attempts": 1,
+      "notes": "23 silent handlers, 9 bare except, 33 broad except, 257 hardcoded URLs, 9 verify=False, 10 captcha refs, 8 truncating writes. 16 defect classes documented with file:line."
+    },
+    {
+      "id": "P00.T8",
+      "title": "Data archaeology: which sources actually yielded, which are dead",
+      "status": "DONE",
+      "evidence": ["engineering/ANALYSIS.md"],
+      "attempts": 1,
+      "notes": "Section 5. raw.githubusercontent.com 649404 (but unattributable across ~50 repos), proxyspace.pro 244623, api.openproxylist.xyz 154290. Key finding: volume != value."
+    },
+    {
+      "id": "P00.T9",
+      "title": "Migration ledger, 100% of legacy features, zero unknown rows",
+      "status": "DONE",
+      "evidence": ["engineering/MIGRATION_LEDGER.md"],
+      "attempts": 1,
+      "notes": "80 features mapped. ADOPTED 30, GENERALISED 19, REPLACED 14, RETIRED_HARMFUL 14, RETIRED_PROHIBITED 3. Zero unknown."
+    },
+    {
+      "id": "P00.T10",
+      "title": "Write SECURITY.md recording the H5/section-20 commitment",
+      "status": "DONE",
+      "evidence": ["engineering/SECURITY.md"],
+      "attempts": 1,
+      "notes": "Records the refusal to port the 2captcha code and the Instagram default target."
+    },
+    {
+      "id": "P00.T11",
+      "title": "Create resumability system before writing any atlas/ code",
+      "status": "DONE",
+      "evidence": [
+        "engineering/TASK_STATE.json",
+        "engineering/PROGRESS.md",
+        "engineering/RESUME_PROMPT.md",
+        "engineering/DECISIONS.md"
+      ],
+      "attempts": 1,
+      "notes": "Ordered by section 21 step 3: state files exist before code."
+    },
+    {
+      "id": "P01.T1",
+      "title": "Create atlas/ skeleton with core/ adapters/ engine/ api/ obs/ cli/ data/ tests/",
+      "status": "TODO",
+      "evidence": [],
+      "attempts": 0,
+      "notes": "Strict isolation: core/ must not import adapters/, api/, or any network library."
+    },
+    {
+      "id": "P01.T2",
+      "title": "tests/unit/test_architecture.py that FAILS if core/ imports I/O",
+      "status": "TODO",
+      "evidence": [],
+      "attempts": 0,
+      "notes": "AST-based import scan of every module under atlas/core/. Must be a real failing test, not a lint comment."
+    },
+    {
+      "id": "P01.T3",
+      "title": "Domain objects: Proxy, Source, Target, Verdict, Score (pure, no I/O)",
+      "status": "TODO",
+      "evidence": [],
+      "attempts": 0,
+      "notes": ""
+    },
+    {
+      "id": "P01.T4",
+      "title": "Ports: SourcePort, ProbePort, StorePort, ClockPort (Protocols)",
+      "status": "TODO",
+      "evidence": [],
+      "attempts": 0,
+      "notes": "ClockPort exists so scheduler/cooldown logic is testable without sleeping."
+    },
+    {
+      "id": "P01.T5",
+      "title": "config.yaml, requirements.txt, Makefile, .env.example, README.md",
+      "status": "TODO",
+      "evidence": [],
+      "attempts": 0,
+      "notes": "All tunables from sections 5/8/9/10 live in config.yaml, not in code."
+    }
+  ],
+  "files_changed": [
+    "engineering/ANALYSIS.md",
+    "engineering/SOURCE_INVENTORY.json",
+    "engineering/BASELINE.json",
+    "engineering/BUG_LEDGER.md",
+    "engineering/MIGRATION_LEDGER.md",
+    "engineering/SECURITY.md",
+    "engineering/DECISIONS.md",
+    "engineering/PROGRESS.md",
+    "engineering/TASK_STATE.json",
+    "engineering/RESUME_PROMPT.md",
+    "engineering/tools/extract_legacy_sources.py",
+    "engineering/tools/probe_legacy_sources.py",
+    "engineering/tools/reprobe_empty.py",
+    "engineering/tools/verify_geonode_parser.py",
+    "engineering/tools/measure_baseline.py",
+    "engineering/tools/verify_bug_lines.py",
+    "engineering/tools/inspect_inventory.py",
+    "engineering/tools/show_baseline.py",
+    "engineering/tools/check_geonode.py",
+    "engineering/raw/legacy_urls.json",
+    "engineering/raw/reprobe_empty.json",
+    "engineering/raw/bug_scan.json",
+    "engineering/raw/geonode_body.txt"
+  ],
+  "tests": {
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "last_run": null,
+    "command": "pytest -q",
+    "note": "No atlas/ code exists yet; PHASE GATE 0 forbids writing it before the five evidence files. Test suite begins at P01.T2."
+  },
+  "open_failures": [],
+  "blockers": [],
+  "next_action": "P01.T1 - create the atlas/ package skeleton, then immediately P01.T2 (architecture isolation test) so the boundary is enforced from the very first commit rather than retrofitted.",
+  "invariants_verified": {
+    "H1_evidence_for_every_claim": true,
+    "H2_no_fabricated_numbers": true,
+    "H3_no_double_delivery": false,
+    "H4_migration_ledger_complete": true,
+    "H5_responsible_use": true,
+    "H6_phase_gates": true,
+    "H7_live_not_good": false,
+    "H8_crash_resume": false
+  },
+  "invariant_notes": {
+    "H3_no_double_delivery": "Not yet verifiable - the pool and lease protocol do not exist until P08.",
+    "H7_live_not_good": "Not yet verifiable - the admission gate does not exist until P06/P07. The baseline PROVES the legacy system violated it (p50 6359ms admitted).",
+    "H8_crash_resume": "Not yet verifiable - storage layer arrives at P07."
+  },
+  "baseline_to_beat": {
+    "source": "engineering/BASELINE.json",
+    "legacy_live_rate_pct": 3.0,
+    "legacy_measured_p95_ms": 1464,
+    "legacy_historical_admitted_p50_ms": 6359.5,
+    "legacy_historical_admitted_p95_ms": 15903,
+    "legacy_historical_success_rate_pct": 0.68,
+    "legacy_pct_over_1500ms": 95.8
+  }
+}
