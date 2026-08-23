@@ -1,0 +1,248 @@
+2025-08-22 23:38:23,453 - INFO - 🚀 Starting Ultimate Proxy Scraper
+2025-08-22 23:38:23,765 - INFO - 🌐 Starting proxy collection from all sources...
+2025-08-22 23:38:23,807 - INFO - 📊 Total sources: 67
+2025-08-22 23:38:25,210 - INFO - ✅ raw.githubusercontent.com: 150 proxies
+2025-08-22 23:38:25,252 - INFO - ✅ raw.githubusercontent.com: 130 proxies
+2025-08-22 23:38:25,259 - INFO - ✅ raw.githubusercontent.com: 201 proxies
+2025-08-22 23:38:25,660 - INFO - ✅ raw.githubusercontent.com: 400 proxies
+2025-08-22 23:38:26,290 - INFO - ✅ raw.githubusercontent.com: 1 proxies
+2025-08-22 23:38:26,810 - INFO - ✅ raw.githubusercontent.com: 54 proxies
+2025-08-22 23:38:26,832 - WARNING - ⚠️ raw.githubusercontent.com: HTTP 404
+2025-08-22 23:38:27,452 - INFO - ✅ raw.githubusercontent.com: 2161 proxies
+2025-08-22 23:38:27,979 - INFO - ✅ raw.githubusercontent.com: 1801 proxies
+2025-08-22 23:38:28,821 - INFO - ✅ raw.githubusercontent.com: 2760 proxies
+2025-08-22 23:38:28,856 - INFO - ✅ raw.githubusercontent.com: 2893 proxies
+2025-08-22 23:38:30,021 - INFO - ✅ raw.githubusercontent.com: 3184 proxies
+2025-08-22 23:38:31,299 - INFO - ✅ raw.githubusercontent.com: 38325 proxies
+2025-08-22 23:38:32,033 - INFO - ✅ raw.githubusercontent.com: 38325 proxies
+2025-08-22 23:38:45,036 - WARNING - ⚠️ Error fetching raw.githubusercontent.com: HTTPSConnectionPool(host='raw.githubusercontent.com', port=443): Read timed out.
+2025-08-22 23:38:53,510 - WARNING - ⚠️ Error fetching api.openproxy.space: HTTPSConnectionPool(host='api.openproxy.space', port=443): Max retries exceeded with url: /lists/htt
+2025-08-22 23:38:54,059 - WARNING - ⚠️ Error fetching raw.githubusercontent.com: HTTPSConnectionPool(host='raw.githubusercontent.com', port=443): Read timed out. (read timeout=15)
+2025-08-22 23:38:54,423 - WARNING - ⚠️ Error fetching raw.githubusercontent.com: HTTPSConnectionPool(host='raw.githubusercontent.com', port=443): Read timed out. (read timeout=15)
+2025-08-22 23:39:15,635 - WARNING - ⚠️ Error fetching api.proxyscrape.com: HTTPSConnectionPool(host='api.proxyscrape.com', port=443): Max retries exceeded with url: /v2/?reque
+2025-08-22 23:39:18,002 - INFO - ✅ raw.githubusercontent.com: 58 proxies
+2025-08-22 23:39:18,316 - INFO - ✅ raw.githubusercontent.com: 190 proxies
+2025-08-22 23:39:18,726 - WARNING - ⚠️ raw.githubusercontent.com: HTTP 404
+2025-08-22 23:39:18,728 - WARNING - ⚠️ raw.githubusercontent.com: HTTP 404
+2025-08-22 23:39:21,445 - INFO - ✅ raw.githubusercontent.com: 40 proxies
+2025-08-22 23:39:21,672 - INFO - ✅ raw.githubusercontent.com: 554 proxies
+2025-08-22 23:39:23,193 - WARNING - ⚠️ raw.githubusercontent.com: HTTP 404
+2025-08-22 23:39:23,249 - WARNING - ⚠️ raw.githubusercontent.com: HTTP 404
+2025-08-22 23:39:23,559 - INFO - ✅ raw.githubusercontent.com: 2443 proxies
+2025-08-22 23:39:23,856 - INFO - ✅ raw.githubusercontent.com: 2682 proxies
+2025-08-22 23:39:25,343 - INFO - ✅ www.proxy-list.download: 90 proxies
+2025-08-22 23:39:26,043 - INFO - ✅ www.proxy-list.download: 90 proxies
+2025-08-22 23:39:26,120 - INFO - ✅ cdn.jsdelivr.net: 2316 proxies
+2025-08-22 23:39:26,716 - INFO - ✅ raw.githubusercontent.com: 64668 proxies
+2025-08-22 23:39:27,353 - INFO - ✅ cdn.jsdelivr.net: 2462 proxies
+2025-08-22 23:39:29,707 - INFO - ✅ raw.githubusercontent.com: 35527 proxies
+2025-08-22 23:39:32,970 - INFO - ✅ api.openproxylist.xyz: 64731 proxies
+2025-08-22 23:39:34,027 - INFO - ✅ raw.githubusercontent.com: 101615 proxies
+2025-08-22 23:39:34,395 - INFO - ✅ api.proxyscrape.com: 36686 proxies
+2025-08-22 23:39:35,309 - INFO - ✅ proxyspace.pro: 45058 proxies
+2025-08-22 23:39:35,874 - INFO - ✅ proxyspace.pro: 64684 proxies
+2025-08-22 23:39:37,834 - INFO - ✅ www.proxy-list.download: 26 proxies
+2025-08-22 23:39:38,633 - INFO - ✅ www.proxy-list.download: 26 proxies
+2025-08-22 23:39:39,206 - INFO - ✅ www.sslproxies.org: 100 proxies
+2025-08-22 23:39:40,042 - INFO - ✅ free-proxy-list.net: 61 proxies
+2025-08-22 23:39:40,477 - INFO - ✅ free-proxy-list.net: 31 proxies
+2025-08-22 23:39:40,714 - INFO - ✅ www.us-proxy.org: 8 proxies
+2025-08-22 23:39:43,869 - INFO - ⚠️ Found 116274 proxies, testing first 15000 only
+2025-08-22 23:39:43,895 - INFO - 🎯 Total unique proxies collected: 15000
+2025-08-22 23:39:43,896 - INFO - 📊 Source statistics:
+2025-08-22 23:39:43,897 - INFO -    📌 raw.githubusercontent.com: 101615 proxies
+2025-08-22 23:39:43,898 - INFO -    📌 api.openproxylist.xyz: 64731 proxies
+2025-08-22 23:39:43,899 - INFO -    📌 proxyspace.pro: 64684 proxies
+2025-08-22 23:39:43,900 - INFO -    📌 api.proxyscrape.com: 36686 proxies
+2025-08-22 23:39:43,901 - INFO -    📌 cdn.jsdelivr.net: 2462 proxies
+2025-08-22 23:39:43,903 - INFO -    📌 www.sslproxies.org: 100 proxies
+2025-08-22 23:39:43,904 - INFO -    📌 free-proxy-list.net: 31 proxies
+2025-08-22 23:39:43,905 - INFO -    📌 www.proxy-list.download: 26 proxies
+2025-08-22 23:39:43,906 - INFO -    📌 www.us-proxy.org: 8 proxies
+2025-08-22 23:39:44,165 - INFO - 🧪 Starting to test 15000 proxies on Instagram...
+2025-08-22 23:39:44,169 - INFO - ⚙️ Using 100 threads with 8s timeout
+2025-08-22 23:39:49,259 - INFO - ✅ Working: 200.24.130.139:999 (5004ms)
+2025-08-22 23:39:59,070 - INFO - ✅ Working: 190.93.102.136:999 (4721ms)
+2025-08-22 23:40:02,415 - INFO - ✅ Working: 152.53.168.53:48061 (2482ms)
+2025-08-22 23:40:03,331 - INFO - ✅ Working: 14.224.218.210:8080 (8453ms)
+2025-08-22 23:40:04,083 - INFO - ✅ Working: 177.234.217.44:999 (10957ms)
+2025-08-22 23:40:18,635 - INFO - ✅ Working: 103.172.42.121:8086 (6693ms)
+2025-08-22 23:40:22,495 - INFO - ✅ Working: 159.192.102.249:8080 (4774ms)
+2025-08-22 23:40:22,900 - INFO - ✅ Working: 1.55.193.211:16000 (2749ms)
+2025-08-22 23:40:32,842 - INFO - ✅ Working: 176.88.168.105:8080 (11444ms)
+2025-08-22 23:40:36,348 - INFO - ✅ Working: 203.175.126.229:8080 (3763ms)
+2025-08-22 23:40:52,359 - INFO - ✅ Working: 103.162.54.74:8888 (3676ms)
+2025-08-22 23:40:52,424 - INFO - ✅ Working: 168.197.42.74:8082 (12354ms)
+2025-08-22 23:40:53,576 - INFO - ✅ Working: 157.180.121.252:39611 (2702ms)
+2025-08-22 23:41:01,049 - INFO - ✅ Working: 179.1.201.140:9992 (13471ms)
+2025-08-22 23:41:15,786 - INFO - ✅ Working: 38.224.56.231:999 (3366ms)
+2025-08-22 23:41:16,376 - INFO - ✅ Working: 103.235.181.241:8080 (4409ms)
+2025-09-01 17:48:09,028 - INFO - 🚀 Starting Ultimate Proxy Scraper
+2025-09-01 17:48:09,326 - INFO - 🌐 Starting proxy collection from all sources...
+2025-09-01 17:48:09,440 - INFO - 📊 Total sources: 67
+2025-09-01 17:48:12,970 - INFO - ✅ raw.githubusercontent.com: 130 proxies
+2025-09-01 17:48:12,972 - INFO - ✅ raw.githubusercontent.com: 66 proxies
+2025-09-01 17:48:16,311 - INFO - ✅ raw.githubusercontent.com: 201 proxies
+2025-09-01 17:48:17,710 - INFO - ✅ raw.githubusercontent.com: 44 proxies
+2025-09-01 17:48:17,825 - INFO - ✅ raw.githubusercontent.com: 400 proxies
+2025-09-01 17:48:18,736 - WARNING - ⚠️ raw.githubusercontent.com: HTTP 404
+2025-09-01 17:48:19,329 - INFO - ✅ raw.githubusercontent.com: 1801 proxies
+2025-09-01 17:48:19,472 - INFO - ✅ raw.githubusercontent.com: 2161 proxies
+2025-09-01 17:48:19,824 - WARNING - ⚠️ raw.githubusercontent.com: HTTP 404
+2025-09-01 17:48:22,139 - INFO - ✅ raw.githubusercontent.com: 40 proxies
+2025-09-01 17:48:23,019 - WARNING - ⚠️ raw.githubusercontent.com: HTTP 404
+2025-09-01 17:48:24,379 - INFO - ✅ raw.githubusercontent.com: 3184 proxies
+2025-09-01 17:48:24,410 - INFO - ✅ raw.githubusercontent.com: 554 proxies
+2025-09-01 17:48:25,690 - WARNING - ⚠️ raw.githubusercontent.com: HTTP 404
+2025-09-01 17:48:25,693 - WARNING - ⚠️ raw.githubusercontent.com: HTTP 404
+2025-09-01 17:48:25,984 - WARNING - ⚠️ raw.githubusercontent.com: HTTP 404
+2025-09-01 17:48:26,255 - INFO - ✅ raw.githubusercontent.com: 190 proxies
+2025-09-01 17:48:26,416 - INFO - ✅ raw.githubusercontent.com: 58 proxies
+2025-09-01 17:48:28,710 - INFO - ✅ raw.githubusercontent.com: 38551 proxies
+2025-09-01 17:48:31,554 - INFO - ✅ raw.githubusercontent.com: 2443 proxies
+2025-09-01 17:48:31,658 - WARNING - ⚠️ api.openproxy.space: HTTP 521
+2025-09-01 17:48:36,730 - INFO - ✅ www.proxy-list.download: 90 proxies
+2025-09-01 17:48:43,297 - INFO - ✅ www.proxy-list.download: 90 proxies
+2025-09-01 17:48:46,145 - INFO - ✅ raw.githubusercontent.com: 38551 proxies
+2025-09-01 17:48:46,156 - INFO - ✅ raw.githubusercontent.com: 35681 proxies
+2025-09-01 17:48:46,475 - INFO - ✅ cdn.jsdelivr.net: 2621 proxies
+2025-09-01 17:48:46,562 - INFO - ✅ cdn.jsdelivr.net: 2408 proxies
+2025-09-01 17:49:05,029 - INFO - ✅ raw.githubusercontent.com: 36072 proxies
+2025-09-01 17:49:17,745 - INFO - ✅ proxyspace.pro: 45364 proxies
+2025-09-01 17:49:17,850 - INFO - ✅ api.proxyscrape.com: 36102 proxies
+2025-09-01 17:49:28,058 - INFO - ✅ api.proxyscrape.com: 36558 proxies
+2025-09-01 17:49:34,971 - INFO - ✅ api.openproxylist.xyz: 89559 proxies
+2025-09-01 17:49:39,500 - INFO - ✅ proxyspace.pro: 89517 proxies
+2025-09-01 17:49:40,012 - INFO - ✅ raw.githubusercontent.com: 89500 proxies
+2025-09-01 17:49:40,888 - INFO - ✅ raw.githubusercontent.com: 101615 proxies
+2025-09-01 17:49:47,513 - INFO - ✅ proxydb.net: 1 proxies
+2025-09-01 17:49:47,701 - INFO - ✅ free-proxy-list.net: 1 proxies
+2025-09-01 17:49:50,445 - INFO - ✅ free-proxy-list.net: 29 proxies
+2025-09-01 17:49:53,422 - INFO - ✅ www.sslproxies.org: 100 proxies
+2025-09-01 17:49:54,481 - INFO - ✅ www.proxy-list.download: 26 proxies
+2025-09-01 17:49:54,667 - INFO - ✅ free-proxy-list.net: 47 proxies
+2025-09-01 17:49:55,205 - INFO - ✅ www.proxy-list.download: 26 proxies
+2025-09-01 17:49:55,601 - INFO - ✅ www.us-proxy.org: 37 proxies
+2025-09-01 17:50:11,147 - WARNING - ⚠️ Error scraping hide.mn: HTTPSConnectionPool(host='hide.mn', port=443): Read timed out. (read timeout=15)
+2025-09-01 17:50:11,149 - INFO - ⚠️ Found 132574 proxies, testing first 15000 only
+2025-09-01 17:50:11,180 - INFO - 🎯 Total unique proxies collected: 15000
+2025-09-01 17:50:11,182 - INFO - 📊 Source statistics:
+2025-09-01 17:50:11,185 - INFO -    📌 raw.githubusercontent.com: 101615 proxies
+2025-09-01 17:50:11,229 - INFO -    📌 api.openproxylist.xyz: 89559 proxies
+2025-09-01 17:50:11,324 - INFO -    📌 proxyspace.pro: 89517 proxies
+2025-09-01 17:50:11,465 - INFO -    📌 api.proxyscrape.com: 36558 proxies
+2025-09-01 17:50:11,524 - INFO -    📌 cdn.jsdelivr.net: 2408 proxies
+2025-09-01 17:50:11,587 - INFO -    📌 www.sslproxies.org: 100 proxies
+2025-09-01 17:50:11,625 - INFO -    📌 free-proxy-list.net: 47 proxies
+2025-09-01 17:50:11,709 - INFO -    📌 www.us-proxy.org: 37 proxies
+2025-09-01 17:50:11,775 - INFO -    📌 www.proxy-list.download: 26 proxies
+2025-09-01 17:50:11,908 - INFO -    📌 proxydb.net: 1 proxies
+2025-09-01 17:50:12,627 - INFO - 🧪 Starting to test 15000 proxies on Instagram...
+2025-09-01 17:50:12,703 - INFO - ⚙️ Using 100 threads with 8s timeout
+2025-09-01 17:50:27,535 - INFO - ✅ Working: 181.174.231.26:999 (7522ms)
+2025-09-01 17:50:27,753 - INFO - ✅ Working: 197.248.57.193:8080 (10609ms)
+2025-09-01 17:50:35,028 - INFO - ✅ Working: 103.41.250.97:8080 (9354ms)
+2025-09-01 17:50:39,888 - INFO - ✅ Working: 38.156.75.130:8080 (10636ms)
+2025-09-01 17:50:57,635 - INFO - ✅ Working: 200.106.63.218:999 (15751ms)
+2025-09-01 17:51:03,970 - INFO - ✅ Working: 103.162.16.109:8080 (9612ms)
+2025-09-01 17:51:07,924 - INFO - ✅ Working: 182.78.42.112:83 (8185ms)
+2025-09-01 17:51:16,869 - INFO - ✅ Working: 190.120.255.167:999 (11042ms)
+2025-09-01 17:51:21,802 - INFO - ✅ Working: 152.53.168.53:32145 (3157ms)
+2025-09-01 17:51:40,681 - INFO - ✅ Working: 147.75.34.93:9443 (2654ms)
+2025-09-01 17:51:42,694 - INFO - ✅ Working: 65.108.251.40:26262 (4002ms)
+2025-09-01 17:51:44,594 - INFO - ✅ Working: 117.5.199.191:5101 (8399ms)
+2025-09-01 17:52:04,130 - INFO - ✅ Working: 223.204.81.212:8080 (9051ms)
+2025-09-01 17:52:08,572 - INFO - ✅ Working: 18.188.141.177:8834 (1329ms)
+2025-09-01 17:52:09,968 - INFO - ✅ Working: 152.53.168.53:10074 (4133ms)
+2025-09-01 17:52:36,538 - INFO - ✅ Working: 164.163.42.16:10000 (2833ms)
+2025-09-01 17:53:23,157 - INFO - ✅ Working: 185.200.38.54:8080 (3560ms)
+2025-09-01 17:53:23,945 - INFO - ✅ Working: 152.53.194.55:20223 (4959ms)
+2025-09-01 17:53:38,021 - INFO - ✅ Working: 27.147.177.74:58080 (8157ms)
+2025-09-01 17:53:58,953 - INFO - ✅ Working: 116.100.250.40:10006 (18999ms)
+2025-09-01 17:54:35,819 - INFO - ✅ Working: 149.86.146.222:8080 (6257ms)
+2025-09-01 17:54:36,337 - INFO - ✅ Working: 38.253.80.25:999 (10895ms)
+2025-09-01 17:55:10,650 - INFO - ✅ Working: 164.163.42.2:10000 (3094ms)
+2025-09-01 17:55:27,532 - INFO - ✅ Working: 103.160.41.8:8080 (6903ms)
+2025-09-01 17:55:30,083 - INFO - ✅ Working: 152.53.168.53:44887 (4169ms)
+2025-09-01 17:55:33,275 - INFO - ✅ Working: 104.129.194.43:9443 (2961ms)
+2025-09-01 17:55:43,910 - INFO - ✅ Working: 38.65.174.107:999 (5963ms)
+2025-09-01 17:55:52,195 - INFO - ✅ Working: 54.199.199.66:3749 (1706ms)
+2025-09-01 17:55:52,902 - INFO - ✅ Working: 67.43.236.20:11729 (5795ms)
+2025-09-01 17:56:08,637 - INFO - ✅ Working: 152.53.171.242:52033 (3160ms)
+2025-09-01 17:56:23,092 - INFO - ✅ Working: 164.163.42.15:10000 (3156ms)
+2025-09-01 17:56:24,901 - INFO - ✅ Working: 143.208.57.163:999 (5832ms)
+2025-09-01 17:56:28,416 - INFO - ✅ Working: 38.127.172.106:24171 (3814ms)
+2025-09-01 17:56:58,225 - INFO - ✅ Working: 38.52.220.58:999 (7294ms)
+2025-09-01 17:57:18,912 - INFO - ✅ Working: 103.169.189.202:9090 (12783ms)
+2025-09-01 17:57:20,422 - INFO - ✅ Working: 46.10.229.243:8080 (15903ms)
+2025-09-01 17:57:22,799 - INFO - ✅ Working: 47.129.253.163:938 (7917ms)
+2025-09-01 17:57:24,009 - INFO - ✅ Working: 195.66.189.58:81 (6222ms)
+2025-09-01 17:57:34,598 - INFO - ✅ Working: 202.57.25.76:8080 (4733ms)
+2025-09-01 17:58:02,335 - INFO - ✅ Working: 201.88.213.118:8080 (17674ms)
+2025-09-01 17:58:40,339 - INFO - ✅ Working: 149.86.146.197:8080 (7540ms)
+2025-09-01 17:58:42,462 - INFO - ✅ Working: 3.79.73.102:8080 (1199ms)
+2025-09-01 17:58:52,537 - INFO - ✅ Working: 41.254.63.18:8080 (3941ms)
+2025-09-01 17:59:02,401 - INFO - ✅ Working: 38.127.172.79:24171 (3753ms)
+2025-09-01 17:59:16,719 - INFO - ✅ Working: 164.163.42.38:10000 (5958ms)
+2025-09-01 17:59:31,556 - INFO - ✅ Working: 190.128.134.66:999 (7196ms)
+2025-09-01 17:59:41,701 - INFO - ✅ Working: 152.53.168.53:18807 (3877ms)
+2025-09-01 17:59:41,924 - INFO - ✅ Working: 175.111.129.154:8080 (8166ms)
+2025-09-01 18:00:07,695 - INFO - ✅ Working: 102.68.128.216:8080 (2761ms)
+2025-09-01 18:00:10,668 - INFO - ✅ Working: 103.159.46.121:82 (10839ms)
+2025-09-01 18:00:16,261 - INFO - ✅ Working: 158.255.212.55:5566 (7237ms)
+2025-09-01 18:00:21,504 - INFO - ✅ Working: 49.0.33.133:27039 (8571ms)
+2025-09-01 18:00:25,906 - INFO - ✅ Working: 38.51.207.98:999 (11580ms)
+2025-09-01 18:00:38,262 - INFO - ✅ Working: 14.224.174.168:3539 (8082ms)
+2025-09-01 18:00:39,379 - INFO - ✅ Working: 164.163.42.39:10000 (3912ms)
+2025-09-01 18:00:51,105 - INFO - ✅ Working: 164.163.42.21:10000 (2782ms)
+2025-09-01 18:00:53,984 - INFO - ✅ Working: 147.75.101.247:55555 (1372ms)
+2025-09-01 18:01:22,220 - INFO - ✅ Working: 188.132.222.230:8080 (1951ms)
+2025-09-01 18:01:26,756 - INFO - ✅ Working: 164.163.42.35:10000 (3526ms)
+2025-09-01 18:01:37,822 - INFO - ✅ Working: 103.78.201.242:5001 (3477ms)
+2025-09-01 18:01:55,134 - INFO - ✅ Working: 183.88.231.188:34599 (19035ms)
+2025-09-01 18:02:27,714 - INFO - ✅ Working: 45.189.108.20:999 (9439ms)
+2025-09-01 18:02:28,684 - INFO - ✅ Working: 152.53.168.53:16371 (2866ms)
+2025-09-01 18:02:33,603 - INFO - ✅ Working: 177.101.86.13:3128 (17664ms)
+2025-09-01 18:02:34,916 - INFO - ✅ Working: 104.129.194.44:10336 (2361ms)
+2025-09-01 18:03:00,089 - INFO - ✅ Working: 186.3.76.228:999 (12467ms)
+2025-09-01 18:03:32,560 - INFO - ✅ Working: 38.127.172.160:24171 (2017ms)
+2025-09-01 18:03:41,758 - INFO - ✅ Working: 152.53.168.53:49661 (2415ms)
+2025-09-01 18:04:08,834 - INFO - ✅ Working: 152.53.168.53:56189 (3776ms)
+2025-09-01 18:04:27,011 - INFO - ✅ Working: 190.130.6.11:8080 (7232ms)
+2025-09-01 18:04:48,469 - INFO - ✅ Working: 180.190.240.83:8082 (6462ms)
+2025-09-01 18:04:50,545 - INFO - ✅ Working: 152.53.168.53:55775 (4909ms)
+2025-09-01 18:04:56,419 - INFO - ✅ Working: 161.49.90.70:1337 (10174ms)
+2025-09-01 18:05:21,415 - INFO - ✅ Working: 38.127.172.31:24171 (6497ms)
+2025-09-01 18:05:27,693 - INFO - ✅ Working: 103.133.27.159:8085 (11895ms)
+2025-09-01 18:05:40,167 - INFO - ✅ Working: 154.6.161.228:37198 (2312ms)
+2025-09-01 18:06:00,531 - INFO - ✅ Working: 126.209.2.2:8081 (8052ms)
+2025-09-01 18:06:25,417 - INFO - ✅ Working: 103.159.96.146:3128 (10394ms)
+2025-09-01 18:06:31,625 - INFO - ✅ Working: 152.53.168.53:21841 (4661ms)
+2025-09-01 18:07:01,386 - INFO - ✅ Working: 116.102.106.101:10002 (7698ms)
+2025-09-01 18:07:47,115 - INFO - ✅ Working: 38.44.17.150:999 (9463ms)
+2025-09-01 18:08:08,849 - INFO - ✅ Working: 40.172.232.213:29214 (1076ms)
+2025-09-01 18:08:21,406 - INFO - ✅ Working: 103.177.235.207:83 (16350ms)
+2025-09-01 18:08:56,599 - INFO - ✅ Working: 117.5.199.191:5104 (12927ms)
+2025-09-01 18:09:32,475 - INFO - ✅ Working: 180.190.188.183:8082 (9446ms)
+2025-09-01 18:09:50,590 - INFO - ✅ Working: 103.251.8.135:3128 (12308ms)
+2025-09-01 18:09:54,289 - INFO - ✅ Working: 103.77.62.134:8080 (5767ms)
+2025-09-01 18:09:58,193 - INFO - ✅ Working: 128.199.253.195:9090 (2587ms)
+2025-09-01 18:10:11,824 - INFO - ✅ Working: 38.253.80.104:999 (5178ms)
+2025-09-01 18:10:14,045 - INFO - ✅ Working: 103.227.187.13:6080 (17757ms)
+2025-09-01 18:10:39,258 - INFO - ✅ Working: 104.129.194.43:11258 (3224ms)
+2025-09-01 18:10:48,342 - INFO - ✅ Working: 164.163.42.6:10000 (2917ms)
+2025-09-01 18:10:49,934 - INFO - ✅ Working: 164.163.43.102:10000 (10445ms)
+2025-09-01 18:10:50,277 - INFO - ✅ Working: 181.209.111.84:999 (10000ms)
+2025-09-01 18:10:55,618 - INFO - ✅ Working: 103.189.197.179:3030 (12518ms)
+2025-09-01 18:10:59,322 - INFO - ✅ Working: 116.97.3.251:1005 (3002ms)
+2025-09-01 18:11:03,144 - INFO - ✅ Working: 103.110.10.198:702 (5050ms)
+2025-09-01 18:11:08,578 - INFO - ✅ Working: 157.175.147.228:10010 (756ms)
+2025-09-01 18:11:14,661 - INFO - ✅ Working: 102.0.11.152:8080 (9294ms)
+2025-09-01 18:11:23,921 - INFO - ✅ Working: 52.184.80.192:23128 (3331ms)
+2025-09-01 18:11:46,941 - INFO - ✅ Working: 103.153.134.150:8080 (13247ms)
+2025-09-01 18:11:47,846 - INFO - ✅ Working: 45.184.103.110:999 (11935ms)
+2025-09-01 18:11:47,867 - INFO - 🎉 Testing completed in 1295.0 seconds!
+2025-09-01 18:11:47,868 - INFO - ✅ Working proxies: 102 out of 15000
+2025-09-01 18:11:48,016 - INFO - 💾 Results saved:
+2025-09-01 18:11:48,017 - INFO -    📄 proxy.txt - Working proxies in IP:PORT format
+2025-09-01 18:11:48,019 - INFO -    📄 proxy_details.json - Detailed results and statistics

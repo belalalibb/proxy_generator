@@ -1,0 +1,726 @@
+{
+  "scan_info": {
+    "scan_date": "2025-09-01T18:11:48.009891",
+    "total_sources": 67,
+    "total_collected": 15000,
+    "total_working": 102,
+    "success_rate": "0.68%",
+    "scan_duration": "1418.98s"
+  },
+  "working_proxies": [
+    {
+      "proxy": "157.175.147.228:10010",
+      "working": true,
+      "response_time": 756,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:11:08.574862"
+    },
+    {
+      "proxy": "40.172.232.213:29214",
+      "working": true,
+      "response_time": 1076,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:08:08.842157"
+    },
+    {
+      "proxy": "3.79.73.102:8080",
+      "working": true,
+      "response_time": 1199,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:58:42.458207"
+    },
+    {
+      "proxy": "18.188.141.177:8834",
+      "working": true,
+      "response_time": 1329,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:52:08.567538"
+    },
+    {
+      "proxy": "147.75.101.247:55555",
+      "working": true,
+      "response_time": 1372,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:00:53.979386"
+    },
+    {
+      "proxy": "54.199.199.66:3749",
+      "working": true,
+      "response_time": 1706,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:55:52.188003"
+    },
+    {
+      "proxy": "188.132.222.230:8080",
+      "working": true,
+      "response_time": 1951,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:01:22.219468"
+    },
+    {
+      "proxy": "38.127.172.160:24171",
+      "working": true,
+      "response_time": 2017,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:03:32.555441"
+    },
+    {
+      "proxy": "154.6.161.228:37198",
+      "working": true,
+      "response_time": 2312,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:05:40.162635"
+    },
+    {
+      "proxy": "104.129.194.44:10336",
+      "working": true,
+      "response_time": 2361,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:02:34.910552"
+    },
+    {
+      "proxy": "152.53.168.53:49661",
+      "working": true,
+      "response_time": 2415,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:03:41.749786"
+    },
+    {
+      "proxy": "128.199.253.195:9090",
+      "working": true,
+      "response_time": 2587,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:09:58.187479"
+    },
+    {
+      "proxy": "147.75.34.93:9443",
+      "working": true,
+      "response_time": 2654,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:51:40.677977"
+    },
+    {
+      "proxy": "102.68.128.216:8080",
+      "working": true,
+      "response_time": 2761,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:00:07.689714"
+    },
+    {
+      "proxy": "164.163.42.21:10000",
+      "working": true,
+      "response_time": 2782,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:00:51.098505"
+    },
+    {
+      "proxy": "164.163.42.16:10000",
+      "working": true,
+      "response_time": 2833,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:52:36.530836"
+    },
+    {
+      "proxy": "152.53.168.53:16371",
+      "working": true,
+      "response_time": 2866,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:02:28.680904"
+    },
+    {
+      "proxy": "164.163.42.6:10000",
+      "working": true,
+      "response_time": 2917,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:10:48.333482"
+    },
+    {
+      "proxy": "104.129.194.43:9443",
+      "working": true,
+      "response_time": 2961,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:55:33.260119"
+    },
+    {
+      "proxy": "116.97.3.251:1005",
+      "working": true,
+      "response_time": 3002,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:10:59.315045"
+    },
+    {
+      "proxy": "164.163.42.2:10000",
+      "working": true,
+      "response_time": 3094,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:55:10.643538"
+    },
+    {
+      "proxy": "164.163.42.15:10000",
+      "working": true,
+      "response_time": 3156,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:56:23.087183"
+    },
+    {
+      "proxy": "152.53.168.53:32145",
+      "working": true,
+      "response_time": 3157,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:51:21.788509"
+    },
+    {
+      "proxy": "152.53.171.242:52033",
+      "working": true,
+      "response_time": 3160,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:56:08.628717"
+    },
+    {
+      "proxy": "104.129.194.43:11258",
+      "working": true,
+      "response_time": 3224,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:10:39.247155"
+    },
+    {
+      "proxy": "52.184.80.192:23128",
+      "working": true,
+      "response_time": 3331,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:11:23.910859"
+    },
+    {
+      "proxy": "103.78.201.242:5001",
+      "working": true,
+      "response_time": 3477,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:01:37.810356"
+    },
+    {
+      "proxy": "164.163.42.35:10000",
+      "working": true,
+      "response_time": 3526,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:01:26.740569"
+    },
+    {
+      "proxy": "185.200.38.54:8080",
+      "working": true,
+      "response_time": 3560,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:53:23.146833"
+    },
+    {
+      "proxy": "38.127.172.79:24171",
+      "working": true,
+      "response_time": 3753,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:59:02.392505"
+    },
+    {
+      "proxy": "152.53.168.53:56189",
+      "working": true,
+      "response_time": 3776,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:04:08.829882"
+    },
+    {
+      "proxy": "38.127.172.106:24171",
+      "working": true,
+      "response_time": 3814,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:56:28.408427"
+    },
+    {
+      "proxy": "152.53.168.53:18807",
+      "working": true,
+      "response_time": 3877,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:59:41.697165"
+    },
+    {
+      "proxy": "164.163.42.39:10000",
+      "working": true,
+      "response_time": 3912,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:00:39.371807"
+    },
+    {
+      "proxy": "41.254.63.18:8080",
+      "working": true,
+      "response_time": 3941,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:58:52.533428"
+    },
+    {
+      "proxy": "65.108.251.40:26262",
+      "working": true,
+      "response_time": 4002,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:51:42.686240"
+    },
+    {
+      "proxy": "152.53.168.53:10074",
+      "working": true,
+      "response_time": 4133,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:52:09.962038"
+    },
+    {
+      "proxy": "152.53.168.53:44887",
+      "working": true,
+      "response_time": 4169,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:55:30.075557"
+    },
+    {
+      "proxy": "152.53.168.53:21841",
+      "working": true,
+      "response_time": 4661,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:06:31.617572"
+    },
+    {
+      "proxy": "202.57.25.76:8080",
+      "working": true,
+      "response_time": 4733,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:57:34.573962"
+    },
+    {
+      "proxy": "152.53.168.53:55775",
+      "working": true,
+      "response_time": 4909,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:04:50.539022"
+    },
+    {
+      "proxy": "152.53.194.55:20223",
+      "working": true,
+      "response_time": 4959,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:53:23.784100"
+    },
+    {
+      "proxy": "103.110.10.198:702",
+      "working": true,
+      "response_time": 5050,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:11:03.137972"
+    },
+    {
+      "proxy": "38.253.80.104:999",
+      "working": true,
+      "response_time": 5178,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:10:11.817698"
+    },
+    {
+      "proxy": "103.77.62.134:8080",
+      "working": true,
+      "response_time": 5767,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:09:54.282262"
+    },
+    {
+      "proxy": "67.43.236.20:11729",
+      "working": true,
+      "response_time": 5795,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:55:52.894607"
+    },
+    {
+      "proxy": "143.208.57.163:999",
+      "working": true,
+      "response_time": 5832,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:56:24.894751"
+    },
+    {
+      "proxy": "164.163.42.38:10000",
+      "working": true,
+      "response_time": 5958,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:59:16.707527"
+    },
+    {
+      "proxy": "38.65.174.107:999",
+      "working": true,
+      "response_time": 5963,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:55:43.903906"
+    },
+    {
+      "proxy": "195.66.189.58:81",
+      "working": true,
+      "response_time": 6222,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:57:24.004832"
+    },
+    {
+      "proxy": "149.86.146.222:8080",
+      "working": true,
+      "response_time": 6257,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:54:35.795301"
+    },
+    {
+      "proxy": "180.190.240.83:8082",
+      "working": true,
+      "response_time": 6462,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:04:48.464918"
+    },
+    {
+      "proxy": "38.127.172.31:24171",
+      "working": true,
+      "response_time": 6497,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:05:21.397345"
+    },
+    {
+      "proxy": "103.160.41.8:8080",
+      "working": true,
+      "response_time": 6903,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:55:27.522126"
+    },
+    {
+      "proxy": "190.128.134.66:999",
+      "working": true,
+      "response_time": 7196,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:59:31.549018"
+    },
+    {
+      "proxy": "190.130.6.11:8080",
+      "working": true,
+      "response_time": 7232,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:04:27.007810"
+    },
+    {
+      "proxy": "158.255.212.55:5566",
+      "working": true,
+      "response_time": 7237,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:00:16.253250"
+    },
+    {
+      "proxy": "38.52.220.58:999",
+      "working": true,
+      "response_time": 7294,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:56:58.219176"
+    },
+    {
+      "proxy": "181.174.231.26:999",
+      "working": true,
+      "response_time": 7522,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:50:21.809663"
+    },
+    {
+      "proxy": "149.86.146.197:8080",
+      "working": true,
+      "response_time": 7540,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:58:40.334985"
+    },
+    {
+      "proxy": "116.102.106.101:10002",
+      "working": true,
+      "response_time": 7698,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:07:01.378429"
+    },
+    {
+      "proxy": "47.129.253.163:938",
+      "working": true,
+      "response_time": 7917,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:57:22.788634"
+    },
+    {
+      "proxy": "126.209.2.2:8081",
+      "working": true,
+      "response_time": 8052,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:06:00.519766"
+    },
+    {
+      "proxy": "14.224.174.168:3539",
+      "working": true,
+      "response_time": 8082,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:00:38.252902"
+    },
+    {
+      "proxy": "27.147.177.74:58080",
+      "working": true,
+      "response_time": 8157,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:53:38.015384"
+    },
+    {
+      "proxy": "175.111.129.154:8080",
+      "working": true,
+      "response_time": 8166,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:59:41.912166"
+    },
+    {
+      "proxy": "182.78.42.112:83",
+      "working": true,
+      "response_time": 8185,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:51:07.919674"
+    },
+    {
+      "proxy": "117.5.199.191:5101",
+      "working": true,
+      "response_time": 8399,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:51:44.589538"
+    },
+    {
+      "proxy": "49.0.33.133:27039",
+      "working": true,
+      "response_time": 8571,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:00:21.499422"
+    },
+    {
+      "proxy": "223.204.81.212:8080",
+      "working": true,
+      "response_time": 9051,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:52:04.126211"
+    },
+    {
+      "proxy": "102.0.11.152:8080",
+      "working": true,
+      "response_time": 9294,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:11:14.653084"
+    },
+    {
+      "proxy": "103.41.250.97:8080",
+      "working": true,
+      "response_time": 9354,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:50:35.024335"
+    },
+    {
+      "proxy": "45.189.108.20:999",
+      "working": true,
+      "response_time": 9439,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:02:27.690120"
+    },
+    {
+      "proxy": "180.190.188.183:8082",
+      "working": true,
+      "response_time": 9446,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:09:32.467405"
+    },
+    {
+      "proxy": "38.44.17.150:999",
+      "working": true,
+      "response_time": 9463,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:07:47.111635"
+    },
+    {
+      "proxy": "103.162.16.109:8080",
+      "working": true,
+      "response_time": 9612,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:51:03.963988"
+    },
+    {
+      "proxy": "181.209.111.84:999",
+      "working": true,
+      "response_time": 10000,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:10:50.269352"
+    },
+    {
+      "proxy": "161.49.90.70:1337",
+      "working": true,
+      "response_time": 10174,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:04:56.412253"
+    },
+    {
+      "proxy": "103.159.96.146:3128",
+      "working": true,
+      "response_time": 10394,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:06:25.412367"
+    },
+    {
+      "proxy": "164.163.43.102:10000",
+      "working": true,
+      "response_time": 10445,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:10:49.926522"
+    },
+    {
+      "proxy": "197.248.57.193:8080",
+      "working": true,
+      "response_time": 10609,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:50:27.688872"
+    },
+    {
+      "proxy": "38.156.75.130:8080",
+      "working": true,
+      "response_time": 10636,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:50:39.879897"
+    },
+    {
+      "proxy": "103.159.46.121:82",
+      "working": true,
+      "response_time": 10839,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:00:10.664310"
+    },
+    {
+      "proxy": "38.253.80.25:999",
+      "working": true,
+      "response_time": 10895,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:54:36.332334"
+    },
+    {
+      "proxy": "190.120.255.167:999",
+      "working": true,
+      "response_time": 11042,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:51:16.858917"
+    },
+    {
+      "proxy": "38.51.207.98:999",
+      "working": true,
+      "response_time": 11580,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:00:25.901014"
+    },
+    {
+      "proxy": "103.133.27.159:8085",
+      "working": true,
+      "response_time": 11895,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:05:27.682434"
+    },
+    {
+      "proxy": "45.184.103.110:999",
+      "working": true,
+      "response_time": 11935,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:11:47.845841"
+    },
+    {
+      "proxy": "103.251.8.135:3128",
+      "working": true,
+      "response_time": 12308,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:09:50.583609"
+    },
+    {
+      "proxy": "186.3.76.228:999",
+      "working": true,
+      "response_time": 12467,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:03:00.074068"
+    },
+    {
+      "proxy": "103.189.197.179:3030",
+      "working": true,
+      "response_time": 12518,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:10:55.608173"
+    },
+    {
+      "proxy": "103.169.189.202:9090",
+      "working": true,
+      "response_time": 12783,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:57:18.905852"
+    },
+    {
+      "proxy": "117.5.199.191:5104",
+      "working": true,
+      "response_time": 12927,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:08:56.587623"
+    },
+    {
+      "proxy": "103.153.134.150:8080",
+      "working": true,
+      "response_time": 13247,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:11:46.937673"
+    },
+    {
+      "proxy": "200.106.63.218:999",
+      "working": true,
+      "response_time": 15751,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:50:57.625772"
+    },
+    {
+      "proxy": "46.10.229.243:8080",
+      "working": true,
+      "response_time": 15903,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:57:20.410024"
+    },
+    {
+      "proxy": "103.177.235.207:83",
+      "working": true,
+      "response_time": 16350,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:08:21.393441"
+    },
+    {
+      "proxy": "177.101.86.13:3128",
+      "working": true,
+      "response_time": 17664,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:02:33.599963"
+    },
+    {
+      "proxy": "201.88.213.118:8080",
+      "working": true,
+      "response_time": 17674,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:58:02.323932"
+    },
+    {
+      "proxy": "103.227.187.13:6080",
+      "working": true,
+      "response_time": 17757,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:10:14.041169"
+    },
+    {
+      "proxy": "116.100.250.40:10006",
+      "working": true,
+      "response_time": 18999,
+      "status_code": 200,
+      "tested_at": "2025-09-01T17:53:58.939094"
+    },
+    {
+      "proxy": "183.88.231.188:34599",
+      "working": true,
+      "response_time": 19035,
+      "status_code": 200,
+      "tested_at": "2025-09-01T18:01:55.129840"
+    }
+  ]
+}
