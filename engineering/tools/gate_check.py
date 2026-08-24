@@ -287,6 +287,83 @@ def check_adr_claims_are_verifiable(res: Result) -> None:
             if offenders else f"{len(blocks)} ADR(s) checked")
 
 
+def check_adr_verify_targets_exist(res: Result) -> None:
+    """
+    ADR-037. A `**Verify:**` line must name something that EXISTS.
+
+    Why this is separate from `check_adr_claims_are_verifiable`. That check tests
+    `"**Verify:**" in body` -- the presence of the STRING, never the existence of
+    what the string names. ADR-036 shipped citing
+    `atlas/tests/unit/test_scheduler.py` while that file did not exist, and the
+    gate reported 36 ADRs checked, no problem. The guard against unfalsifiable
+    claims was itself satisfiable by an unfalsifiable claim.
+
+    The two remain separate checks so the failure modes stay distinguishable:
+    "this ADR names no way to check it" and "this ADR names a way to check it
+    that does not exist" are different defects with different fixes, and merging
+    them would make the second look like the first in the gate output.
+
+    Deliberately narrow: only tokens that look REPO-RELATIVE (contain a `/`) are
+    resolved. Bare basenames like `gate_check.py` or `SECURITY.md` appear in
+    prose throughout DECISIONS.md, and requiring every mention of a filename to
+    resolve would push path noise into every ADR to catch a defect that has only
+    ever occurred in the pathful form.
+    """
+    decisions = ROOT / "engineering" / "DECISIONS.md"
+    if not decisions.exists():
+        res.add("adr_verify_targets_exist", False, "DECISIONS.md missing")
+        return
+
+    import re as _re
+
+    text = decisions.read_text(encoding="utf-8")
+    blocks: list[tuple[str, str]] = []
+    current_id, buf = None, []
+    for line in text.splitlines():
+        if line.startswith("## ADR-"):
+            if current_id:
+                blocks.append((current_id, "\n".join(buf)))
+            current_id, buf = line.split("—")[0].replace("##", "").strip(), []
+        else:
+            buf.append(line)
+    if current_id:
+        blocks.append((current_id, "\n".join(buf)))
+
+    # A path-ish token: at least one `/`, ending in a tracked file extension.
+    token_re = _re.compile(r"[A-Za-z0-9_./-]*/[A-Za-z0-9_./-]*"
+                           r"\.(?:py|json|md|txt|yaml|yml|sql)\b")
+
+    missing: list[str] = []
+    checked = 0
+    for adr_id, body in blocks:
+        if "**Verify:**" not in body:
+            continue
+        # RSPLIT, not split: the Verify section is the LAST one. ADR-037's own
+        # prose quotes the string `**Verify:**` while describing this very hole,
+        # and splitting on the FIRST occurrence scanned its whole body and
+        # reported two real files as dangling. The check caught that itself --
+        # recorded in ADR-037 rather than quietly fixed, because a guard whose
+        # first action is to misfire on its own ADR is worth knowing about.
+        tail = body.rsplit("**Verify:**", 1)[1]
+        for tok in token_re.findall(tail):
+            tok = tok.strip("`.,;:)（）")
+            if not tok or tok.startswith(("http", "atlas/**")):
+                continue
+            checked += 1
+            # ADRs refer to `core/policy/lifecycle.py` as often as to
+            # `atlas/core/policy/lifecycle.py`; both name the same real file, so
+            # the `atlas/` prefix is tried before declaring a claim dangling.
+            # Flagging a file that exists would train the reader to ignore this
+            # check, which is worse than the narrowness it buys.
+            if (ROOT / tok).exists() or (ROOT / "atlas" / tok).exists():
+                continue
+            missing.append(f"{adr_id} -> {tok}")
+
+    res.add("adr_verify_targets_exist", not missing,
+            "dangling Verify target(s): " + ", ".join(missing) if missing
+            else f"{checked} repo-relative Verify: target(s) resolve on disk")
+
+
 def check_readme_claims(res: Result) -> None:
     """
     ADR-014(c). Numeric README claims tagged <!--verify:file:jsonpath--> are
@@ -596,6 +673,7 @@ def main() -> int:
     check_tests_not_vacuous(res)
     check_state_consistency(res)
     check_adr_claims_are_verifiable(res)
+    check_adr_verify_targets_exist(res)
     check_readme_claims(res)
     check_declared_test_count_matches_collection(res)
     check_no_cross_stream_splice(res)
