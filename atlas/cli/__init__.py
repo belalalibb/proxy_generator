@@ -1,0 +1,1 @@
+"""cli/ — operator entry points."""
