@@ -1,0 +1,27 @@
+{
+  "task": "P00.T5",
+  "generator": "engineering/tools/probe_legacy_sources.py + direct curl",
+  "rebuilt_after_sync_loss": true,
+  "network_used": true,
+  "url": "https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc&protocols=https",
+  "evidence_file": "engineering/raw/geonode_body.txt",
+  "bytes_on_wire": 230067,
+  "bytes_decoded": 230019,
+  "sha256": "0552f97bd4da587e73be6960d69d4a62bdf758b0931d06dd893873db690dfa2a",
+  "parsed": {
+    "json_path": 500,
+    "regex_adjacent": 0,
+    "html_table": 0
+  },
+  "verdict": "ALIVE_JSON",
+  "documented_2026_08_23": {
+    "bytes": 230019,
+    "unique_proxies": 500,
+    "verdict": "ALIVE_JSON"
+  },
+  "reproduces_documented_finding": true,
+  "two_confirmed_root_causes": [
+    "OUR OWN THROTTLING: the pooled/session fetch returned HTTP 200 with a 622-byte body (documented run saw 659 bytes). A short body is NOT a dead source -> ADR-006 reason-code THROTTLED_OR_SHORT.",
+    "LEGACY REGEX BLIND SPOT: parse_adjacent finds 0 because the JSON puts ip and port in separate keys; json_path finds 500 -> ADR-002/T4 structured parsers."
+  ]
+}
