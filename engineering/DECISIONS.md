@@ -1253,3 +1253,90 @@ than overwritten per rung.
   "evidence".
 
 **Verify:** `python3 -m pytest atlas/tests/unit/test_probe.py -q` (28 tests)
+
+---
+
+## ADR-026 — A source's label is verified by feeding probe results back onto the source row
+
+**Phase:** P07 · **Status:** ACCEPTED
+
+**Context.** ADR-005 established that a source's protocol label is a *hint* and must be
+discovered empirically. P06 built that discovery and proved it works. But the sweep recorded
+every verdict **per proxy** and never wrote anything back onto the **source** row, so the
+registry still reported `labels_verified: 0` after a live run that had, in fact, discovered
+the protocol of hundreds of endpoints. The facts existed and nothing read them.
+
+That is exactly **ADR-019's defect class — a captured fact that nothing reads — one layer up.**
+ADR-019 caught it inside a record; here the whole *feedback edge* between two aggregates was
+missing. B-12 is the measured reason this matters: `TheSpeedX/SOCKS-List/master/http.txt`
+is a SOCKS list named `http.txt`, and 2 853 of its candidates were tested as HTTP and
+discarded. Nothing in the legacy system could ever learn that, because the label was never
+compared with the observation.
+
+**Decision.** The engine composes `registry → fetch → normalize → probe → gate → store` and,
+before returning, **classifies the source's label against the protocols its own probes
+discovered**, in `classify_label`:
+
+- `UNPROVEN` — nothing was discovered. The honest default: a label is **not** promoted by
+  absence of contradiction. This is the ADR-024/admission inversion applied to labels —
+  absence of evidence may never flatter.
+- `VERIFIED` — the majority discovered protocol equals the label.
+- `REFUTED` — the majority contradicts it (the B-12 case).
+- `UNKNOWN_LABEL` — the row claimed nothing, so there is nothing to verify. Reported
+  **distinctly**, never collapsed into `VERIFIED`.
+
+`classify_label` is a **pure function** taking `(labelled, observed_counts)`, so all four
+branches are testable without I/O, and `run_cycle` **returns the updated `Source` rows** to
+the caller rather than writing the registry file itself (core owns no files, ADR-001).
+
+**Consequence.** `labels_verified` can now move off 0 — and, more importantly, a lying source
+is *recorded* as lying instead of silently wasting a cycle's budget every run. The engine
+gains a return value it would not otherwise need, which is the price of not hiding a
+write inside a pure pipeline.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_engine.py -q -k "label or refuted"` —
+**4 selected, 26 deselected**, one test per branch: `test_an_unprobed_label_is_unproven_not_verified`,
+`test_a_label_confirmed_by_probes_is_verified`,
+`test_a_socks_list_named_http_is_refuted_not_silently_accepted`,
+`test_an_unknown_label_is_reported_distinctly_not_as_verified`.
+
+---
+
+## ADR-027 — A one-sided bound is half a test: assert the work, not just the ceiling
+
+**Phase:** P07 · **Status:** ACCEPTED
+
+**Context.** `test_max_probes_bounds_total_work` asserted `report.probed <= 3`. That
+assertion is satisfied by a cycle that probes **nothing at all**. Demonstrated by mutation,
+not by argument:
+
+| mutant | `probed <= 3` | strengthened |
+|---|---|---|
+| clamp deleted (probes 8) | **FAIL** ✅ | FAIL ✅ |
+| `run_cycle` starved (probes 0) | **PASS** ❌ | **FAIL** ✅ |
+
+So the original test caught the mutant its author imagined and passed the one they did not.
+It was not a *vacuous* test in the ADR-010 sense — it did have teeth against over-probing —
+which is precisely why it survived review: a test that fails for *some* mutant looks proven.
+
+The same shape was already latent elsewhere in this suite: when the engine fixtures used
+RFC 5737 documentation IPs (`203.0.113.x`), which Python's `ipaddress` reports as
+`is_private=True`, `normalize` correctly dropped **every** candidate — and **20 of 30 engine
+tests still passed** against a pipeline through which nothing flowed. Ten failed loudly and
+were fixed by moving the fixtures to a globally-routable range; the twenty that passed were
+mostly pure functions that genuinely need no candidates, but the budget test was hiding among
+them.
+
+**Decision.** A test that bounds work must assert **both sides**: that the ceiling held *and*
+that the ceiling is what stopped it. Prefer **equality on the observable** (`probed == 3`)
+over an inequality, and corroborate against a **second, independent witness** — here the
+fake probe's own call log (`len(probe.sampled) == 3`) — so a report that is merely
+self-consistent cannot pass alone.
+
+**Consequence.** Slightly more brittle tests: an equality assertion must be revisited when a
+budget's semantics legitimately change. That is the intended trade — a bound nobody can
+starve past is worth an occasional edit.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_engine.py -q -k max_probes`, and the
+mutation record above is reproducible by inserting an early `continue` into `run_cycle`'s
+source loop: the strengthened test fails, the original passes.
