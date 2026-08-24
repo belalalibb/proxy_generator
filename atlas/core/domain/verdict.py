@@ -49,6 +49,21 @@ class ReasonCode(str, Enum):
     SOURCE_UNCHANGED = "SOURCE_UNCHANGED"   # ETag/If-Modified-Since hit
     SOURCE_DEAD = "SOURCE_DEAD"
     PARSE_EMPTY = "PARSE_EMPTY"
+    FETCH_INCOMPLETE = "FETCH_INCOMPLETE"
+    """
+    ADR-013: the body did not arrive intact (short read vs Content-Length, or the
+    size cap was hit). This is OUR fault, not the source's, and it is a DIFFERENT
+    fact from PARSE_EMPTY.
+
+    Earned the hard way: a rebuilt audit tool used aiohttp's
+    `resp.content.read(n)`, which returns only what is currently BUFFERED, and so
+    read 74 241 of 230 067 bytes. The truncated JSON would not parse, and a live
+    source yielding 500 proxies was filed empty -- the third misclassification of
+    the same source, from a second distinct cause.
+
+    A candidate carrying this code must be RE-FETCHED before any verdict is
+    recorded against it.
+    """
 
 
 class Grade(str, Enum):
