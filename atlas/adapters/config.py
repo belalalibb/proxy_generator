@@ -40,6 +40,7 @@ from typing import Any
 
 import yaml
 
+from atlas.core.policy.lifecycle import SchedulerPolicy
 from atlas.core.policy.target_policy import TargetPolicy
 
 # Repo root: atlas/adapters/config.py -> atlas/ -> repo/
@@ -145,9 +146,86 @@ def load_default_target_is_absent(path: Path | None = None) -> bool:
     return targets.get("default_target") is None
 
 
+def _require_positive_number(block: dict[str, Any], key: str, path: Path) -> float:
+    """
+    Read `scheduler.<key>` as a number that must be present.
+
+    There is deliberately NO default. ADR-036 decision 2 makes these four keys
+    load-bearing; a loader that substituted its own fallback would leave
+    `config.yaml` exactly as decorative as ADR-036 found it -- an operator could
+    delete `max_pool_size` and the system would carry on with a number from the
+    source code, which is the ADR-029 defect (code that evaluates a config block
+    but does not read it) wearing a different hat.
+    """
+    if key not in block:
+        raise ConfigError(f"missing `scheduler.{key}` in {path}")
+    raw = block[key]
+    # bool is a subclass of int in Python, so `retire_after_consecutive_failures:
+    # yes` would otherwise load as 1 and retire every proxy on its FIRST failure.
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+        raise ConfigError(
+            f"scheduler.{key} must be a number, got {type(raw).__name__} "
+            f"({raw!r}) in {path}"
+        )
+    return float(raw)
+
+
+def _require_positive_int(block: dict[str, Any], key: str, path: Path) -> int:
+    value = _require_positive_number(block, key, path)
+    if value != int(value):
+        raise ConfigError(
+            f"scheduler.{key} must be a whole number, got {value!r} in {path}"
+        )
+    return int(value)
+
+
+def load_scheduler_policy(path: Path | None = None) -> SchedulerPolicy:
+    """
+    Build a `SchedulerPolicy` from `config.yaml scheduler.*` (ADR-036 dec. 4).
+
+    Until this existed, all four `scheduler.*` keys had ZERO Python readers --
+    the ADR-019 defect class for the sixth time, and the reason ADR-036 was
+    written. `SchedulerPolicy.__post_init__` does the RANGE validation (pure,
+    in core); this function does the SHAPE and PRESENCE validation, because
+    "the key is absent" and "the key is a string" are file facts, not policy
+    facts, and `core/` may not read files.
+
+    The two cooldown values are intentionally NOT read from `scheduler.*`: they
+    belong to ADR-006's backoff ladder, which is shared with the source path,
+    and duplicating them under `scheduler:` would create the second source of
+    truth ADR-036 decision 1 refused.
+    """
+    path = path or DEFAULT_CONFIG_PATH
+    loaded = _load_yaml(path)
+
+    block = loaded.data.get("scheduler")
+    if not isinstance(block, dict):
+        raise ConfigError(f"missing or malformed `scheduler:` block in {path}")
+
+    # SchedulerPolicy.__post_init__ raises on out-of-range values (<= 0, or a
+    # retire threshold of 0 that would empty the pool on the first pass). Those
+    # errors are re-raised as ConfigError so a caller catching config problems
+    # gets one exception type regardless of which layer noticed.
+    try:
+        return SchedulerPolicy(
+            recheck_ready_after_s=_require_positive_number(
+                block, "recheck_ready_after_s", path),
+            discovery_interval_s=_require_positive_number(
+                block, "discovery_interval_s", path),
+            retire_after_consecutive_failures=_require_positive_int(
+                block, "retire_after_consecutive_failures", path),
+            max_pool_size=_require_positive_int(block, "max_pool_size", path),
+        )
+    except ValueError as exc:
+        if isinstance(exc, ConfigError):
+            raise
+        raise ConfigError(f"invalid `scheduler:` block in {path}: {exc}") from exc
+
+
 __all__ = [
     "ConfigError",
     "DEFAULT_CONFIG_PATH",
     "load_target_policy",
     "load_default_target_is_absent",
+    "load_scheduler_policy",
 ]
