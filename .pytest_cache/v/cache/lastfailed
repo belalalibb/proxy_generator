@@ -12,5 +12,12 @@
   "atlas/tests/unit/test_engine_MUTANT.py::test_quality_rate_is_admitted_over_probed_not_raw_volume": true,
   "atlas/tests/unit/test_architecture.py::test_core_has_no_io_or_network_imports": true,
   "atlas/tests/unit/test_architecture.py::test_core_imports_are_on_the_allowlist": true,
-  "atlas/tests/unit/test_architecture.py::test_no_default_target_url_constant": true
+  "atlas/tests/unit/test_architecture.py::test_no_default_target_url_constant": true,
+  "atlas/tests/unit/test_target_policy.py::test_the_default_policy_denies_the_config_hosts": true,
+  "atlas/tests/unit/test_url_parity.py::test_fuzz_never_diverges_from_cpython": true,
+  "atlas/tests/unit/test_url_parity.py::test_malformed_authorities_are_refused_not_guessed[http://[#12]]": true,
+  "atlas/tests/unit/test_url_parity.py::test_malformed_authorities_are_refused_not_guessed[http://[9a]]": true,
+  "atlas/tests/unit/test_url_parity.py::test_malformed_authorities_are_refused_not_guessed[http://[b.c:9-01]]": true,
+  "atlas/tests/unit/test_url_parity.py::test_malformed_authorities_are_refused_not_guessed[http://[:]]": true,
+  "atlas/tests/unit/test_url_parity.py::test_malformed_authorities_are_refused_not_guessed[http://[2_%]/x]": true
 }
