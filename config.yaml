@@ -14,13 +14,14 @@ version: 4
 # The legacy gate was `status == 200 and len(text) > 1000` on ONE sample. From its
 # own recorded run (n=102, engineering/BASELINE.json):
 #     p50 6 359.5 ms | mean 7 145.1 ms | p95 15 903 ms | max 19 035 ms
-#     95.8% of ACCEPTED proxies were slower than 1 500 ms; 56.8% slower than 5 000.
+#     95.1% of ACCEPTED proxies were slower than 1 500 ms; 58.8% slower than 5 000.
+#     (n=102 proxy_details.json. The n=118 log stream reads 95.8/56.8 -- ADR-020.)
 # Latency was measured 59 times in the legacy tree and compared against a
 # rejecting threshold ZERO times.
 admission:
   samples_k: 5                  # ADR-003. k=1 is the defect; k=10 doubles cost
   decide_on: p95                # never `min` (cosmetic), never a single sample
-  max_p95_ms: 1500              # rejects 95.8% of what the legacy gate admitted
+  max_p95_ms: 1500              # rejects 95.1% of what the legacy gate admitted
   max_jitter: 0.5               # stdev/p50 -- fast but erratic is not good
   min_success_ratio: 0.6        # of the k samples
   stop_after_consecutive_failures: 2   # don't pay 5x for a dead endpoint
