@@ -1,0 +1,1789 @@
+{
+  "task": "P00.T3/T4/T5",
+  "generator": "engineering/tools/probe_legacy_sources.py",
+  "rebuilt_after_sync_loss": true,
+  "snapshot_not_reproduction": true,
+  "network_used": true,
+  "measured_at_utc": "20260824T002432Z",
+  "note": "A past network read cannot be reproduced. This is a NEW snapshot; engineering/SOURCE_INVENTORY.json is retained unchanged as the 2026-08-23 record. Comparison is point-in-time, not a diff of truth.",
+  "params": {
+    "concurrency": 12,
+    "per_host_concurrency": 2,
+    "per_host_delay_s": 1.0,
+    "timeout_s": 20,
+    "excluded": "2captcha.com (H5/ADR-007), malformed bare scheme"
+  },
+  "wall_clock_s": 33.8,
+  "urls_probed": 120,
+  "verdicts": {
+    "ALIVE": 56,
+    "DEAD": 35,
+    "TRULY_EMPTY": 20,
+    "ALIVE_HTML_TABLE": 5,
+    "THROTTLED_OR_SHORT": 4
+  },
+  "total_unique_candidates": 74895,
+  "recovered_by_structured_parser": 5,
+  "recovered_detail": [
+    {
+      "url": "https://hide.mn/en/proxy-list/",
+      "parser": "html_table",
+      "candidates": 64
+    },
+    {
+      "url": "https://geonode.com/free-proxy-list",
+      "parser": "html_table",
+      "candidates": 54
+    },
+    {
+      "url": "https://list.proxylistplus.com/SSL-proxy",
+      "parser": "html_table",
+      "candidates": 50
+    },
+    {
+      "url": "https://www.freeproxy.world/",
+      "parser": "html_table",
+      "candidates": 50
+    },
+    {
+      "url": "https://proxybros.com/free-proxy-list/",
+      "parser": "html_table",
+      "candidates": 28
+    }
+  ],
+  "failure_breakdown": {
+    "http_404": 24,
+    "http_502": 4,
+    "http_521": 2,
+    "http_403": 2,
+    "http_429": 2,
+    "http_526": 1
+  },
+  "results": [
+    {
+      "url": "https://api.openproxylist.xyz/http.txt",
+      "host": "api.openproxylist.xyz",
+      "verdict": "ALIVE",
+      "elapsed_ms": 239.0,
+      "fetched_at_utc": "2026-08-24T00:23:58.958733+00:00",
+      "http_status": 200,
+      "bytes": 112915,
+      "parsed": {
+        "regex_adjacent": 5954,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 5954,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://api.openproxylist.xyz/https.txt",
+      "host": "api.openproxylist.xyz",
+      "verdict": "ALIVE",
+      "elapsed_ms": 204.4,
+      "fetched_at_utc": "2026-08-24T00:23:58.924563+00:00",
+      "http_status": 200,
+      "bytes": 69751,
+      "parsed": {
+        "regex_adjacent": 3643,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 3643,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://api.proxyscrape.com/?request=getproxies&proxytype=http&timeout=10000&country=all&ssl=yes&anonymity=all",
+      "host": "api.proxyscrape.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 242.6,
+      "fetched_at_utc": "2026-08-24T00:23:58.962861+00:00",
+      "http_status": 200,
+      "bytes": 4787,
+      "parsed": {
+        "regex_adjacent": 238,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 238,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http",
+      "host": "api.proxyscrape.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 107.5,
+      "fetched_at_utc": "2026-08-24T00:23:58.828102+00:00",
+      "http_status": 200,
+      "bytes": 19018,
+      "parsed": {
+        "regex_adjacent": 945,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 945,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=https",
+      "host": "api.proxyscrape.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 530.6,
+      "fetched_at_utc": "2026-08-24T00:24:00.349847+00:00",
+      "http_status": 200,
+      "bytes": 38816,
+      "parsed": {
+        "regex_adjacent": 1808,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 1808,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://api.proxyscrape.com/v3/free-proxy-list/get?request=displayproxies&proxy_format=protocolipport&format=text",
+      "host": "api.proxyscrape.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 20.5,
+      "fetched_at_utc": "2026-08-24T00:24:01.136170+00:00",
+      "http_status": 200,
+      "bytes": 51803,
+      "parsed": {
+        "regex_adjacent": 1722,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 1722,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/all/data.txt",
+      "host": "cdn.jsdelivr.net",
+      "verdict": "ALIVE",
+      "elapsed_ms": 66.4,
+      "fetched_at_utc": "2026-08-24T00:23:58.894824+00:00",
+      "http_status": 200,
+      "bytes": 63999,
+      "parsed": {
+        "regex_adjacent": 2474,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 2474,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt",
+      "host": "cdn.jsdelivr.net",
+      "verdict": "ALIVE",
+      "elapsed_ms": 40.4,
+      "fetched_at_utc": "2026-08-24T00:23:59.911988+00:00",
+      "http_status": 200,
+      "bytes": 16839,
+      "parsed": {
+        "regex_adjacent": 676,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 676,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt",
+      "host": "cdn.jsdelivr.net",
+      "verdict": "ALIVE",
+      "elapsed_ms": 27.9,
+      "fetched_at_utc": "2026-08-24T00:23:59.898649+00:00",
+      "http_status": 200,
+      "bytes": 34746,
+      "parsed": {
+        "regex_adjacent": 1369,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 1369,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://free-proxy-list.net/anonymous-proxy.html",
+      "host": "free-proxy-list.net",
+      "verdict": "ALIVE",
+      "elapsed_ms": 80.2,
+      "fetched_at_utc": "2026-08-24T00:23:59.108379+00:00",
+      "http_status": 200,
+      "bytes": 98105,
+      "parsed": {
+        "regex_adjacent": 200,
+        "json_path": 0,
+        "html_table": 200
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 200,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://free-proxy-list.net/en/ssl-proxy.html",
+      "host": "free-proxy-list.net",
+      "verdict": "ALIVE",
+      "elapsed_ms": 36.6,
+      "fetched_at_utc": "2026-08-24T00:24:00.108051+00:00",
+      "http_status": 200,
+      "bytes": 78957,
+      "parsed": {
+        "regex_adjacent": 100,
+        "json_path": 0,
+        "html_table": 100
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 100,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://free-proxy-list.net/uk-proxy.html",
+      "host": "free-proxy-list.net",
+      "verdict": "ALIVE",
+      "elapsed_ms": 88.6,
+      "fetched_at_utc": "2026-08-24T00:24:00.165071+00:00",
+      "http_status": 200,
+      "bytes": 79150,
+      "parsed": {
+        "regex_adjacent": 100,
+        "json_path": 0,
+        "html_table": 100
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 100,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://proxyspace.pro/http.txt",
+      "host": "proxyspace.pro",
+      "verdict": "ALIVE",
+      "elapsed_ms": 427.8,
+      "fetched_at_utc": "2026-08-24T00:24:00.567815+00:00",
+      "http_status": 200,
+      "bytes": 32484,
+      "parsed": {
+        "regex_adjacent": 1693,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 1693,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://proxyspace.pro/https.txt",
+      "host": "proxyspace.pro",
+      "verdict": "ALIVE",
+      "elapsed_ms": 289.0,
+      "fetched_at_utc": "2026-08-24T00:24:00.454407+00:00",
+      "http_status": 200,
+      "bytes": 3685,
+      "parsed": {
+        "regex_adjacent": 192,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 192,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 22.5,
+      "fetched_at_utc": "2026-08-24T00:24:00.234051+00:00",
+      "http_status": 200,
+      "bytes": 13391,
+      "parsed": {
+        "regex_adjacent": 667,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 667,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/http_proxies.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 26.4,
+      "fetched_at_utc": "2026-08-24T00:24:01.255104+00:00",
+      "http_status": 200,
+      "bytes": 58029,
+      "parsed": {
+        "regex_adjacent": 3133,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 3133,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/https_proxies.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 31.1,
+      "fetched_at_utc": "2026-08-24T00:24:01.260659+00:00",
+      "http_status": 200,
+      "bytes": 941,
+      "parsed": {
+        "regex_adjacent": 49,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 49,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/B4RC0DE-TM/proxy-list/main/HTTP.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 80.4,
+      "fetched_at_utc": "2026-08-24T00:24:02.316384+00:00",
+      "http_status": 200,
+      "bytes": 57499,
+      "parsed": {
+        "regex_adjacent": 3185,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 3185,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 25.4,
+      "fetched_at_utc": "2026-08-24T00:24:03.343081+00:00",
+      "http_status": 200,
+      "bytes": 43128,
+      "parsed": {
+        "regex_adjacent": 2265,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 2265,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/https.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 19.8,
+      "fetched_at_utc": "2026-08-24T00:24:04.325272+00:00",
+      "http_status": 200,
+      "bytes": 58972,
+      "parsed": {
+        "regex_adjacent": 2996,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 2996,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Hendrikbgr/Free-Proxy-Repo/master/proxy_list.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 35.1,
+      "fetched_at_utc": "2026-08-24T00:24:04.360669+00:00",
+      "http_status": 200,
+      "bytes": 13275,
+      "parsed": {
+        "regex_adjacent": 684,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 684,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 30.1,
+      "fetched_at_utc": "2026-08-24T00:24:06.365125+00:00",
+      "http_status": 200,
+      "bytes": 90349,
+      "parsed": {
+        "regex_adjacent": 4921,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 4921,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 10.7,
+      "fetched_at_utc": "2026-08-24T00:24:08.398052+00:00",
+      "http_status": 200,
+      "bytes": 742,
+      "parsed": {
+        "regex_adjacent": 40,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 40,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 58.3,
+      "fetched_at_utc": "2026-08-24T00:24:08.534137+00:00",
+      "http_status": 200,
+      "bytes": 28186,
+      "parsed": {
+        "regex_adjacent": 1479,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 1479,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 34.9,
+      "fetched_at_utc": "2026-08-24T00:24:09.556999+00:00",
+      "http_status": 200,
+      "bytes": 54284,
+      "parsed": {
+        "regex_adjacent": 2853,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 2853,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Tsprnay/Proxy-lists/master/proxies/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 429.6,
+      "fetched_at_utc": "2026-08-24T00:24:10.871298+00:00",
+      "http_status": 200,
+      "bytes": 84167,
+      "parsed": {
+        "regex_adjacent": 4523,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 4523,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Tsprnay/Proxy-lists/master/proxies/https.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 272.2,
+      "fetched_at_utc": "2026-08-24T00:24:10.804044+00:00",
+      "http_status": 200,
+      "bytes": 20864,
+      "parsed": {
+        "regex_adjacent": 1173,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 1173,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Vann-Dev/proxy-list/main/proxies/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 87.6,
+      "fetched_at_utc": "2026-08-24T00:24:11.914194+00:00",
+      "http_status": 200,
+      "bytes": 19612,
+      "parsed": {
+        "regex_adjacent": 897,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 897,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Vann-Dev/proxy-list/main/proxies/https.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 46.5,
+      "fetched_at_utc": "2026-08-24T00:24:12.899186+00:00",
+      "http_status": 200,
+      "bytes": 1934,
+      "parsed": {
+        "regex_adjacent": 100,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 100,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Zaeem20/FREE_PROXIES_LIST/master/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 51.5,
+      "fetched_at_utc": "2026-08-24T00:24:12.957160+00:00",
+      "http_status": 200,
+      "bytes": 3242,
+      "parsed": {
+        "regex_adjacent": 173,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 173,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/aslisk/proxyhttps/main/https.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 48.3,
+      "fetched_at_utc": "2026-08-24T00:24:14.962378+00:00",
+      "http_status": 200,
+      "bytes": 68501,
+      "parsed": {
+        "regex_adjacent": 2681,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 2681,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 13.2,
+      "fetched_at_utc": "2026-08-24T00:24:16.027905+00:00",
+      "http_status": 200,
+      "bytes": 7489,
+      "parsed": {
+        "regex_adjacent": 400,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 400,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 12.3,
+      "fetched_at_utc": "2026-08-24T00:24:16.964904+00:00",
+      "http_status": 200,
+      "bytes": 2755,
+      "parsed": {
+        "regex_adjacent": 142,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 142,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/im-razvan/proxy_list/main/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 56.5,
+      "fetched_at_utc": "2026-08-24T00:24:17.082057+00:00",
+      "http_status": 200,
+      "bytes": 4987,
+      "parsed": {
+        "regex_adjacent": 268,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 268,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 25.7,
+      "fetched_at_utc": "2026-08-24T00:24:17.991300+00:00",
+      "http_status": 200,
+      "bytes": 31219,
+      "parsed": {
+        "regex_adjacent": 1633,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 1633,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-https.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 34.4,
+      "fetched_at_utc": "2026-08-24T00:24:18.115005+00:00",
+      "http_status": 200,
+      "bytes": 41201,
+      "parsed": {
+        "regex_adjacent": 2161,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 2161,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 8.0,
+      "fetched_at_utc": "2026-08-24T00:24:21.050808+00:00",
+      "http_status": 200,
+      "bytes": 7606,
+      "parsed": {
+        "regex_adjacent": 395,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 395,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 28.4,
+      "fetched_at_utc": "2026-08-24T00:24:22.249115+00:00",
+      "http_status": 200,
+      "bytes": 63848,
+      "parsed": {
+        "regex_adjacent": 2470,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 2470,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 11.3,
+      "fetched_at_utc": "2026-08-24T00:24:23.064838+00:00",
+      "http_status": 200,
+      "bytes": 18239,
+      "parsed": {
+        "regex_adjacent": 729,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 729,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/https/data.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 17.2,
+      "fetched_at_utc": "2026-08-24T00:24:23.243798+00:00",
+      "http_status": 200,
+      "bytes": 34538,
+      "parsed": {
+        "regex_adjacent": 1361,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 1361,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxy4parsing/proxy-list/main/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 74.6,
+      "fetched_at_utc": "2026-08-24T00:24:24.133799+00:00",
+      "http_status": 200,
+      "bytes": 48698,
+      "parsed": {
+        "regex_adjacent": 2717,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 2717,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/prxchk/proxy-list/main/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 16.2,
+      "fetched_at_utc": "2026-08-24T00:24:24.247521+00:00",
+      "http_status": 200,
+      "bytes": 1113,
+      "parsed": {
+        "regex_adjacent": 58,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 58,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 9.6,
+      "fetched_at_utc": "2026-08-24T00:24:25.121550+00:00",
+      "http_status": 200,
+      "bytes": 10603,
+      "parsed": {
+        "regex_adjacent": 554,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 554,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies_anonymous/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 41.0,
+      "fetched_at_utc": "2026-08-24T00:24:25.289273+00:00",
+      "http_status": 200,
+      "bytes": 3593,
+      "parsed": {
+        "regex_adjacent": 190,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 190,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 35.8,
+      "fetched_at_utc": "2026-08-24T00:24:26.154600+00:00",
+      "http_status": 200,
+      "bytes": 5133,
+      "parsed": {
+        "regex_adjacent": 86,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 86,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 43.2,
+      "fetched_at_utc": "2026-08-24T00:24:26.331452+00:00",
+      "http_status": 200,
+      "bytes": 1654,
+      "parsed": {
+        "regex_adjacent": 86,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 86,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/saisuiu/Lionkings-Http-Proxys-Proxies/main/free.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 20.1,
+      "fetched_at_utc": "2026-08-24T00:24:27.390517+00:00",
+      "http_status": 200,
+      "bytes": 17934,
+      "parsed": {
+        "regex_adjacent": 1000,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 1000,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/http_proxies.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 60.2,
+      "fetched_at_utc": "2026-08-24T00:24:28.442763+00:00",
+      "http_status": 200,
+      "bytes": 34921,
+      "parsed": {
+        "regex_adjacent": 1462,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 1462,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tuanminpay/live-proxy/master/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 89.2,
+      "fetched_at_utc": "2026-08-24T00:24:29.320224+00:00",
+      "http_status": 200,
+      "bytes": 54630,
+      "parsed": {
+        "regex_adjacent": 2842,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 2842,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/vakhov/fresh-proxy-list/master/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 50.6,
+      "fetched_at_utc": "2026-08-24T00:24:29.478262+00:00",
+      "http_status": 200,
+      "bytes": 9789,
+      "parsed": {
+        "regex_adjacent": 524,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 524,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zevtyardt/proxy-list/main/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 35.6,
+      "fetched_at_utc": "2026-08-24T00:24:31.363421+00:00",
+      "http_status": 200,
+      "bytes": 20975,
+      "parsed": {
+        "regex_adjacent": 1089,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 1089,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zloi-user/hideip.me/main/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 13.8,
+      "fetched_at_utc": "2026-08-24T00:24:31.525702+00:00",
+      "http_status": 200,
+      "bytes": 3230,
+      "parsed": {
+        "regex_adjacent": 113,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 113,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zloi-user/hideip.me/main/https.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "ALIVE",
+      "elapsed_ms": 12.5,
+      "fetched_at_utc": "2026-08-24T00:24:32.368409+00:00",
+      "http_status": 200,
+      "bytes": 20670,
+      "parsed": {
+        "regex_adjacent": 736,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 736,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://spys.me/proxy.txt",
+      "host": "spys.me",
+      "verdict": "ALIVE",
+      "elapsed_ms": 308.0,
+      "fetched_at_utc": "2026-08-24T00:24:26.639786+00:00",
+      "http_status": 200,
+      "bytes": 11396,
+      "parsed": {
+        "regex_adjacent": 400,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 400,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://www.sslproxies.org/",
+      "host": "www.sslproxies.org",
+      "verdict": "ALIVE",
+      "elapsed_ms": 112.4,
+      "fetched_at_utc": "2026-08-24T00:24:28.341849+00:00",
+      "http_status": 200,
+      "bytes": 78957,
+      "parsed": {
+        "regex_adjacent": 100,
+        "json_path": 0,
+        "html_table": 100
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 100,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://www.us-proxy.org/",
+      "host": "www.us-proxy.org",
+      "verdict": "ALIVE",
+      "elapsed_ms": 181.0,
+      "fetched_at_utc": "2026-08-24T00:24:28.490698+00:00",
+      "http_status": 200,
+      "bytes": 98986,
+      "parsed": {
+        "regex_adjacent": 200,
+        "json_path": 0,
+        "html_table": 200
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 200,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://geonode.com/free-proxy-list",
+      "host": "geonode.com",
+      "verdict": "ALIVE_HTML_TABLE",
+      "elapsed_ms": 340.6,
+      "fetched_at_utc": "2026-08-24T00:23:59.484678+00:00",
+      "http_status": 200,
+      "bytes": 311152,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 54
+      },
+      "best_parser": "html_table",
+      "unique_candidates": 54,
+      "recovered_by_structured_parser": true
+    },
+    {
+      "url": "https://hide.mn/en/proxy-list/",
+      "host": "hide.mn",
+      "verdict": "ALIVE_HTML_TABLE",
+      "elapsed_ms": 691.4,
+      "fetched_at_utc": "2026-08-24T00:23:59.972671+00:00",
+      "http_status": 200,
+      "bytes": 68808,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 64
+      },
+      "best_parser": "html_table",
+      "unique_candidates": 64,
+      "recovered_by_structured_parser": true
+    },
+    {
+      "url": "https://list.proxylistplus.com/SSL-proxy",
+      "host": "list.proxylistplus.com",
+      "verdict": "ALIVE_HTML_TABLE",
+      "elapsed_ms": 321.0,
+      "fetched_at_utc": "2026-08-24T00:23:59.861522+00:00",
+      "http_status": 200,
+      "bytes": 41322,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 50
+      },
+      "best_parser": "html_table",
+      "unique_candidates": 50,
+      "recovered_by_structured_parser": true
+    },
+    {
+      "url": "https://proxybros.com/free-proxy-list/",
+      "host": "proxybros.com",
+      "verdict": "ALIVE_HTML_TABLE",
+      "elapsed_ms": 859.1,
+      "fetched_at_utc": "2026-08-24T00:24:00.849561+00:00",
+      "http_status": 200,
+      "bytes": 200749,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 28
+      },
+      "best_parser": "html_table",
+      "unique_candidates": 28,
+      "recovered_by_structured_parser": true
+    },
+    {
+      "url": "https://www.freeproxy.world/",
+      "host": "www.freeproxy.world",
+      "verdict": "ALIVE_HTML_TABLE",
+      "elapsed_ms": 614.3,
+      "fetched_at_utc": "2026-08-24T00:24:27.289315+00:00",
+      "http_status": 200,
+      "bytes": 126858,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 50
+      },
+      "best_parser": "html_table",
+      "unique_candidates": 50,
+      "recovered_by_structured_parser": true
+    },
+    {
+      "url": "https://api.openproxy.space/lists/http",
+      "host": "api.openproxy.space",
+      "verdict": "DEAD",
+      "elapsed_ms": 309.7,
+      "fetched_at_utc": "2026-08-24T00:23:59.027843+00:00",
+      "http_status": 521
+    },
+    {
+      "url": "https://api.telegram.org/bot",
+      "host": "api.telegram.org",
+      "verdict": "DEAD",
+      "elapsed_ms": 358.8,
+      "fetched_at_utc": "2026-08-24T00:23:59.143861+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://iproyal.com/free-proxy-list/",
+      "host": "iproyal.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 38.4,
+      "fetched_at_utc": "2026-08-24T00:23:59.540207+00:00",
+      "http_status": 403
+    },
+    {
+      "url": "https://openproxy.space/list/https",
+      "host": "openproxy.space",
+      "verdict": "DEAD",
+      "elapsed_ms": 323.3,
+      "fetched_at_utc": "2026-08-24T00:23:59.981880+00:00",
+      "http_status": 521
+    },
+    {
+      "url": "https://proxy-list.download/api/v1/get?type=http",
+      "host": "proxy-list.download",
+      "verdict": "DEAD",
+      "elapsed_ms": 91.4,
+      "fetched_at_utc": "2026-08-24T00:23:59.990278+00:00",
+      "http_status": 429
+    },
+    {
+      "url": "https://proxy-list.download/api/v1/get?type=https",
+      "host": "proxy-list.download",
+      "verdict": "DEAD",
+      "elapsed_ms": 87.5,
+      "fetched_at_utc": "2026-08-24T00:23:59.999743+00:00",
+      "http_status": 429
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Bardiafa/Proxy-Starter/main/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 56.4,
+      "fetched_at_utc": "2026-08-24T00:24:02.317223+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Bardiafa/Proxy-Starter/main/https.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 12.5,
+      "fetched_at_utc": "2026-08-24T00:24:03.303125+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/HyperBeats/proxy-list/main/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 20.6,
+      "fetched_at_utc": "2026-08-24T00:24:05.333641+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Kitsun3Sec/ProxyList/main/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 13.7,
+      "fetched_at_utc": "2026-08-24T00:24:05.371719+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ObcbO/getproxy/master/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 62.1,
+      "fetched_at_utc": "2026-08-24T00:24:06.434031+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ObcbO/getproxy/master/https.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 39.9,
+      "fetched_at_utc": "2026-08-24T00:24:07.385241+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/RX4096/proxy-list/main/online/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 40.0,
+      "fetched_at_utc": "2026-08-24T00:24:07.474887+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/https.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 38.6,
+      "fetched_at_utc": "2026-08-24T00:24:09.440311+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/UptimerBot/proxy-list/main/proxies/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 57.6,
+      "fetched_at_utc": "2026-08-24T00:24:11.851197+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Zeller-A/Proxy-Scraping/main/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 14.5,
+      "fetched_at_utc": "2026-08-24T00:24:13.913103+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Zeller-A/Proxy-Scraping/main/https.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 27.0,
+      "fetched_at_utc": "2026-08-24T00:24:13.983671+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/berkay-digital/Proxy-Starter/main/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 29.8,
+      "fetched_at_utc": "2026-08-24T00:24:15.014453+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/caliphdev/Proxy-List/master/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 20.1,
+      "fetched_at_utc": "2026-08-24T00:24:15.952064+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/manuGMG/proxy-365/main/HTTP.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 57.4,
+      "fetched_at_utc": "2026-08-24T00:24:19.035875+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/mertguvencli/http-proxy-list/main/proxy-list/data.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 71.7,
+      "fetched_at_utc": "2026-08-24T00:24:19.168250+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 3.6,
+      "fetched_at_utc": "2026-08-24T00:24:20.041162+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/mmpx12/proxy-list/master/https.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 4.4,
+      "fetched_at_utc": "2026-08-24T00:24:20.173455+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 45.5,
+      "fetched_at_utc": "2026-08-24T00:24:21.220016+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/http/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 3.2,
+      "fetched_at_utc": "2026-08-24T00:24:22.052041+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/saschazesiger/Free-Proxies/master/proxies/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 31.0,
+      "fetched_at_utc": "2026-08-24T00:24:28.229096+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/yemixzy/proxy-list/main/proxies/http.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 29.3,
+      "fetched_at_utc": "2026-08-24T00:24:30.325857+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://raw.githubusercontent.com/yoannchb-pro/https-proxies/main/proxies.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 35.6,
+      "fetched_at_utc": "2026-08-24T00:24:30.510505+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://spys.one/en/https-ssl-proxy/",
+      "host": "spys.one",
+      "verdict": "DEAD",
+      "elapsed_ms": 34.7,
+      "fetched_at_utc": "2026-08-24T00:24:26.674753+00:00",
+      "http_status": 403
+    },
+    {
+      "url": "https://www.proxies24.com/proxy-list/https-proxies",
+      "host": "www.proxies24.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 88.3,
+      "fetched_at_utc": "2026-08-24T00:24:27.440629+00:00",
+      "http_status": 526
+    },
+    {
+      "url": "https://www.proxy-list.download/HTTP",
+      "host": "www.proxy-list.download",
+      "verdict": "DEAD",
+      "elapsed_ms": 96.6,
+      "fetched_at_utc": "2026-08-24T00:24:27.468078+00:00",
+      "http_status": 502
+    },
+    {
+      "url": "https://www.proxy-list.download/HTTPS",
+      "host": "www.proxy-list.download",
+      "verdict": "DEAD",
+      "elapsed_ms": 67.3,
+      "fetched_at_utc": "2026-08-24T00:24:27.458219+00:00",
+      "http_status": 502
+    },
+    {
+      "url": "https://www.proxy-list.download/api/v1/get?type=http",
+      "host": "www.proxy-list.download",
+      "verdict": "DEAD",
+      "elapsed_ms": 23.6,
+      "fetched_at_utc": "2026-08-24T00:24:28.514521+00:00",
+      "http_status": 502
+    },
+    {
+      "url": "https://www.proxy-list.download/api/v1/get?type=https",
+      "host": "www.proxy-list.download",
+      "verdict": "DEAD",
+      "elapsed_ms": 44.4,
+      "fetched_at_utc": "2026-08-24T00:24:28.536067+00:00",
+      "http_status": 502
+    },
+    {
+      "url": "https://www.proxy11.com/api/demoweb/proxy.json?key=free-demo&country=&city=&port=&type=https",
+      "host": "www.proxy11.com",
+      "verdict": "DEAD",
+      "elapsed_ms": 340.9,
+      "fetched_at_utc": "2026-08-24T00:24:27.809273+00:00",
+      "http_status": 404
+    },
+    {
+      "url": "https://api.proxyscrape.com/v2/?request=get&protocol=http&timeout=10000&country=all&ssl=yes&anonymity=all",
+      "host": "api.proxyscrape.com",
+      "verdict": "THROTTLED_OR_SHORT",
+      "elapsed_ms": 132.6,
+      "fetched_at_utc": "2026-08-24T00:24:00.114561+00:00",
+      "http_status": 200,
+      "bytes": 20,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://hasdata.com/free-proxy-list",
+      "host": "hasdata.com",
+      "verdict": "THROTTLED_OR_SHORT",
+      "elapsed_ms": 72.3,
+      "fetched_at_utc": "2026-08-24T00:23:59.280754+00:00",
+      "http_status": 200,
+      "bytes": 932,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://httpbin.org/ip",
+      "host": "httpbin.org",
+      "verdict": "THROTTLED_OR_SHORT",
+      "elapsed_ms": 16.6,
+      "fetched_at_utc": "2026-08-24T00:23:59.501565+00:00",
+      "http_status": 200,
+      "bytes": 34,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://proxydb.net/?protocol=https&country=",
+      "host": "proxydb.net",
+      "verdict": "THROTTLED_OR_SHORT",
+      "elapsed_ms": 344.0,
+      "fetched_at_utc": "2026-08-24T00:24:01.715115+00:00",
+      "http_status": 200,
+      "bytes": 1057,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "http://free-proxy.cz/en/",
+      "host": "free-proxy.cz",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 71.0,
+      "fetched_at_utc": "2026-08-24T00:23:58.784545+00:00",
+      "http_status": 200,
+      "bytes": 51168,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "http://www.boys-here.com/newtest2/list0.txt",
+      "host": "www.boys-here.com",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 334.4,
+      "fetched_at_utc": "2026-08-24T00:23:59.049876+00:00",
+      "http_status": 200,
+      "bytes": 14049,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://advanced.name/freeproxy",
+      "host": "advanced.name",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 941.7,
+      "fetched_at_utc": "2026-08-24T00:23:59.658261+00:00",
+      "http_status": 200,
+      "bytes": 84895,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://advanced.name/freeproxy?type=https",
+      "host": "advanced.name",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 913.1,
+      "fetched_at_utc": "2026-08-24T00:23:59.630882+00:00",
+      "http_status": 200,
+      "bytes": 91944,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://databay.com/free-proxy-list",
+      "host": "databay.com",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 58.4,
+      "fetched_at_utc": "2026-08-24T00:23:59.018854+00:00",
+      "http_status": 200,
+      "bytes": 5048,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://fineproxy.org/free-proxy/",
+      "host": "fineproxy.org",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 245.2,
+      "fetched_at_utc": "2026-08-24T00:23:59.208226+00:00",
+      "http_status": 200,
+      "bytes": 23475,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://free-proxy-list.net/",
+      "host": "free-proxy-list.net",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 51.6,
+      "fetched_at_utc": "2026-08-24T00:23:59.071225+00:00",
+      "http_status": 200,
+      "bytes": 2230,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://freeproxylist.org/",
+      "host": "freeproxylist.org",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 2696.2,
+      "fetched_at_utc": "2026-08-24T00:24:01.804922+00:00",
+      "http_status": 200,
+      "bytes": 76459,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://multiproxy.org/txt_all/proxy.txt",
+      "host": "multiproxy.org",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 390.9,
+      "fetched_at_utc": "2026-08-24T00:24:00.022057+00:00",
+      "http_status": 200,
+      "bytes": 3006,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://openproxylist.com/proxy/",
+      "host": "openproxylist.com",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 278.0,
+      "fetched_at_utc": "2026-08-24T00:24:00.139830+00:00",
+      "http_status": 200,
+      "bytes": 43400,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://proxy-tools.com/proxy/https",
+      "host": "proxy-tools.com",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 689.9,
+      "fetched_at_utc": "2026-08-24T00:24:00.662798+00:00",
+      "http_status": 200,
+      "bytes": 119073,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://proxy5.net/free-proxy",
+      "host": "proxy5.net",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 147.2,
+      "fetched_at_utc": "2026-08-24T00:24:00.130172+00:00",
+      "http_status": 200,
+      "bytes": 44826,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://proxydb.net/",
+      "host": "proxydb.net",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 372.3,
+      "fetched_at_utc": "2026-08-24T00:24:00.372197+00:00",
+      "http_status": 200,
+      "bytes": 12117,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://proxydb.net/?protocol=https",
+      "host": "proxydb.net",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 342.9,
+      "fetched_at_utc": "2026-08-24T00:24:00.374773+00:00",
+      "http_status": 200,
+      "bytes": 12117,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc&protocols=https",
+      "host": "proxylist.geonode.com",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 208.9,
+      "fetched_at_utc": "2026-08-24T00:24:00.323698+00:00",
+      "http_status": 200,
+      "bytes": 60271,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://proxyscrape.com/free-proxy-list",
+      "host": "proxyscrape.com",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 80.6,
+      "fetched_at_utc": "2026-08-24T00:24:00.211019+00:00",
+      "http_status": 200,
+      "bytes": 2375,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/runarbu/ProxyMaid/master/lists/proxies.txt",
+      "host": "raw.githubusercontent.com",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 43.0,
+      "fetched_at_utc": "2026-08-24T00:24:27.197155+00:00",
+      "http_status": 200,
+      "bytes": 3051,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://www.instagram.com",
+      "host": "www.instagram.com",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 172.7,
+      "fetched_at_utc": "2026-08-24T00:24:27.370267+00:00",
+      "http_status": 200,
+      "bytes": 107749,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://www.media.io/",
+      "host": "www.media.io",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 62.0,
+      "fetched_at_utc": "2026-08-24T00:24:27.351756+00:00",
+      "http_status": 200,
+      "bytes": 136480,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    },
+    {
+      "url": "https://www.proxynova.com/proxy-server-list/",
+      "host": "www.proxynova.com",
+      "verdict": "TRULY_EMPTY",
+      "elapsed_ms": 499.9,
+      "fetched_at_utc": "2026-08-24T00:24:28.309469+00:00",
+      "http_status": 200,
+      "bytes": 32573,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    }
+  ]
+}
