@@ -1688,3 +1688,89 @@ number made this file simpler.
 **Verify:** `python3 -m pytest atlas/tests/unit/test_handout.py atlas/tests/integration/test_handout_store.py -q`
 (38 unit + 8 integration) and `python3 engineering/tools/mutate_handout.py` (7/7 killed,
 → `engineering/raw/handout_mutation.json`).
+
+---
+
+## ADR-034
+### The per-host rate limit becomes real, in `engine/`, over a monotonic sliding window
+
+**Status.** Accepted (2026-08-24, P09).
+
+**Context.** `config.yaml targets.allow_policy.max_requests_per_host_per_min: 60` has
+existed since P01 and `SECURITY.md` §3 promises the target "must pass the allow-policy".
+ADR-029 implemented `deny_hosts`, `deny_private_ranges` and `deny_metadata_hosts` — and
+explicitly **not** this key, because a limiter needs a clock and mutable shared state and
+`core/` may have neither (`test_architecture.py`). ADR-029 said so in the module docstring
+and deferred to P09 rather than faking it; `handout.py` repeated the deferral.
+
+Honest, but the consequence is that for two phases the number in the config file was read by
+nobody. That is the ADR-019 defect class — *a captured value no decision consumes* — for the
+fifth time (ADR-019, ADR-021, ADR-029, ADR-033, now this). The deferral was the right call
+twice and would have been a lie a third time.
+
+**Decision.** A stateful `HostRateLimiter` in `atlas/engine/rate_limit.py`, with the clock
+**injected** (`ClockPort`). The pure policy stays pure; the state lives one layer out. Four
+properties are part of the decision, not implementation detail:
+
+1. **Monotonic, not wall-clock.** The window is measured with `clock.monotonic_ms()`. A
+   wall-clock limiter fails in *both* directions: set the clock back and the window never
+   expires (silent lockout), set it forward and the limit is bypassed. Enforced by a test
+   whose clock **raises** if `now()` is ever read.
+2. **Sliding, not fixed window.** A fixed 60 s bucket admits `limit` at 59.9 s and `limit`
+   more at 60.1 s — **2× the configured rate** across a 200 ms span, which is precisely the
+   burst ADR-006 (the GeoNode incident) exists to prevent. The wrong design is written out
+   in `test_fixed_window_boundary_burst_is_refused` and asserted to admit 6 where this
+   admits 3, so the test cannot pass for both designs.
+3. **Bounded memory that fails closed.** One dict entry per caller-supplied host is an
+   unbounded allocation driven by untrusted input, so it is capped. The subtlety is the
+   cap's behaviour when full: evicting an *active* host would reset its budget and turn the
+   memory bound into a **rate-limit bypass** (spray distinct hostnames, drop every real
+   counter). Eviction therefore only removes hosts whose window has fully drained, and when
+   none has, the new request is refused `LIMITER_SATURATED`. A limiter that fails open under
+   pressure is not a limiter.
+4. **`check()` and `consume()` are separate.** A request refused for some *other* reason — a
+   denied target, an empty pool — must not spend the host's budget, or the operator sees a
+   rate-limit refusal whose cause was elsewhere (B-02). Call order at the serving layer is
+   validate → `consume()` → serve, never `consume()` first.
+
+Refusals are named (`RateRefusal`) and carry `retry_after_s`, computed from the oldest hit in
+the window rather than guessed, so a client that honours it succeeds on the first retry
+(`test_honouring_retry_after_succeeds_on_the_first_attempt`).
+
+**A duplication this decision was forced to resolve.** The limiter must key on the same
+notion of host identity as the deny-list, or `a.com` and `A.com.` are one host to the policy
+and **two buckets** to the limiter — a silent doubling of the configured rate for anyone who
+types the root dot. `check_target` and `host_matches_deny` each carried their own inline
+`.lower().rstrip(".")`. Extracted to `canonical_host()` in `core/policy/target_policy.py` and
+both call sites routed through it: duplicated normalisation that currently agrees is not a
+shared rule, it is two rules that have not diverged yet. 467 pre-existing tests confirm the
+extraction changed no behaviour.
+
+**A defect found while writing this, worth recording.** The first draft of `_key_of` called
+`.lower()` on the result of `split_url(...).host`. `split_url` already case-folds at every
+return path, so that call did nothing — a redundant guard reading as though this layer owned
+a normalisation it did not. It was removed rather than kept "for safety", and the upstream
+guarantee it appeared to provide is pinned instead by
+`test_canonical_host_folds_case_via_split_url`. Dead defensive code is worse than none: it
+makes a future change to `split_url` look safe here when it is not.
+
+**Measured effect.**
+
+| property | evidence |
+|---|---|
+| the config value is now enforced | 36 unit tests; `RateLimitPolicy()` default is the file's 60/min |
+| bypasses are detectable | **9/9** injected defects killed → `engineering/raw/rate_limit_mutation.json` |
+| fixed-window burst refused | control admits **6**, this admits **3**, same request pattern |
+| limit holds under threads | 8 threads × 40 requests → **exactly 50** admitted at limit 50 (non-vacuity asserted first) |
+| no wall-clock read | clock whose `now()` raises; suite green |
+
+**Deliberately not done here.** This is a **per-process** limiter and the class docstring
+says so. Two API workers each get their own counters, so an operator who believes this caps
+the whole deployment would be wrong by a factor of the worker count. A cross-process limit
+needs shared storage and is named as P11 scope rather than implied by a hopeful class name.
+No DNS either: hosts that resolve to the same address still get separate budgets, for the
+same reason ADR-029 does no DNS.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_rate_limit.py -q` (36) and
+`python3 engineering/tools/mutate_rate_limit.py` (9/9 killed →
+`engineering/raw/rate_limit_mutation.json`).
