@@ -1,0 +1,31 @@
+# ATLAS PROXY FABRIC v4 — ignore rules
+#
+# NOTE (ADR-010): this file is deliberately minimal. A previous platform sync
+# dropped engineering/tools/ entirely because those files were never tracked,
+# which silently invalidated 6 tasks marked DONE. Nothing under engineering/
+# may be ignored -- it is the evidence base.
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# secrets — never commit
+.env
+!.env.example
+
+# runtime state (regenerable; the DB is not evidence)
+atlas/data/*.db
+atlas/data/*.db-wal
+atlas/data/*.db-shm
+atlas/data/exports/
+
+# NEVER ignore:
+#   !engineering/**
+#   !engineering/tools/**
