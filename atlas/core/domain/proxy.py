@@ -163,6 +163,20 @@ class Proxy:
     consecutive_failures: int = 0
     total_successes: int = 0
     total_attempts: int = 0
+    # ADR-039. Rechecks CLAIMED but never reported -- a crashed or hung worker.
+    #
+    # NOT the same quantity as either counter above it, which is exactly why it
+    # has to exist. `total_attempts` counts probe SAMPLES (k per probe) and
+    # `consecutive_failures` counts probes that RETURNED a verdict. An abandoned
+    # probe produces neither: measured in `engineering/raw/recheck_bounds.json`,
+    # 12 claim->reclaim cycles left both at 0, so no threshold expressed in terms
+    # of them could ever bound the cycle.
+    #
+    # CONSECUTIVE, like `consecutive_failures`: a probe that completes clears it.
+    # A cumulative counter would eventually retire a healthy long-lived proxy for
+    # unrelated crashes spread over weeks, which is a restart policy masquerading
+    # as a proxy-quality decision.
+    abandoned_rechecks: int = 0
     first_seen: datetime | None = None
     last_checked: datetime | None = None
     lease_id: str | None = None
@@ -218,6 +232,7 @@ class Proxy:
 
     def record_success(self, at: datetime) -> Proxy:
         return replace(self, consecutive_failures=0,
+                       abandoned_rechecks=0,
                        total_successes=self.total_successes + 1,
                        total_attempts=self.total_attempts + 1,
                        last_checked=at)
@@ -226,8 +241,22 @@ class Proxy:
         """
         ADR-006: cooldown is driven by CONSECUTIVE failures, and the reason is
         always recorded. The legacy code swallowed the reason entirely (B-02).
+
+        `abandoned_rechecks` is CLEARED here as well as in `record_success`,
+        because this probe REPORTED: it ran, it produced a nameable reason, and
+        the row is therefore not abandoning its claims. A completed-but-bad probe
+        is the business of `consecutive_failures`, which this increments.
+
+        The two ladders together are what close the alternating pattern. A proxy
+        that abandons, then fails, then abandons would reset the abandon counter
+        each time -- but every completed failure advances `consecutive_failures`,
+        which only a SUCCESS clears, so it retires on the failure ladder instead.
+        Neither counter alone bounds that sequence; `test_alternating_abandon_and_failure_still_retires`
+        pins it, because "each guard is fine in isolation" is precisely how the
+        seam defects in this project have always survived their unit tests.
         """
         return replace(self, consecutive_failures=self.consecutive_failures + 1,
+                       abandoned_rechecks=0,
                        total_attempts=self.total_attempts + 1,
                        last_checked=at, reason_code=reason)
 
