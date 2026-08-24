@@ -1875,3 +1875,106 @@ P09.T3, not here.
 **Verify:** `python3 -m pytest atlas/tests/unit/test_handout.py -q` (42) and
 `python3 engineering/tools/mutate_handout.py` (9/9 killed →
 `engineering/raw/handout_mutation.json`).
+
+---
+
+## ADR-036
+### `COOLING` is an absorbing state: the pool retires nothing, recovers nothing, and one transient failure is permanent
+
+**Status.** Accepted (2026-08-24, P09.T3).
+
+**Context.** The task for T3 was "build the scheduler loop that reads the four
+`scheduler.*` keys", on the premise — recorded in `next_action` and re-verified
+from disk this session — that `recheck_ready_after_s`, `discovery_interval_s`,
+`retire_after_consecutive_failures` and `max_pool_size` have **zero** Python
+readers, the ADR-019 defect class for the sixth time. That premise is true. It is
+also not the defect.
+
+**What measurement found.** Probing the real `SqliteStore` rather than reading
+the code (`engineering/tools/measure_pool_lifecycle.py`):
+
+| fact | measured |
+|---|---|
+| a proxy with **40** consecutive failures | state `COOLING`, grade `REJECTED` |
+| `retire_after_consecutive_failures` | `5` in `config.yaml`, read by nobody |
+| `ProxyState.RETIRED` assigned in `atlas/**/*.py` | **nowhere** — one comment in `scoring.py`, zero assignments |
+| transitions **out of** `COOLING` in production code | **none** |
+| `lease()` of a `COOLING` row | 0 rows, by design (`WHERE state='READY'`) |
+| discovery re-probing a known fingerprint | **skipped** (`if self._store.get(...) is not None: continue`) |
+
+Each of those is individually defensible. Together they mean: **a proxy that
+fails once is removed from the pool forever.** `COOLING` is documented in
+`proxy.py` as "failed recently; eligible again after a cooldown (ADR-006)" and
+`RETIRED` as "repeatedly failed" — but nothing implements *eligible again*, and
+nothing implements *repeatedly*. The docstring describes a state machine that
+does not exist; the code implements a one-way funnel into a terminal state whose
+name says it is temporary.
+
+**This is ADR-006's own lesson, recurring one level down.** ADR-006 exists
+because a single throttled 659-byte read filed GeoNode — 230 019 bytes of valid
+JSON, 500 proxies — as permanently dead, and its fix was: *a single failure must
+NEVER disable a source.* `cooldown_delay()` was written pure so the recovery
+ladder could be tested without waiting, and `Source` got `cooldown_until` plus
+`reactivated()`. **`Proxy` got neither.** So the exact defect ADR-006 was written
+to prevent is present, unfixed, on the proxy path — where the pool's entire value
+lives. Measured: `cooldown_delay` has exactly **one** production caller
+(`cycle.py:262`, the *source* path). The proxy path never calls it.
+
+**A second, quieter consequence.** Because retirement never fires, the reachable
+backoff ladder for a proxy is unbounded in principle but *unused* in practice —
+nothing ever consults it. And with `retire_after_consecutive_failures: 5`, the
+delays beyond `n=4` (240 s) are unreachable once retirement *is* implemented, so
+ADR-006's 3600 s cap **never binds on the proxy path**. That is worth stating
+because a cap that cannot bind is exactly the kind of decorative parameter this
+project keeps finding; it is retained deliberately (below), not by omission.
+
+**Decision.**
+
+1. **A proxy's cooldown eligibility is DERIVED, not stored.** No
+   `cooldown_until` column is added. Eligibility is
+   `last_checked + cooldown_delay(consecutive_failures)`, computed by a **pure**
+   function in `core/policy/lifecycle.py`. The schema already holds both inputs.
+   Adding a column would create a second source of truth for a fact the existing
+   two columns fully determine — and this project has already paid for
+   contradictory duplicated state (ADR-020's cross-stream splice).
+2. **`retire_after_consecutive_failures` becomes load-bearing.** At or above the
+   threshold a proxy transitions `COOLING → RETIRED` and is never reconsidered.
+   Below it, once its derived cooldown has elapsed, it is `RETIRED`'s opposite:
+   eligible for re-probe.
+3. **`RETIRED` is terminal and that is now enforced, not merely intended.**
+   `Proxy.retired()` exists; nothing transitions out of `RETIRED`; a test asserts
+   the absorbing property holds for `RETIRED` **and fails if it holds for
+   `COOLING`** — the negative control that would have caught this defect.
+4. **The scheduler is a pure PLAN plus a thin executor.** `SchedulerPolicy`
+   (pure, in `core/policy/lifecycle.py`) answers "what should happen to this row
+   now?"; `PoolScheduler` (`engine/scheduler.py`) applies it with an injected
+   `ClockPort` and a store. All four `scheduler.*` keys are read by
+   `load_scheduler_policy()` in `adapters/config.py`.
+5. **`max_pool_size` evicts by RANK, and never evicts a `LEASED` row.** Evicting
+   a leased proxy would hand the H3 guarantee to a size limit: the row would
+   vanish while a consumer still held it, and `release()` would resurrect it
+   (`INSERT ... ON CONFLICT`), reappearing as `READY` with no lease. Eviction is
+   restricted to terminal and unleased rows, worst-ranked first.
+6. **ADR-006's 3600 s cap is retained unchanged**, and the fact that it cannot
+   bind at `retire_after=5` is recorded here rather than silently removed: the
+   cap is a property of the *backoff rule*, which is shared with the source path
+   where it does bind (`disable_after=12`, so `n=8` reaches 3840 s → capped).
+
+**Why the store grows a `select_for_recheck()` rather than the scheduler reading
+rows.** The scheduler must find rows whose *derived* eligibility has elapsed.
+Doing that in Python means loading the pool — 50 000 rows at the configured cap —
+to discard almost all of it. The predicate is pushed into SQL, but the *decision*
+stays pure: SQL selects **candidates** by state and age; `SchedulerPolicy` makes
+the actual retire/recheck/keep call on each one. Otherwise the rule would exist
+twice, in Python and in SQL, and the two would drift — which is ADR-023's
+recurring lesson about a guard that verifies its own documentation.
+
+**What this does NOT do.** It does not re-probe. `PoolScheduler.plan()` returns
+the work to be done and `apply_retirements()` performs only the state
+transitions; wiring the recheck to `DiscoveryEngine.evaluate()` is a P10 concern
+and is left explicitly undone rather than half-done. The gap is named in
+`next_action`, not implied.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_scheduler.py -q` and
+`python3 engineering/tools/measure_pool_lifecycle.py` →
+`engineering/raw/pool_lifecycle.json` (the before/after table above).
