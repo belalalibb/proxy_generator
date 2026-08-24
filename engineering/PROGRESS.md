@@ -612,3 +612,109 @@ the *threshold* only; jitter and reliability have never been measured live.
 Build the real `ProbePort` (k=5, integrity checks for `TRANSPARENT_LEAK` /
 `CONTENT_MISMATCH`) and produce the first artifact in which `label_is_verified`
 can become true. Registry currently reports `labels_verified: 0`.
+
+---
+
+## P06 — PROBE + LIVE CALIBRATION · gate **PASSED**
+
+**Goal:** retire the H7 `k=1` caveat. The P04 replay proved the gate rejects 97 of
+the legacy system's own 102 admitted proxies, but every legacy row carries one
+latency sample, so only the *threshold* was ever exercised. Three of the gate's
+rules — `UNRELIABLE`, `TOO_JITTERY`, and the integrity checks — had never run
+against real data.
+
+### Result
+
+`make doctor` → **16/16 gate checks**, **244 tests** (235 unit + 9 integration).
+
+Live sweep (`engineering/raw/admission_live_adr024.json`), k=5, TLS verification ON,
+300 candidates drawn from 14 of 67 enabled registry sources:
+
+| stage | count |
+|---|---|
+| probed | 300 |
+| TCP ok | 86 |
+| reached the gate | 12 |
+| ≥2 samples | 6 |
+| **ADMITTED** | **3** (p95 846.5 / 863.7 / 940.2 ms, all GOOD) |
+
+Rejections, every one naming its cause: `TCP_TIMEOUT` 194, `TCP_REFUSED` 43,
+`BAD_STATUS` 28, `PROXY_AUTH_REQUIRED` 23, `NOT_MEASURED` 5, `UNRELIABLE` 2,
+`TOO_SLOW_P95` 2.
+
+**H7 upgraded.** `UNRELIABLE` and `NOT_MEASURED` fired on live data for the first
+time. Stated plainly: **`TOO_JITTERY` still has not** — 0 of 6 multi-sample
+proxies tripped it, so that rule remains unit-tested only, and I am recording that
+rather than letting "the k>1 rules were exercised" imply all of them.
+
+### Two defects v4 introduced, both behind a green suite
+
+Neither was found by a failing test. Both were found by **reading an artifact and
+noticing the numbers could not be true.** The suite was 239-green throughout.
+
+**V4-01 / ADR-025 — a measured cause overwritten by a note about something never tested.**
+The first sweep reported `tcp_ok: 24, reached_gate: 0, PROTO_MISMATCH: 24`. Every
+endpoint that completed a TCP handshake was filed as `socks4 not testable`.
+`discover_protocol` kept the last failure in one variable, and since SOCKS sits at
+the *end* of the ladder, the honest "cannot test this rung" placeholder overwrote
+the real HTTP measurement every time. A **refused connection** was reported as a
+note about a protocol never attempted.
+
+Both facts were true. The bug was in which one *survived*. That is **B-02 —
+cause lost at the point of discovery — recurring inside the code written to avoid
+B-02**, and the placeholder had been added for an honest reason (refusing to
+fabricate a negative, H2). Fix: rank the two facts, `last_tested or untested`.
+A measurement always outranks an untested rung. Afterwards the real causes
+appeared and 14 proxies reached the gate.
+
+**V4-02 / ADR-024 — a "95th percentile" that returned the minimum.**
+With real reasons finally surfacing, the next artifact contained:
+
+```json
+{"samples_ms": [7659.2, 4100.7], "p50_ms": 5880.0, "p95_ms": 4100.7}
+```
+
+A tail *below* the median is arithmetically impossible. Cause: the ADR-011 floor
+rank, `int((n-1)*0.95)`, is **0 at n=2** — the p95 of two samples was the faster
+one. Randomised check: ordering violated **4000/4000 at n=2, 0/4000 at every other
+n**. And k=2 is not exotic; it is the ordinary outcome of ADR-003's own early-stop
+rule.
+
+This was **not cosmetic — it was a false ADMIT.** Samples `(1400ms, 1600ms)`
+against the 1500 ms ceiling: p95 reads 1400 → passes; jitter 0.09 → passes;
+success_ratio 1.0 → passes. Verdict **OK / USABLE**. The gate whose entire purpose
+is rejecting slow proxies admitted one it had itself measured over budget — H7's
+own failure mode, reintroduced through the *estimator* rather than the threshold.
+Invisible to every unit test, because they all use k=5.
+
+Fix: `pct_floor` **frozen** for ADR-011 baseline parity (that requirement is about
+comparability, not correctness); new `pct_tail` for the gate — identical for k≥3,
+returns the upper sample at k=2. Parity anchors n=102/n=118 use indices 95 and 111,
+nowhere near the pathology, and that is asserted directly.
+
+**One defect was masking the other.** Until real reasons surfaced, nothing ever
+reached the gate with 2 samples, so the k=2 pathology could not be observed.
+
+### What this phase changed about the method
+
+Both defects were invisible to tests and visible in output, so the gate now
+**reads artifacts too**: `check_no_percentile_ordering_violation` scans every
+calibration report for `p95 < p50`. Teeth proven by injection — PASS on 10 real
+records, FAIL on an injected row, PASS after removal.
+
+The pre-fix artifacts are **preserved as evidence** in `engineering/raw/superseded/`,
+not regenerated. They are separated from the gate's glob by a **directory
+boundary** rather than a filename exclusion list, because an exclusion list is a
+thing someone later adds a second entry to (the ADR-023 lesson).
+
+### PHASE GATE 6 · **PASSED**
+
+Invariants: H1 ✅ · H2 ✅ · H3 ✅ · H4 ✅ · H5 ✅ · H6 ✅ · H8 ✅ ·
+**H7 ✅ UPGRADED** — the k=1 caveat is retired, with the `TOO_JITTERY` gap named.
+
+**NEXT:** P07 — SCORING + ENGINE. Scoring per B-16 (freshness / reliability /
+latency, so a proxy validated once cannot stay "working" forever), then the engine
+loop composing registry → fetch → normalize → probe → gate → store with ADR-006
+consecutive-failure cooldown. Carried forward honestly: `TOO_JITTERY` unproven
+live, and `labels_verified` is still **0** because the sweep records verdicts per
+*proxy* and never writes them back onto the *source* row.
