@@ -1,4 +1,73 @@
 {
+ "after": {
+  "consumers_of_recheck": {
+   "recheck": [
+    "atlas/engine/recheck.py:180",
+    "atlas/engine/scheduler.py:98"
+   ],
+   "recheck_ready": [
+    "atlas/engine/recheck.py:180",
+    "atlas/engine/scheduler.py:99"
+   ]
+  },
+  "discovery_interval_readers": {
+   "sites": [
+    "atlas/core/policy/lifecycle.py:124",
+    "atlas/core/policy/lifecycle.py:126"
+   ],
+   "verdict": "declared/validated but nothing schedules on it"
+  },
+  "double_probe": {
+   "claim_between_passes": true,
+   "pass1_selected": 1,
+   "pass2_selected": 0,
+   "same_row_selected_twice": [],
+   "verdict": "CLAIMED: the second pass no longer selects it"
+  },
+  "lease_clobber": {
+   "audit_double_delivery": [],
+   "claimed_for_probe": [
+    "10.0.0.1"
+   ],
+   "lease_granted": 0,
+   "lease_id_after_writeback": null,
+   "lease_ids": [],
+   "lease_survived_the_recheck": false,
+   "path": "claim_for_probe + complete_probe",
+   "selected_for_recheck_while_leasable": [
+    "10.0.0.1"
+   ],
+   "state_after_writeback": "READY",
+   "verdict": "NO OVERLAP: the claim took the row to PROBING first, so the consumer's lease was REFUSED (lease_granted=0) and the write-back had no live lease to erase. The two never hold the row at once -- which side wins is a race, and both orders are asserted in test_recheck_store.py.",
+   "writeback_applied": true
+  },
+  "probing_absorbing": {
+   "a_week_later_buckets": {
+    "in_flight": [
+     "10.0.0.3"
+    ],
+    "recheck": [],
+    "recheck_ready": []
+   },
+   "after_reclaim": {
+    "reason_code": "PROBE_ABANDONED",
+    "recheck_bucket": [
+     "10.0.0.3"
+    ],
+    "state": "COOLING"
+   },
+   "leasable_after_a_week": 0,
+   "rows_reclaimed": 1,
+   "store_has_reclaim_method": true,
+   "verdict": "NOT ABSORBING: reclaim_stale_probes returns the row to COOLING, which re-enters the ADR-006 ladder"
+  },
+  "probing_membership_reads": [
+   "atlas/core/policy/lifecycle.py:205"
+  ],
+  "probing_writes_in_production": [
+   "atlas/core/policy/lifecycle.py:205"
+  ]
+ },
  "before": {
   "consumers_of_recheck": {
    "recheck": [
@@ -56,7 +125,7 @@
    "atlas/core/policy/lifecycle.py:205"
   ]
  },
- "measured_at": "2026-08-24T21:22:53.231155+00:00",
- "note": "P10 evidence. `before` is the state ADR-036 shipped: the recheck seam has no consumer, PROBING is read by decide() and both store queries but written nowhere, and the obvious wiring (probe then upsert_many) erases a live lease because the write-back carries a pre-lease snapshot. Re-run with --after once the fix lands so the file holds the pair.",
+ "measured_at": "2026-08-24T21:46:31.119565+00:00",
+ "note": "P10 evidence. `before` is the state ADR-036 shipped: the recheck seam has no consumer, PROBING is read by decide() and both store queries but written nowhere, and the obvious wiring (probe then upsert_many) erases a live lease because the write-back carries a pre-lease snapshot. `after` runs the SAME three experiments against the ADR-038 path (claim_for_probe + complete_probe + reclaim_stale_probes): one variable changed, so the two arms are comparable rather than spliced.",
  "tool": "engineering/tools/measure_recheck_gap.py"
 }
