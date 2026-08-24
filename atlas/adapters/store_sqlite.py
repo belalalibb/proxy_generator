@@ -317,6 +317,123 @@ class SqliteStore:
         ).fetchall()
         return {ProxyState(r["state"]): r["n"] for r in rows}
 
+    # ── ADR-036: the rows a scheduler pass must consider ─────────────────────
+    def select_schedulable(self, *, limit: int = 1000) -> tuple[Proxy, ...]:
+        """
+        Candidate rows for a scheduler pass, oldest-checked first.
+
+        THIS IS A CANDIDATE FILTER, NOT THE DECISION. It selects on `state`
+        alone -- an indexable predicate -- and leaves every retire/recheck/keep
+        call to `core.policy.lifecycle.decide`. The eligibility rule itself
+        (`last_checked + cooldown_delay(consecutive_failures) <= now`) is
+        deliberately NOT expressed here: `cooldown_delay` is an exponential
+        ladder, and reimplementing it in SQL would put the same rule in two
+        languages with nothing to keep them equal. ADR-023 is what that costs --
+        a guard that had drifted into verifying its own documentation.
+
+        So SQL narrows 50 000 rows to a bounded batch; Python decides. The
+        `LEASED` state is excluded because a leased row belongs to its consumer
+        and to H3, and `RETIRED` because it is terminal -- selecting either would
+        mean the scheduler repeatedly examines rows it must never act on, and at
+        the configured `max_pool_size` those are the two categories most likely
+        to dominate the table.
+
+        Ordered by `last_checked` ASC with NULLs first, so the least-recently
+        verified rows are considered before fresher ones and a never-checked row
+        is never starved by a large pool of recently-checked ones. `limit` bounds
+        the batch: an unbounded scheduler pass would load the whole pool into
+        memory, which is the same unbounded-allocation defect the rate limiter's
+        host cap exists to prevent (ADR-034).
+        """
+        rows = self._db.execute(
+            """
+            SELECT * FROM proxies
+             WHERE state IN ('DISCOVERED', 'COOLING', 'READY', 'PROBING')
+             ORDER BY (last_checked IS NULL) DESC, last_checked ASC
+             LIMIT ?
+            """,
+            (int(limit),),
+        ).fetchall()
+        return tuple(self._from_row(r) for r in rows)
+
+    def select_evictable(self, *, limit: int) -> tuple[Proxy, ...]:
+        """
+        Rows eligible for `max_pool_size` eviction, worst first (ADR-036).
+
+        NEVER returns a `LEASED` row. Evicting a leased proxy would hand the H3
+        guarantee to a size limit: the row would vanish while a consumer still
+        held it, and `release()` -- an `UPDATE ... WHERE state='LEASED'` -- would
+        silently no-op, so the consumer's release would be lost rather than
+        rejected. `PROBING` is excluded for the same reason at a smaller scale: a
+        probe is in flight and its result would be written back to a row that no
+        longer exists.
+
+        Order is worst-first: RETIRED before COOLING before DISCOVERED before
+        READY, and within a state the worst grade and slowest p95 go first. A
+        cap that evicted arbitrary rows would silently delete the pool's best
+        proxies whenever it triggered, which is a size limit behaving as a
+        quality regression.
+        """
+        rows = self._db.execute(
+            """
+            SELECT * FROM proxies
+             WHERE state IN ('RETIRED', 'COOLING', 'DISCOVERED', 'READY')
+             ORDER BY CASE state
+                        WHEN 'RETIRED'    THEN 0
+                        WHEN 'COOLING'    THEN 1
+                        WHEN 'DISCOVERED' THEN 2
+                        WHEN 'READY'      THEN 3
+                      END ASC,
+                      CASE grade
+                        WHEN 'REJECTED' THEN 0
+                        WHEN 'USABLE'   THEN 1
+                        WHEN 'GOOD'     THEN 2
+                        WHEN 'PRIME'    THEN 3
+                        ELSE 0
+                      END ASC,
+                      p95_ms DESC NULLS FIRST,
+                      fingerprint ASC
+             LIMIT ?
+            """,
+            (int(limit),),
+        ).fetchall()
+        return tuple(self._from_row(r) for r in rows)
+
+    def delete_many(self, fingerprints: tuple[str, ...]) -> int:
+        """
+        Remove rows by fingerprint. Refuses to delete a LEASED row.
+
+        The refusal is in SQL (`AND state != 'LEASED'`) rather than checked in
+        Python beforehand, because a check-then-delete has a window: the row
+        could be leased between the check and the DELETE. Same reasoning as
+        `lease()`'s compare-and-set -- the condition belongs in the statement
+        that acts on it. The return value is the number actually deleted, so a
+        caller that tried to remove a leased row sees a shortfall rather than a
+        silent success.
+        """
+        if not fingerprints:
+            return 0
+        self._db.execute("BEGIN IMMEDIATE")
+        try:
+            marks = ",".join("?" * len(fingerprints))
+            cur = self._db.execute(
+                f"DELETE FROM proxies WHERE fingerprint IN ({marks}) "
+                "AND state != 'LEASED'",
+                fingerprints,
+            )
+            n = cur.rowcount
+            self._db.commit()
+        except BaseException:
+            self._db.rollback()
+            raise
+        self._after_write(n)
+        return n
+
+    def pool_size(self) -> int:
+        """Total rows. Named separately from the private `_count_all` so the
+        scheduler's `max_pool_size` check reads against a public contract."""
+        return self._count_all()
+
     # ── THE H3 GUARANTEE ──────────────────────────────────────────────────────
     def lease(self, *, count: int, min_grade: Grade, lease_ms: int,
               now: datetime) -> tuple[Proxy, ...]:
