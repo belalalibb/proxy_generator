@@ -422,6 +422,49 @@ def check_no_cross_stream_splice(res: Result) -> None:
             "every 95.8/56.8 citation names its n=118 stream")
 
 
+def check_no_percentile_ordering_violation(res: Result) -> None:
+    """
+    ADR-024 / V4-02. A p95 below the p50 is arithmetically impossible, so any
+    artifact containing one is proof that the estimator read the wrong end of the
+    distribution.
+
+    This is checked against the ARTIFACTS rather than by unit test on purpose:
+    the defect was invisible to every unit test (all written at k=5) and visible
+    on the first line of real output. The gate now reads what the tools actually
+    produced -- the same reason ADR-020's splice check greps prose instead of
+    trusting that the numbers came from one run.
+
+    Scans every calibration report for records where p95 < p50.
+    """
+    raw = ROOT / "engineering" / "raw"
+    offenders: list[str] = []
+    scanned = 0
+    for f in sorted(raw.glob("admission_live*.json")) + sorted(raw.glob("calib*.json")):
+        try:
+            doc = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            offenders.append(f"{f.name}: unreadable ({type(exc).__name__})")
+            continue
+        records = []
+        for key in ("admitted_detail", "sample_of_gate_reachers"):
+            val = doc.get(key)
+            if isinstance(val, list):
+                records.extend(val)
+        for rec in records:
+            if not isinstance(rec, dict):
+                continue
+            p50, p95 = rec.get("p50_ms"), rec.get("p95_ms")
+            if isinstance(p50, (int, float)) and isinstance(p95, (int, float)):
+                scanned += 1
+                if p95 < p50:
+                    offenders.append(
+                        f"{f.name}:{rec.get('endpoint', '?')} p95={p95} < p50={p50}")
+    res.add("no_percentile_ordering_violation", not offenders,
+            "p95 below p50 (ADR-024 estimator defect): " + "; ".join(offenders[:5])
+            if offenders else
+            f"{scanned} measured record(s) satisfy p95 >= p50")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
@@ -440,6 +483,7 @@ def main() -> int:
     check_h3_negative_control_present(res)
     check_tests_tracked_by_git(res)
     check_makefile_tools_exist(res)
+    check_no_percentile_ordering_violation(res)
 
     if args.json:
         print(json.dumps(
