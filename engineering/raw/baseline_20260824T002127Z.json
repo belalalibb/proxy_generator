@@ -1,0 +1,158 @@
+{
+  "task": "P00.T6",
+  "generator": "engineering/tools/measure_baseline.py",
+  "rebuilt_after_sync_loss": true,
+  "measured_at_utc": "20260824T002127Z",
+  "A_historical": {
+    "measurable": true,
+    "source_file": "proxy_details.json",
+    "scan_date": "2025-09-01T18:11:48.009891",
+    "total_sources": 67,
+    "total_collected": 15000,
+    "total_working": 102,
+    "reported_success_rate": "0.68%",
+    "scan_duration_s": 1418.98,
+    "accepted_latency_ms": {
+      "n": 102,
+      "min_ms": 756.0,
+      "p50_ms": 6359.5,
+      "mean_ms": 7145.1,
+      "p95_ms": 15903.0,
+      "max_ms": 19035.0,
+      "p95_ms_interpolated": 16327.6,
+      "p50_ms_floor": 6257.0,
+      "percentile_method": "p50=interpolated median, p95=lower rank int((n-1)*0.95)",
+      "over_1500ms_pct": 95.1,
+      "over_5000ms_pct": 58.8
+    },
+    "derived_throughput": {
+      "collected_per_min": 634.3,
+      "working_per_min": 4.31,
+      "minutes_to_produce_10_working": 2.32
+    },
+    "log": {
+      "measurable": true,
+      "source_file": "proxy_scraper.log",
+      "latency_mentions": 118,
+      "latency_ms": {
+        "n": 118,
+        "min_ms": 756.0,
+        "p50_ms": 6092.5,
+        "mean_ms": 7032.3,
+        "p95_ms": 15903.0,
+        "max_ms": 19035.0,
+        "p95_ms_interpolated": 15970.0,
+        "p50_ms_floor": 5963.0,
+        "percentile_method": "p50=interpolated median, p95=lower rank int((n-1)*0.95)",
+        "over_1500ms_pct": 95.8,
+        "over_5000ms_pct": 56.8
+      },
+      "warning_lines": 18,
+      "error_lines": 0,
+      "top_yield_hosts": [
+        [
+          "raw.githubusercontent.com",
+          852634
+        ],
+        [
+          "proxyspace.pro",
+          398824
+        ],
+        [
+          "api.openproxylist.xyz",
+          308580
+        ],
+        [
+          "api.proxyscrape.com",
+          182590
+        ],
+        [
+          "cdn.jsdelivr.net",
+          14677
+        ],
+        [
+          "www.proxy-list.download",
+          516
+        ],
+        [
+          "www.sslproxies.org",
+          400
+        ],
+        [
+          "free-proxy-list.net",
+          247
+        ]
+      ]
+    },
+    "proxy_txt": {
+      "measurable": true,
+      "lines": 616,
+      "unique": 616,
+      "duplicate_lines": 0
+    }
+  },
+  "A_reconciliation_vs_BASELINE_json": {
+    "comparable": true,
+    "fields": [
+      {
+        "field": "total_collected",
+        "documented": 15000,
+        "regenerated": 15000,
+        "match": true
+      },
+      {
+        "field": "total_working",
+        "documented": 102,
+        "regenerated": 102,
+        "match": true
+      },
+      {
+        "field": "scan_duration_s",
+        "documented": 1418.98,
+        "regenerated": 1418.98,
+        "match": true
+      },
+      {
+        "field": "n",
+        "documented": 102,
+        "regenerated": 102,
+        "match": true
+      },
+      {
+        "field": "min_ms",
+        "documented": 756,
+        "regenerated": 756.0,
+        "match": true
+      },
+      {
+        "field": "p50_ms",
+        "documented": 6359.5,
+        "regenerated": 6359.5,
+        "match": true
+      },
+      {
+        "field": "p95_ms",
+        "documented": 15903,
+        "regenerated": 15903.0,
+        "match": true
+      },
+      {
+        "field": "mean_ms",
+        "documented": 7145.1,
+        "regenerated": 7145.1,
+        "match": true
+      },
+      {
+        "field": "max_ms",
+        "documented": 19035,
+        "regenerated": 19035.0,
+        "match": true
+      }
+    ],
+    "exact": 9,
+    "total": 9,
+    "drift": []
+  },
+  "B_measured_now": null,
+  "note": "BASELINE.json is never overwritten. Stream A is deterministic and reconciled field-by-field; stream B is a new dated snapshot."
+}
