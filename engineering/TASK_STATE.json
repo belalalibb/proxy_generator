@@ -1,7 +1,7 @@
 {
   "version": "4.0.0",
-  "updated_at": "2026-08-24T00:00:00Z",
-  "current_phase": "P10_RECHECK_WIRING",
+  "updated_at": "2026-08-24T23:30:00Z",
+  "current_phase": "P12_FULL_SUITE",
   "phase_gate_status": {
     "P00": "PASSED",
     "P01": "PASSED",
@@ -13,8 +13,8 @@
     "P07": "PASSED",
     "P08": "PASSED",
     "P09": "PASSED",
-    "P10": "TODO",
-    "P11": "TODO",
+    "P10": "PASSED",
+    "P11": "PASSED",
     "P12": "TODO",
     "P13": "TODO",
     "P14": "TODO"
@@ -750,6 +750,67 @@
         "proof_on_live_defect": "with test_scheduler.py absent, adr_claims_are_verifiable still PASSES (36 ADRs) while adr_verify_targets_exist names ADR-036",
         "max_reachable_backoff_s": 240.0
       }
+    },
+    {
+      "id": "P10.T1",
+      "phase": "P10",
+      "title": "Wire plan().recheck to the probe path via a claim/write-back protocol (ADR-038)",
+      "status": "DONE",
+      "evidence": [
+        "atlas/engine/recheck.py::RecheckService",
+        "atlas/adapters/store_sqlite.py::claim_for_probe",
+        "atlas/tests/unit/test_recheck.py",
+        "atlas/tests/integration/test_recheck_store.py",
+        "engineering/tools/measure_recheck_gap.py",
+        "engineering/raw/recheck_gap.json",
+        "atlas/tests/unit/naive_recheck.py"
+      ],
+      "attempts": 1,
+      "notes": "Measured BEFORE writing: readers of .recheck/.recheck_ready = 1 each (both inside scheduler.py's own bucket sum); production writes of ProxyState.PROBING = 0; two consecutive passes selected the SAME row (3fd692f1f03a4fe8); naive write-back vs a live lease = CLOBBERED. The one-line version would have shipped a double-delivery: upsert_many sets EVERY column from a Proxy loaded before the lease existed, returning state=READY/lease_id=NULL under a live consumer. Critically, double_delivery_violations() returned [] on that clobber -- the P05 H3 audit reconstructs LEASE/RELEASE/EXPIRE from the append-only log and no second LEASE was ever appended. An audit that watches one mechanism is blind to a violation produced by another. After: lease_clobber NO OVERLAP, double_probe [], probing_absorbing returns to COOLING and re-enters the ADR-006 ladder."
+    },
+    {
+      "id": "P11.T1",
+      "phase": "P11",
+      "title": "Derive the claim lifetime from the real probe plan instead of a hand-picked literal (ADR-039)",
+      "status": "DONE",
+      "evidence": [
+        "atlas/core/ports/probe.py::claim_bound",
+        "atlas/engine/recheck.py::RecheckBudget",
+        "engineering/tools/measure_recheck_bounds.py",
+        "engineering/raw/recheck_bounds.json",
+        "atlas/tests/unit/test_recheck.py::test_probe_and_lease_expiry_share_one_boundary_convention"
+      ],
+      "attempts": 1,
+      "notes": "Measured BEFORE: probe_ms default 120000 vs 590000 required at batch 100/concurrency 10 -- short by 470000ms (~5x), and probe_ms=1 was accepted. The wave factor is what the old default missed: one claim covers the whole batch but a semaphore admits only `concurrency` at a time, so required = worst_case_per_probe * ceil(batch/concurrency). Raising the literal to 590000 was REJECTED as the fix: the next change to k, a timeout, or the ladder would make a new hand-picked number silently wrong again, which is that literal's entire history. PROTOCOL_LADDER moved to core and imported by the adapter so bound and priced code cannot disagree. claim_bound deliberately OVER-prices (75000/750000, all four rungs) because aiohttp-socks is absent so two rungs currently cost ~0; the test asserts equality when restricted to the measured rungs and strict excess otherwise -- pinning 590000 would have converted a safety margin into a regression the suite DEMANDED."
+    },
+    {
+      "id": "P11.T2",
+      "phase": "P11",
+      "title": "Count recheck abandonment inside the reclaiming UPDATE and bound it with its own retirement ladder",
+      "status": "DONE",
+      "evidence": [
+        "atlas/adapters/store_sqlite.py::reclaim_stale_probes",
+        "atlas/adapters/store_sqlite.py::retire_abandoned",
+        "atlas/core/domain/proxy.py",
+        "atlas/tests/unit/test_recheck.py::test_a_row_PAST_the_threshold_still_retires",
+        "atlas/tests/unit/test_recheck.py::test_alternating_abandon_and_failure_still_retires",
+        "atlas/tests/unit/test_recheck.py::test_retirement_runs_before_planning_so_it_cannot_be_bypassed"
+      ],
+      "attempts": 1,
+      "notes": "Measured BEFORE: 12 crash cycles driven, consecutive_failures 0, total_attempts 0, ever retired false -- the abandon path was not merely unbounded, it was INVISIBLE. Counter incremented INSIDE the reclaiming UPDATE: atomic with PROBING->COOLING and idempotent because the state='PROBING' predicate means a second concurrent reclaim matches nothing. The caller cannot do it -- the abandoning worker is dead by definition (H8: SIGKILL is uncatchable). Counter is CONSECUTIVE, cleared by record_success AND record_failure: a probe that reported bad news is not abandoning its claim; a cumulative counter would retire a healthy proxy for unrelated crashes weeks apart. retire_after_abandoned_rechecks is a SEPARATE knob from retire_after_consecutive_failures because the two count different events. Expiry is inclusive (<=) to match expire_leases, verified by reading both methods' SQL rather than asserting my newer test's assumption. Evidence paths CORRECTED before the gate would pass: I first wrote retire_abandoned against core/policy/lifecycle.py and the claim method as claim_for_recheck; done_tasks_have_evidence resolves the symbol INSIDE the named file and refused both. retire_abandoned is a store method (the retirement is one UPDATE, not a pure decision) and the claim is claim_for_probe. The ADR-037 lesson holds: an evidence list that cannot be checked is the same defect as a Verify line naming nothing."
+    },
+    {
+      "id": "P11.T3",
+      "phase": "P11",
+      "title": "Mutation-prove the recheck bounds; close the >= hole and the dangling docstring citation",
+      "status": "DONE",
+      "evidence": [
+        "engineering/tools/mutate_recheck.py",
+        "engineering/raw/recheck_mutation.json",
+        "engineering/DECISIONS.md::ADR-039"
+      ],
+      "attempts": 1,
+      "notes": "15/15 killed (7 from ADR-038, 8 added here), survivors 0, working_tree_unchanged true, across 5 modules. THREE defects found in the guards themselves: (1) rewriting the retirement predicate from '>= ?' to '= ?' left all 66 tests GREEN even though retire_abandoned's docstring argued specifically for >= -- reachable via a config threshold lowered below existing rows, making every one permanently unretirable; (2) two early injections SILENTLY NO-OPED because the anchor omitted a type annotation, and 'guard passed' was indistinguishable from a guard with teeth -- an injection that does not land is a false negative that LOOKS like a false positive; (3) record_failure's docstring cited test_alternating_abandon_and_failure_still_retires BY NAME and that test did not exist (the ADR-026 class, invisible to check_adr_claims_are_verifiable because it only walks ADR->code, not docstring->test). Also fixed here: the artifact's `modules` field was hand-listed as 2 while its 15 mutations spanned 5 -- now derived from MUTATIONS, same reasoning as `originals`."
     }
   ],
   "files_changed": [
@@ -820,11 +881,11 @@
     "engineering/raw/handout_mutation.json"
   ],
   "tests": {
-    "total": 574,
-    "passed": 574,
+    "total": 655,
+    "passed": 655,
     "failed": 0,
-    "breakdown": "557 unit + 17 integration. P09.T3 added 65 unit tests in test_scheduler.py (the file ADR-036 cited but never created) over the 509 that survived the sync.",
-    "note": "The 509 baseline is itself a correction: TASK_STATE declared 507 while pytest collected 509, and that 2-test gap is what exposed the missing test file and missing config loader (ADR-037). An intermittent single warning appears in roughly 1 run in 4, from integration teardown (SIGKILL child / multiprocessing); recorded rather than silently dropped."
+    "breakdown": "629 unit + 26 integration. P10/P11 added 77 recheck tests (68 unit in test_recheck.py + 9 integration in test_recheck_store.py) over the 574 recorded at P09.",
+    "note": "574 -> 655 is a reconciliation, not just growth: TASK_STATE was reverted to the P09 snapshot by a sync (the ADR-010 failure mode) and lost every P10/P11 task row while the code, tests and ADR-038/039 remained on disk. declared_test_count_matches_collection caught it by reaching past both documents to pytest --collect-only. An intermittent single warning appears in roughly 1 run in 4, from integration teardown (SIGKILL child / multiprocessing); recorded rather than silently dropped."
   },
   "open_failures": [],
   "blockers": [
@@ -843,7 +904,7 @@
       "next_step": "Re-implement the T2 CODE to match the already-synced ADR-035 spec (which is authoritative and was independently re-verified against store_sqlite.py: single `last_checked TEXT`, no target-keyed table). Do NOT rewrite the synced docs."
     }
   ],
-  "next_action": "P10 -- wire the recheck. ADR-036 deliberately stopped short: PoolScheduler.plan() RETURNS the recheck set and apply_retirements() performs only state transitions, so nothing re-probes yet. Measured gap: discovery skips known fingerprints (`if self._store.get(...) is not None: continue` in cycle.py), so a COOLING row whose cooldown has elapsed is selected by select_schedulable, classified RECHECK by decide(), and then consumed by nobody. Connect plan().recheck to DiscoveryEngine.evaluate(). Also unread: scheduler.discovery_interval_s is now LOADED by load_scheduler_policy() but no loop consults it -- it is the one key of the four that still drives nothing.",
+  "next_action": "P12 -- full 6-level suite green. P10/P11 are closed and gated: the recheck claim lifetime is derived (claim_bound), abandonment is counted inside the reclaiming UPDATE and bounded by its own retirement ladder, 15/15 mutations killed across 5 modules. Known unfinished business carried forward, named rather than counted as done: (a) scheduler.discovery_interval_s is LOADED by load_scheduler_policy() but still no loop consults it -- the one key of four that drives nothing; (b) check_integrity (S5) has no production caller, so claim_bound deliberately does not price it; (c) the SOCKS rungs of PROTOCOL_LADDER cost ~0 because aiohttp-socks is not installed -- claim_bound over-prices them on purpose, and the day that package lands the bound becomes exact rather than conservative; (d) check_adr_claims_are_verifiable walks ADR->code only, so a docstring citing a nonexistent test is still invisible to the gate (found by hand twice now: ADR-026, and record_failure in P11).",
   "invariants_verified": {
     "H1_evidence_for_every_claim": true,
     "H2_no_fabricated_numbers": true,
