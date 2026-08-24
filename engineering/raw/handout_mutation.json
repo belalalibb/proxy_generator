@@ -1,9 +1,9 @@
 {
- "generated_at": "2026-08-24T16:30:23.575230+00:00",
+ "generated_at": "2026-08-24T20:15:38.224202+00:00",
  "module": "atlas/engine/handout.py",
  "suite": "atlas/tests/unit/test_handout.py",
  "baseline": {
-  "passed": 38,
+  "passed": 42,
   "failed": 0
  },
  "mutations": [
@@ -31,9 +31,23 @@
   {
    "mutation": "stale_reported_as_fresh",
    "applied": true,
-   "killed_by": 3,
+   "killed_by": 5,
    "survived": false,
-   "rationale": "Present 900-second-old evidence as current, silently -- the B-16 defect that made 97% of proxy.txt look alive."
+   "rationale": "Present evidence older than the recheck horizon as current, silently -- the B-16 defect that made 97% of proxy.txt look alive."
+  },
+  {
+   "mutation": "never_checked_treated_as_fresh_via_comparison",
+   "applied": true,
+   "killed_by": 1,
+   "survived": false,
+   "rationale": "Drop the never-checked arm so an unverified proxy reports INSIDE the horizon. This is the mutant that SURVIVED while the test restated the boolean inline instead of calling `_past_horizon` -- a test that re-implements the code under test measures the test (ADR-035). It dies only because the predicate is now callable."
+  },
+  {
+   "mutation": "unfireable_horizon_accepted",
+   "applied": true,
+   "killed_by": 1,
+   "survived": false,
+   "rationale": "Drop the ADR-035 construction guard, permitting a horizon at or above max_age_s. `rank(include_stale=False)` then drops every row the flag could describe, so the flag can never fire and all served proxies report fresh at any age -- staleness reported as freshness by CONFIGURATION rather than by code."
   },
   {
    "mutation": "never_checked_looks_just_checked",
