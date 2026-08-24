@@ -1,0 +1,449 @@
+{
+  "generated_at": "2026-08-24T03:16:21.269954+00:00",
+  "question": "applied to LIVE proxies with real k sampling, what does the admission gate actually do, and which rule fires?",
+  "method": {
+    "k": 5,
+    "target": "https://httpbin.org/get",
+    "ip_echo": "https://api.ipify.org?format=json",
+    "candidates_probed": 300,
+    "concurrency": 40,
+    "seed": 20260824,
+    "policy": {
+      "max_p95_ms": 1500.0,
+      "max_jitter": 0.5,
+      "min_success_ratio": 0.6
+    },
+    "tls_verification": "ON (B-09 was 9 sites disabling it)"
+  },
+  "caveats": [
+    "ADR-009 survivorship: these are candidates that exist TODAY, not the population the legacy 2025 run observed. The two rates are not directly comparable.",
+    "SOCKS candidates cannot be tested: aiohttp has no native SOCKS support, so they are reported as untestable rather than as failures.",
+    "A single sweep is a point-in-time sample; source availability varies minute to minute (see TASK_STATE.source_registry.point_in_time_variance)."
+  ],
+  "totals": {
+    "probed": 300,
+    "tcp_ok": 91,
+    "reached_gate": 14,
+    "with_2plus_samples": 5,
+    "admitted": 1,
+    "rejected": 299
+  },
+  "rejection_reasons": {
+    "TCP_TIMEOUT": 191,
+    "TCP_REFUSED": 44,
+    "BAD_STATUS": 31,
+    "PROXY_AUTH_REQUIRED": 19,
+    "NOT_MEASURED": 6,
+    "UNRELIABLE": 4,
+    "TOO_SLOW_P95": 3,
+    "TLS_FAILED": 1
+  },
+  "rejection_stages": {
+    "S2_TCP": 209,
+    "S3_PROTOCOL": 77,
+    "S4_S5_GATE": 13
+  },
+  "k_gt_1_evidence": {
+    "note": "these are the rules the k=1 P04 replay COULD NOT test",
+    "proxies_with_multiple_samples": 5,
+    "jitter_computed_for": 5,
+    "rejected_too_jittery": 0,
+    "rejected_unreliable": 4,
+    "rejected_transparent_leak": 0,
+    "rejected_content_mismatch": 0,
+    "rejected_not_measured": 6
+  },
+  "admitted_detail": [
+    {
+      "endpoint": "190.97.236.129:999",
+      "tcp_ok": true,
+      "tcp_ms": 92.7,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 5,
+      "successful": 5,
+      "samples_ms": [
+        874.5,
+        855.5,
+        817.7,
+        911.4,
+        841.4
+      ],
+      "sample_reasons": [],
+      "integrity_reason": "OK",
+      "observed_anonymity": "anonymous",
+      "stage": "S4_S5_GATE",
+      "p50_ms": 855.5,
+      "p95_ms": 874.5,
+      "stdev_ms": 35.4,
+      "success_ratio": 1.0,
+      "jitter": 0.041,
+      "admitted": true,
+      "reason": "OK",
+      "grade": "GOOD"
+    }
+  ],
+  "sample_of_gate_reachers": [
+    {
+      "endpoint": "180.191.231.112:8082",
+      "tcp_ok": true,
+      "tcp_ms": 235.8,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 2,
+      "successful": 0,
+      "samples_ms": [],
+      "sample_reasons": [
+        "TCP_TIMEOUT",
+        "TCP_TIMEOUT"
+      ],
+      "stage": "S4_S5_GATE",
+      "p50_ms": null,
+      "p95_ms": null,
+      "stdev_ms": null,
+      "success_ratio": 0.0,
+      "jitter": null,
+      "admitted": false,
+      "reason": "NOT_MEASURED",
+      "grade": "REJECTED"
+    },
+    {
+      "endpoint": "103.130.61.61:8081",
+      "tcp_ok": true,
+      "tcp_ms": 234.1,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 4,
+      "successful": 2,
+      "samples_ms": [
+        7659.2,
+        4100.7
+      ],
+      "sample_reasons": [
+        "TCP_TIMEOUT",
+        "TCP_TIMEOUT"
+      ],
+      "integrity_reason": "OK",
+      "observed_anonymity": "anonymous",
+      "stage": "S4_S5_GATE",
+      "p50_ms": 5880.0,
+      "p95_ms": 4100.7,
+      "stdev_ms": 2516.3,
+      "success_ratio": 0.5,
+      "jitter": 0.428,
+      "admitted": false,
+      "reason": "UNRELIABLE",
+      "grade": "REJECTED"
+    },
+    {
+      "endpoint": "103.4.76.233:1111",
+      "tcp_ok": true,
+      "tcp_ms": 1243.0,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 2,
+      "successful": 0,
+      "samples_ms": [],
+      "sample_reasons": [
+        "TCP_TIMEOUT",
+        "TCP_TIMEOUT"
+      ],
+      "stage": "S4_S5_GATE",
+      "p50_ms": null,
+      "p95_ms": null,
+      "stdev_ms": null,
+      "success_ratio": 0.0,
+      "jitter": null,
+      "admitted": false,
+      "reason": "NOT_MEASURED",
+      "grade": "REJECTED"
+    },
+    {
+      "endpoint": "124.83.110.175:8081",
+      "tcp_ok": true,
+      "tcp_ms": 1248.3,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 3,
+      "successful": 1,
+      "samples_ms": [
+        2093.6
+      ],
+      "sample_reasons": [
+        "TCP_TIMEOUT",
+        "TCP_TIMEOUT"
+      ],
+      "integrity_reason": "TCP_TIMEOUT",
+      "observed_anonymity": "unknown",
+      "stage": "S4_S5_GATE",
+      "p50_ms": 2093.6,
+      "p95_ms": 2093.6,
+      "stdev_ms": null,
+      "success_ratio": 0.3333333333333333,
+      "jitter": null,
+      "admitted": false,
+      "reason": "UNRELIABLE",
+      "grade": "REJECTED"
+    },
+    {
+      "endpoint": "95.254.142.165:3128",
+      "tcp_ok": true,
+      "tcp_ms": 202.4,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 5,
+      "successful": 4,
+      "samples_ms": [
+        4045.9,
+        4029.5,
+        6413.4,
+        3915.0
+      ],
+      "sample_reasons": [
+        "TCP_TIMEOUT"
+      ],
+      "integrity_reason": "OK",
+      "observed_anonymity": "anonymous",
+      "stage": "S4_S5_GATE",
+      "p50_ms": 4037.7,
+      "p95_ms": 4045.9,
+      "stdev_ms": 1209.7,
+      "success_ratio": 0.8,
+      "jitter": 0.3,
+      "admitted": false,
+      "reason": "TOO_SLOW_P95",
+      "grade": "REJECTED"
+    },
+    {
+      "endpoint": "114.94.148.37:18080",
+      "tcp_ok": true,
+      "tcp_ms": 236.3,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 2,
+      "successful": 0,
+      "samples_ms": [],
+      "sample_reasons": [
+        "BAD_STATUS",
+        "BAD_STATUS"
+      ],
+      "stage": "S4_S5_GATE",
+      "p50_ms": null,
+      "p95_ms": null,
+      "stdev_ms": null,
+      "success_ratio": 0.0,
+      "jitter": null,
+      "admitted": false,
+      "reason": "NOT_MEASURED",
+      "grade": "REJECTED"
+    },
+    {
+      "endpoint": "124.105.40.93:8181",
+      "tcp_ok": true,
+      "tcp_ms": 1240.8,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 3,
+      "successful": 1,
+      "samples_ms": [
+        3092.3
+      ],
+      "sample_reasons": [
+        "TCP_TIMEOUT",
+        "TCP_TIMEOUT"
+      ],
+      "integrity_reason": "TCP_TIMEOUT",
+      "observed_anonymity": "unknown",
+      "stage": "S4_S5_GATE",
+      "p50_ms": 3092.3,
+      "p95_ms": 3092.3,
+      "stdev_ms": null,
+      "success_ratio": 0.3333333333333333,
+      "jitter": null,
+      "admitted": false,
+      "reason": "UNRELIABLE",
+      "grade": "REJECTED"
+    },
+    {
+      "endpoint": "190.97.236.129:999",
+      "tcp_ok": true,
+      "tcp_ms": 92.7,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 5,
+      "successful": 5,
+      "samples_ms": [
+        874.5,
+        855.5,
+        817.7,
+        911.4,
+        841.4
+      ],
+      "sample_reasons": [],
+      "integrity_reason": "OK",
+      "observed_anonymity": "anonymous",
+      "stage": "S4_S5_GATE",
+      "p50_ms": 855.5,
+      "p95_ms": 874.5,
+      "stdev_ms": 35.4,
+      "success_ratio": 1.0,
+      "jitter": 0.041,
+      "admitted": true,
+      "reason": "OK",
+      "grade": "GOOD"
+    },
+    {
+      "endpoint": "86.53.111.249:8080",
+      "tcp_ok": true,
+      "tcp_ms": 89.2,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 5,
+      "successful": 5,
+      "samples_ms": [
+        5902.6,
+        904.8,
+        4188.5,
+        1904.8,
+        903.5
+      ],
+      "sample_reasons": [],
+      "integrity_reason": "OK",
+      "observed_anonymity": "anonymous",
+      "stage": "S4_S5_GATE",
+      "p50_ms": 1904.8,
+      "p95_ms": 4188.5,
+      "stdev_ms": 2210.0,
+      "success_ratio": 1.0,
+      "jitter": 1.16,
+      "admitted": false,
+      "reason": "TOO_SLOW_P95",
+      "grade": "REJECTED"
+    },
+    {
+      "endpoint": "38.137.234.82:999",
+      "tcp_ok": true,
+      "tcp_ms": 58.6,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 2,
+      "successful": 0,
+      "samples_ms": [],
+      "sample_reasons": [
+        "TCP_TIMEOUT",
+        "TCP_TIMEOUT"
+      ],
+      "stage": "S4_S5_GATE",
+      "p50_ms": null,
+      "p95_ms": null,
+      "stdev_ms": null,
+      "success_ratio": 0.0,
+      "jitter": null,
+      "admitted": false,
+      "reason": "NOT_MEASURED",
+      "grade": "REJECTED"
+    },
+    {
+      "endpoint": "119.188.131.55:17981",
+      "tcp_ok": true,
+      "tcp_ms": 343.6,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 5,
+      "successful": 5,
+      "samples_ms": [
+        2936.0,
+        2941.0,
+        2935.4,
+        3224.4,
+        3252.8
+      ],
+      "sample_reasons": [],
+      "integrity_reason": "OK",
+      "observed_anonymity": "unknown",
+      "stage": "S4_S5_GATE",
+      "p50_ms": 2941.0,
+      "p95_ms": 3224.4,
+      "stdev_ms": 165.3,
+      "success_ratio": 1.0,
+      "jitter": 0.056,
+      "admitted": false,
+      "reason": "TOO_SLOW_P95",
+      "grade": "REJECTED"
+    },
+    {
+      "endpoint": "165.99.192.105:1111",
+      "tcp_ok": true,
+      "tcp_ms": 1248.4,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 2,
+      "successful": 0,
+      "samples_ms": [],
+      "sample_reasons": [
+        "TCP_TIMEOUT",
+        "TCP_TIMEOUT"
+      ],
+      "stage": "S4_S5_GATE",
+      "p50_ms": null,
+      "p95_ms": null,
+      "stdev_ms": null,
+      "success_ratio": 0.0,
+      "jitter": null,
+      "admitted": false,
+      "reason": "NOT_MEASURED",
+      "grade": "REJECTED"
+    },
+    {
+      "endpoint": "163.181.207.215:9999",
+      "tcp_ok": true,
+      "tcp_ms": 239.7,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 2,
+      "successful": 0,
+      "samples_ms": [],
+      "sample_reasons": [
+        "BAD_STATUS",
+        "BAD_STATUS"
+      ],
+      "stage": "S4_S5_GATE",
+      "p50_ms": null,
+      "p95_ms": null,
+      "stdev_ms": null,
+      "success_ratio": 0.0,
+      "jitter": null,
+      "admitted": false,
+      "reason": "NOT_MEASURED",
+      "grade": "REJECTED"
+    },
+    {
+      "endpoint": "202.146.228.251:8088",
+      "tcp_ok": true,
+      "tcp_ms": 233.7,
+      "stage3_ok": true,
+      "discovered_protocol": "http",
+      "attempted": 4,
+      "successful": 1,
+      "samples_ms": [
+        8558.1
+      ],
+      "sample_reasons": [
+        "TCP_TIMEOUT",
+        "TCP_TIMEOUT",
+        "TCP_TIMEOUT"
+      ],
+      "integrity_reason": "TCP_TIMEOUT",
+      "observed_anonymity": "unknown",
+      "stage": "S4_S5_GATE",
+      "p50_ms": 8558.1,
+      "p95_ms": 8558.1,
+      "stdev_ms": null,
+      "success_ratio": 0.25,
+      "jitter": null,
+      "admitted": false,
+      "reason": "UNRELIABLE",
+      "grade": "REJECTED"
+    }
+  ]
+}
