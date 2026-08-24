@@ -65,6 +65,7 @@ def mk(host: str = "1.2.3.4", *, port: int = 8080,
        consecutive_failures: int = 0,
        last_checked: datetime | None = NOW,
        grade: Grade = Grade.GOOD,
+       abandoned_rechecks: int = 0,
        p95_ms: float | None = 400.0) -> Proxy:
     return Proxy(
         endpoint=Endpoint(host=host, port=port),
@@ -76,6 +77,7 @@ def mk(host: str = "1.2.3.4", *, port: int = 8080,
                                success_ratio=1.0),
         anonymity=Anonymity.ANONYMOUS,
         consecutive_failures=consecutive_failures,
+        abandoned_rechecks=abandoned_rechecks,
         last_checked=last_checked,
         first_seen=NOW - timedelta(days=1),
         source_id="test",
@@ -752,8 +754,16 @@ class TestMigration:
 # broken version.
 # ══════════════════════════════════════════════════════════════════════════════
 from atlas.core.ports.probe import (  # noqa: E402
-    PROTOCOL_LADDER, ProbeBound, claim_bound, default_target_timeout_ms,
+    PROTOCOL_LADDER, ProbeBound, ProbePlan, claim_bound,
+    default_target_timeout_ms,
 )
+
+# The artifact measured only the rungs the aiohttp adapter can currently TEST
+# (http, https -- aiohttp-socks is not installed), while `claim_bound` prices
+# every rung in `PROTOCOL_LADDER` on purpose. Named here so the two numbers in
+# the tests below are traceable to that difference rather than looking like one
+# of them is a typo.
+_MEASURED_TESTABLE_RUNGS = 2
 
 
 class TestProbeLifetimeBound:
@@ -829,16 +839,61 @@ class TestProbeLifetimeBound:
         with pytest.raises(ValueError, match="shorter than the worst-case probe"):
             RecheckBudget(probe_ms=120_000)
 
-    def test_the_measured_old_default_is_still_undersized(self):
+    def test_the_bound_reproduces_the_measured_number_rung_for_rung(self):
         """
-        Ties the refusal above to the artifact, so the number is not folklore.
+        Ties the bound to `recheck_bounds.json` so the number is not folklore.
+
+        THE ARTIFACT AND THE CODE DISAGREE ON PURPOSE, and this test pins the
+        disagreement instead of averaging over it. The measurement priced the two
+        rungs the adapter can currently TEST (http, https -- aiohttp-socks is not
+        installed, so the SOCKS rungs cost ~0), giving 59 000 ms per probe and
+        590 000 ms required. `claim_bound` prices all four rungs -- 75 000 and
+        750 000 -- because the adapter's own error message invites aiohttp-socks
+        to be installed, and on that day two free rungs silently become two real
+        requests.
+
+        My first version of this test asserted 590 000 against the live code and
+        failed. That failure was the test being wrong, not the code: pinning the
+        measured number would have quietly converted a deliberate safety margin
+        into a regression the suite demanded. So the assertion is now that the
+        code EQUALS the measurement when restricted to the measured rungs, and
+        EXCEEDS it otherwise -- which catches drift in the arithmetic while
+        leaving the conservatism free to be conservative.
         """
         b = RecheckBudget()
-        assert b.claim_bound().required_ms == 590_000, (
-            "the measured worst case in recheck_bounds.json was 590 000 ms; if "
-            "the probe plan changed, re-measure rather than editing this number"
+        as_measured = claim_bound(
+            b.plan, target_timeout_ms=b.target_timeout_ms,
+            batch=b.max_rechecks, concurrency=b.concurrency,
+            protocol_rungs=_MEASURED_TESTABLE_RUNGS)
+        assert as_measured.per_probe_ms == 59_000, (
+            "recheck_bounds.json measured 59 000 ms per probe over 2 testable "
+            "rungs; if the plan changed, re-measure rather than editing this"
         )
-        assert b.probe_ms == 590_000, "the default must BE the bound"
+        assert as_measured.required_ms == 590_000
+        assert b.claim_bound().required_ms > as_measured.required_ms, (
+            "pricing all 4 ladder rungs must be strictly more conservative than "
+            "pricing the 2 currently-testable ones"
+        )
+        assert b.probe_ms == b.claim_bound().required_ms, (
+            "the default must BE the bound, not a number near it"
+        )
+
+    def test_the_old_default_is_undersized_on_either_reading(self):
+        """
+        The 120 000 ms default was wrong even by the MOST generous accounting.
+
+        Stated separately so the refusal does not rest on the conservative rung
+        count: if someone later installs aiohttp-socks or trims the ladder, the
+        old default is still short, and this test keeps saying so.
+        """
+        b = RecheckBudget()
+        generous = claim_bound(
+            b.plan, target_timeout_ms=b.target_timeout_ms,
+            batch=b.max_rechecks, concurrency=b.concurrency,
+            protocol_rungs=1)
+        assert generous.required_ms > 120_000, (
+            "even pricing a single protocol rung, the old default is too short"
+        )
 
     def test_a_sufficient_claim_is_accepted(self):
         """
@@ -904,8 +959,12 @@ class TestProbeLifetimeBound:
             worst = budget.claim_bound().required_ms
             store.claim_for_probe((row.fingerprint,), now=NOW,
                                   probe_ms=budget.probe_ms)
-            # The probe takes the entire worst case, to the millisecond.
-            at_limit = NOW + timedelta(milliseconds=worst)
+            # One millisecond inside the deadline. NOT `at_limit == deadline`:
+            # the store reclaims on `probe_expires_at <= now`, so the deadline
+            # instant itself is expired -- see the convention test below, which
+            # exists because my first draft of this test assumed the opposite and
+            # would have had me "fix" the store to match the test.
+            at_limit = NOW + timedelta(milliseconds=worst - 1)
             assert store.reclaim_stale_probes(now=at_limit) == 0, (
                 "the claim expired while a probe was still legitimately running"
             )
@@ -918,6 +977,59 @@ class TestProbeLifetimeBound:
         finally:
             store.close()
             tmp.cleanup()
+
+    def test_the_deadline_instant_itself_counts_as_expired(self):
+        """
+        THE CONVENTION, PINNED — and the reason the test above uses `worst - 1`.
+
+        `reclaim_stale_probes` matches `probe_expires_at <= now`, so a claim is
+        dead AT its deadline, not one tick after. This is worth its own test
+        because I got it wrong first: my draft asserted that a probe running for
+        exactly the worst case still held its claim, it failed, and the tempting
+        response was to widen the store's comparison to `<`. That would have
+        edited proven code to satisfy a newer test's assumption.
+
+        Both readings are defensible in isolation; what settles it is that
+        `expire_leases` -- covered by the H3 concurrency work -- already uses
+        `lease_expires_at <= now`. Two deadline mechanisms in one store
+        disagreeing about whether a boundary is inclusive is precisely the kind
+        of near-invisible inconsistency this project keeps finding after the
+        fact, so the probe path follows the lease path and this test says so out
+        loud.
+        """
+        row = mk("10.0.9.11", state=ProxyState.COOLING, consecutive_failures=1,
+                 last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            store.claim_for_probe((row.fingerprint,), now=NOW, probe_ms=1_000)
+            deadline = NOW + timedelta(milliseconds=1_000)
+            assert store.reclaim_stale_probes(
+                now=deadline - timedelta(milliseconds=1)) == 0
+            assert store.reclaim_stale_probes(now=deadline) == 1, (
+                "the deadline instant must be treated as expired, matching "
+                "expire_leases' `lease_expires_at <= now`"
+            )
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_probe_and_lease_expiry_share_one_boundary_convention(self):
+        """
+        NEGATIVE CONTROL for the reasoning above, asserted against the SQL.
+
+        If someone changes one comparison and not the other, the two deadline
+        mechanisms drift apart and nothing else in the suite notices -- each path
+        keeps passing its own tests. Reads the source of both methods and
+        requires the same operator.
+        """
+        import inspect
+        probe_sql = inspect.getsource(SqliteStore.reclaim_stale_probes)
+        lease_sql = inspect.getsource(SqliteStore.expire_leases)
+        assert "probe_expires_at <= ?" in probe_sql
+        assert "lease_expires_at <= ?" in lease_sql, (
+            "the lease path's boundary changed; the probe path above was "
+            "justified by matching it, so they must be reconciled together"
+        )
 
     def test_negative_control_a_short_claim_really_does_get_reclaimed(self):
         """
@@ -944,6 +1056,483 @@ class TestProbeLifetimeBound:
                 now=at_limit) is False, (
                 "the probe's measurement was silently lost -- and the row is now "
                 "claimable by a second worker, which is the double probe"
+            )
+        finally:
+            store.close()
+            tmp.cleanup()
+
+
+class TestAbandonedRechecksAreCounted:
+    """
+    The second half of ADR-039: an abandoned probe must LEAVE A TRACE.
+
+    Measured before the counter existed (`recheck_bounds.json`): 12
+    claim->reclaim cycles, `consecutive_failures` and `total_attempts` both still
+    0, `decide()` returning RECHECK every time, `ever_retired: false`. The abandon
+    path recorded nothing, so no threshold expressed in terms of the existing
+    counters could ever bound the cycle. A permanently crashing proxy was an
+    infinite claim loop that looked, from every counter in the row, like a proxy
+    nothing had happened to.
+    """
+
+    def test_reclaiming_an_abandoned_probe_increments_the_counter(self):
+        row = mk("10.0.10.1", state=ProxyState.COOLING, consecutive_failures=1,
+                 last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            assert store.get(row.fingerprint).abandoned_rechecks == 0
+            store.claim_for_probe((row.fingerprint,), now=NOW, probe_ms=1_000)
+            store.reclaim_stale_probes(now=NOW + timedelta(seconds=2))
+            assert store.get(row.fingerprint).abandoned_rechecks == 1, (
+                "the abandon path must record the abandonment, or no threshold "
+                "can ever see it (recheck_bounds.json: 12 cycles, counter 0)"
+            )
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_the_counter_survives_the_roundtrip_through_the_row(self):
+        """
+        Persistence, not just an in-memory field.
+
+        A counter that lived only in Python would reset on restart, and the whole
+        point is to bound a loop that spans crashes.
+        """
+        row = mk("10.0.10.2", state=ProxyState.COOLING, consecutive_failures=1,
+                 abandoned_rechecks=2, last_checked=NOW - timedelta(hours=2))
+        store, path, tmp = store_with(row)
+        try:
+            store.close()
+            reopened = SqliteStore(path / "pool.db")
+            try:
+                assert reopened.get(row.fingerprint).abandoned_rechecks == 2
+            finally:
+                reopened.close()
+        finally:
+            tmp.cleanup()
+
+    def test_repeated_abandonment_accumulates(self):
+        """
+        Three crash cycles must read as three, not as one repeated.
+        """
+        row = mk("10.0.10.3", state=ProxyState.COOLING, consecutive_failures=1,
+                 last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            for i in range(3):
+                store.claim_for_probe((row.fingerprint,), now=NOW,
+                                      probe_ms=1_000)
+                store.reclaim_stale_probes(now=NOW + timedelta(seconds=2))
+                assert store.get(row.fingerprint).abandoned_rechecks == i + 1
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_a_second_reclaim_does_not_double_count_one_abandonment(self):
+        """
+        Idempotence, which the `state='PROBING'` predicate is what provides.
+
+        Reclaim is called once per pass and a pass can overlap another; a counter
+        that advanced twice for one claim would retire healthy proxies early.
+        """
+        row = mk("10.0.10.4", state=ProxyState.COOLING, consecutive_failures=1,
+                 last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            store.claim_for_probe((row.fingerprint,), now=NOW, probe_ms=1_000)
+            later = NOW + timedelta(seconds=2)
+            assert store.reclaim_stale_probes(now=later) == 1
+            assert store.reclaim_stale_probes(now=later) == 0
+            assert store.get(row.fingerprint).abandoned_rechecks == 1, (
+                "the row left PROBING on the first reclaim, so the second must "
+                "match nothing rather than advance the counter again"
+            )
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_a_completed_probe_clears_the_counter(self):
+        """
+        CONSECUTIVE, as the field's docstring claims. A cumulative counter would
+        retire a healthy long-lived proxy for unrelated crashes spread over weeks
+        -- a restart policy masquerading as a proxy-quality decision.
+        """
+        row = mk("10.0.10.5", state=ProxyState.COOLING, consecutive_failures=1,
+                 abandoned_rechecks=2, last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            store.claim_for_probe((row.fingerprint,), now=NOW, probe_ms=600_000)
+            probed = store.get(row.fingerprint)
+            assert store.complete_probe(
+                probed.record_success(NOW)
+                     .with_state(ProxyState.READY, reason="OK")
+                     .graded(Grade.GOOD), now=NOW) is True
+            assert store.get(row.fingerprint).abandoned_rechecks == 0
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_a_completed_FAILURE_also_clears_the_counter(self):
+        """
+        A probe that REPORTED is not abandoning its claim, even if it reported bad
+        news. `record_failure` clears the abandon counter and advances the failure
+        one, so the row retires on the ladder that describes what actually
+        happened.
+        """
+        row = mk("10.0.10.6", state=ProxyState.COOLING, consecutive_failures=1,
+                 abandoned_rechecks=2, last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            store.claim_for_probe((row.fingerprint,), now=NOW, probe_ms=600_000)
+            probed = store.get(row.fingerprint)
+            assert store.complete_probe(
+                probed.record_failure(NOW, reason="TOO_SLOW_P95")
+                     .with_state(ProxyState.COOLING, reason="TOO_SLOW_P95")
+                     .graded(Grade.REJECTED), now=NOW) is True
+            after = store.get(row.fingerprint)
+            assert after.abandoned_rechecks == 0
+            assert after.consecutive_failures == 2
+        finally:
+            store.close()
+            tmp.cleanup()
+
+
+class TestAbandonedRetirement:
+    """
+    The threshold that actually bounds the loop.
+    """
+
+    def test_a_row_at_the_threshold_is_retired(self):
+        policy = SchedulerPolicy()
+        row = mk("10.0.11.1", state=ProxyState.COOLING, consecutive_failures=1,
+                 abandoned_rechecks=policy.retire_after_abandoned_rechecks,
+                 last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            assert store.retire_abandoned(
+                threshold=policy.retire_after_abandoned_rechecks, now=NOW) == 1
+            after = store.get(row.fingerprint)
+            assert after.state is ProxyState.RETIRED
+            assert after.reason_code == "RETIRED_ABANDONED_RECHECKS", (
+                "the retirement must name the abandon ladder, not be filed "
+                "under a generic failure -- otherwise the two causes are "
+                "indistinguishable in the pool's own records"
+            )
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_a_row_below_the_threshold_is_left_alone(self):
+        """
+        NEGATIVE CONTROL: a retirement that fired on everything would pass the
+        test above while emptying the pool.
+        """
+        policy = SchedulerPolicy()
+        row = mk("10.0.11.2", state=ProxyState.COOLING, consecutive_failures=1,
+                 abandoned_rechecks=policy.retire_after_abandoned_rechecks - 1,
+                 last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            assert store.retire_abandoned(
+                threshold=policy.retire_after_abandoned_rechecks, now=NOW) == 0
+            assert store.get(row.fingerprint).state is ProxyState.COOLING
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_a_leased_row_is_never_retired_by_the_abandon_ladder(self):
+        """
+        H3. The row belongs to a consumer that is using it right now; retiring it
+        would be the clobber defect arriving from a new direction.
+        """
+        row = mk("10.0.11.3", abandoned_rechecks=99)
+        store, _, tmp = store_with(row)
+        try:
+            leased = store.lease(count=1, min_grade=Grade.USABLE,
+                                 lease_ms=60_000, now=NOW)
+            assert len(leased) == 1
+            assert store.retire_abandoned(threshold=1, now=NOW) == 0
+            assert store.get(row.fingerprint).state is ProxyState.LEASED
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_a_probing_row_is_never_retired_from_under_a_live_probe(self):
+        """
+        Retiring mid-probe would make `complete_probe` silently no-op -- its
+        `WHERE state='PROBING'` would stop matching -- turning a measured result
+        into a lost one. A counter-driven cleanup must not be able to discard
+        work that is still in flight.
+        """
+        row = mk("10.0.11.4", state=ProxyState.COOLING, consecutive_failures=1,
+                 abandoned_rechecks=99, last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            store.claim_for_probe((row.fingerprint,), now=NOW, probe_ms=600_000)
+            assert store.retire_abandoned(threshold=1, now=NOW) == 0
+            probed = store.get(row.fingerprint)
+            assert store.complete_probe(
+                probed.record_success(NOW)
+                     .with_state(ProxyState.READY, reason="OK")
+                     .graded(Grade.GOOD), now=NOW) is True, (
+                "the in-flight probe's write-back must still land"
+            )
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_an_already_retired_row_is_not_retired_twice(self):
+        """
+        Otherwise the count inflates with rows retired passes ago and the report
+        stops meaning "retired this pass".
+        """
+        row = mk("10.0.11.5", state=ProxyState.RETIRED, abandoned_rechecks=99,
+                 last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            assert store.retire_abandoned(threshold=1, now=NOW) == 0
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_a_row_PAST_the_threshold_still_retires(self):
+        """
+        `>=`, NOT `==` -- and this test exists because an injection proved nothing
+        was checking it.
+
+        `retire_abandoned`'s docstring already argued the point ("a row that
+        somehow passed the threshold ... must still retire. An equality test is
+        how a guard silently stops firing"), but rewriting the SQL to
+        `abandoned_rechecks = ?` left all 66 tests green. The reasoning was
+        documented and unverified, which is the ADR-023 pattern: prose that
+        describes a guarantee the suite does not actually hold anyone to.
+
+        The overshoot is reachable in practice: lowering
+        `retire_after_abandoned_rechecks` in config leaves existing rows above
+        the new threshold, and with `==` every one of them becomes permanently
+        unretirable -- the exact unbounded loop ADR-039 closed, re-entered
+        through a config edit.
+        """
+        row = mk("10.0.11.9", state=ProxyState.COOLING, consecutive_failures=1,
+                 abandoned_rechecks=7, last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            assert store.retire_abandoned(threshold=3, now=NOW) == 1, (
+                "a row at 7 abandonments against a threshold of 3 must retire; "
+                "an equality test would skip it forever"
+            )
+            assert store.get(row.fingerprint).state is ProxyState.RETIRED
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_decide_also_retires_a_row_past_the_threshold(self):
+        """
+        The same overshoot on the POLICY side, for the same reason.
+        """
+        from atlas.core.policy.lifecycle import PoolAction, decide
+        policy = SchedulerPolicy(retire_after_abandoned_rechecks=3)
+        row = mk("10.0.11.10", state=ProxyState.COOLING,
+                 consecutive_failures=0, abandoned_rechecks=9,
+                 last_checked=NOW - timedelta(hours=2))
+        assert decide(row, policy, now=NOW) is PoolAction.RETIRE
+
+    def test_a_nonsense_threshold_is_refused(self):
+        store, _, tmp = store_with()
+        try:
+            with pytest.raises(ValueError, match="threshold must be >= 1"):
+                store.retire_abandoned(threshold=0, now=NOW)
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_decide_retires_a_row_that_has_abandoned_enough_rechecks(self):
+        """
+        The POLICY branch, not just the SQL: `decide()` must stop returning
+        RECHECK for a row that has earned retirement, or the scheduler keeps
+        spending a full claim to re-learn a recorded fact.
+        """
+        from atlas.core.policy.lifecycle import PoolAction, decide
+        policy = SchedulerPolicy()
+        row = mk("10.0.11.6", state=ProxyState.COOLING, consecutive_failures=0,
+                 abandoned_rechecks=policy.retire_after_abandoned_rechecks,
+                 last_checked=NOW - timedelta(hours=2))
+        assert decide(row, policy, now=NOW) is PoolAction.RETIRE
+
+    def test_decide_still_rechecks_a_row_below_the_threshold(self):
+        """
+        NEGATIVE CONTROL for the branch above.
+        """
+        from atlas.core.policy.lifecycle import PoolAction, decide
+        policy = SchedulerPolicy()
+        row = mk("10.0.11.7", state=ProxyState.COOLING, consecutive_failures=0,
+                 abandoned_rechecks=policy.retire_after_abandoned_rechecks - 1,
+                 last_checked=NOW - timedelta(hours=2))
+        assert decide(row, policy, now=NOW) is PoolAction.RECHECK
+
+    def test_the_two_thresholds_are_independent_knobs(self):
+        """
+        `retire_after_abandoned_rechecks` must not be derived from
+        `retire_after_consecutive_failures`. Tying them would mean one config
+        change silently retuned two different policies -- and they count
+        genuinely different events (a probe that RAN vs one that never reported).
+        """
+        from atlas.core.policy.lifecycle import PoolAction, decide
+        policy = SchedulerPolicy(retire_after_consecutive_failures=99)
+        row = mk("10.0.11.8", state=ProxyState.COOLING, consecutive_failures=0,
+                 abandoned_rechecks=policy.retire_after_abandoned_rechecks,
+                 last_checked=NOW - timedelta(hours=2))
+        assert decide(row, policy, now=NOW) is PoolAction.RETIRE, (
+            "raising the FAILURE threshold must not disable the ABANDON ladder"
+        )
+
+
+class TestAbandonLoopIsBounded:
+    """
+    THE PROPERTY THE ARTIFACT SHOWED WAS FALSE: the loop must terminate.
+    """
+
+    def test_a_permanently_crashing_proxy_eventually_retires(self):
+        """
+        Drives the SAME 12 claim->reclaim cycles the artifact recorded and asserts
+        the row is retired by the end. Before ADR-039 this ran forever with every
+        counter reading zero.
+        """
+        policy = SchedulerPolicy()
+        row = mk("10.0.12.1", state=ProxyState.COOLING, consecutive_failures=1,
+                 last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            retired_at = None
+            for cycle in range(12):
+                now = NOW + timedelta(minutes=30 * cycle)
+                store.reclaim_stale_probes(now=now)
+                if store.retire_abandoned(
+                        threshold=policy.retire_after_abandoned_rechecks,
+                        now=now):
+                    retired_at = cycle
+                    break
+                # the worker claims and then dies without reporting
+                store.claim_for_probe((row.fingerprint,), now=now,
+                                      probe_ms=1_000)
+            assert retired_at is not None, (
+                "12 crash cycles and the row never retired -- exactly the "
+                "unbounded loop recorded in recheck_bounds.json"
+            )
+            assert store.get(row.fingerprint).state is ProxyState.RETIRED
+            assert retired_at <= policy.retire_after_abandoned_rechecks + 1, (
+                f"retired only after {retired_at} cycles, which is more claims "
+                "than the threshold should ever allow"
+            )
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_alternating_abandon_and_failure_still_retires(self):
+        """
+        THE TEST `record_failure`'s DOCSTRING ALREADY PROMISED BY NAME.
+
+        Found by reading that docstring during this pass: it cited this test as
+        pinning the alternating case, and the test did not exist -- the ADR-026
+        defect class (a citation pointing at nothing), which the gate cannot see
+        because `check_adr_claims_are_verifiable` only walks ADR -> code.
+
+        The case is the one where each guard alone is insufficient. Abandon, then
+        fail, then abandon: every completed failure clears `abandoned_rechecks`,
+        and every abandonment leaves `consecutive_failures` untouched. So a proxy
+        alternating between the two advances NEITHER counter monotonically, and a
+        reader could reasonably conclude it cycles forever. It does not, because
+        `consecutive_failures` is cleared only by SUCCESS -- so the failures
+        accumulate across the abandonments and retire it on the failure ladder.
+        That reasoning is exactly the kind this project has been wrong about
+        before, so it is measured here rather than argued.
+        """
+        policy = SchedulerPolicy()
+        row = mk("10.0.12.2", state=ProxyState.COOLING, consecutive_failures=0,
+                 last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            from atlas.core.policy.lifecycle import PoolAction, decide
+            retired = False
+            for cycle in range(40):
+                now = NOW + timedelta(minutes=30 * cycle)
+                store.reclaim_stale_probes(now=now)
+                if store.retire_abandoned(
+                        threshold=policy.retire_after_abandoned_rechecks,
+                        now=now):
+                    retired = True
+                    break
+                current = store.get(row.fingerprint)
+                if decide(current, policy, now=now) is PoolAction.RETIRE:
+                    retired = True
+                    break
+                if cycle % 2 == 0:
+                    # abandon: claim and die
+                    store.claim_for_probe((row.fingerprint,), now=now,
+                                          probe_ms=1_000)
+                else:
+                    # a probe that REPORTS a failure (clears abandoned_rechecks)
+                    store.claim_for_probe((row.fingerprint,), now=now,
+                                          probe_ms=600_000)
+                    probed = store.get(row.fingerprint)
+                    store.complete_probe(
+                        probed.record_failure(now, reason="TOO_SLOW_P95")
+                             .with_state(ProxyState.COOLING,
+                                         reason="TOO_SLOW_P95")
+                             .graded(Grade.REJECTED), now=now)
+            assert retired, (
+                "alternating abandon/failure never retired: each ladder was "
+                "reset by the other, which is the seam both thresholds exist "
+                "to close"
+            )
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_run_once_reports_what_it_retired(self):
+        """
+        The pass must ACCOUNT for the retirement, not perform it silently.
+        """
+        policy = SchedulerPolicy()
+        row = mk("10.0.12.3", state=ProxyState.COOLING, consecutive_failures=1,
+                 abandoned_rechecks=policy.retire_after_abandoned_rechecks,
+                 last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            svc, eng = service(store, FakeClock(), policy=policy)
+            report = asyncio.run(svc.run_once())
+            assert report.retired_abandoned == 1
+            assert eng.seen == [], (
+                "a row retired for abandonment must not also be re-probed in "
+                "the same pass -- that is the claim the threshold exists to "
+                "stop spending"
+            )
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_retirement_runs_before_planning_so_it_cannot_be_bypassed(self):
+        """
+        ORDERING, asserted through observable behaviour rather than by reading
+        `run_once`. If retirement ran after `plan()`, the row would already be a
+        candidate and would take one more claim before dying.
+        """
+        policy = SchedulerPolicy()
+        doomed = mk("10.0.12.4", state=ProxyState.COOLING,
+                    consecutive_failures=1,
+                    abandoned_rechecks=policy.retire_after_abandoned_rechecks,
+                    last_checked=NOW - timedelta(hours=2))
+        healthy = mk("10.0.12.5", state=ProxyState.COOLING,
+                     consecutive_failures=1,
+                     last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(doomed, healthy)
+        try:
+            svc, eng = service(store, FakeClock(), policy=policy)
+            report = asyncio.run(svc.run_once())
+            assert report.retired_abandoned == 1
+            assert eng.seen == [healthy.fingerprint], (
+                "the doomed row must never reach the probe path; only the "
+                "healthy one should have been evaluated"
             )
         finally:
             store.close()
