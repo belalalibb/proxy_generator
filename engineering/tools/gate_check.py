@@ -23,6 +23,9 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import re
+import sys
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -252,6 +255,48 @@ def check_readme_claims(res: Result) -> None:
             "; ".join(bad) if bad else f"{checked} tagged claim(s) re-derived from artifacts")
 
 
+def check_declared_test_count_matches_collection(res: Result) -> None:
+    """
+    ADR-018. TASK_STATE.tests.passed must equal the number of tests pytest can
+    actually COLLECT.
+
+    Earned in P03: README claimed '87 passed' while the suite had grown to 113.
+    The ADR-014(c) tag checked README *against TASK_STATE*, and TASK_STATE was
+    stale by the identical amount -- so two wrong numbers agreed with each other
+    and the gate passed. Cross-checking two documents proves consistency, not
+    truth. This check reaches past both to the code itself.
+
+    Collection only (--collect-only): no test is executed here, so this stays
+    cheap and cannot mask a failing suite -- `make doctor` runs the suite
+    separately, because passing and existing are different facts (ADR-010).
+    """
+    state = ROOT / "engineering" / "TASK_STATE.json"
+    if not state.exists():
+        res.add("declared_test_count_matches_collection", False, "TASK_STATE.json missing")
+        return
+    try:
+        declared = json.loads(state.read_text(encoding="utf-8"))["tests"]["passed"]
+    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        res.add("declared_test_count_matches_collection", False,
+                f"cannot read tests.passed ({type(exc).__name__})")
+        return
+
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", "atlas/tests/unit/", "--collect-only", "-q"],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    m = re.search(r"(\d+)\s+tests? collected", proc.stdout)
+    if not m:
+        res.add("declared_test_count_matches_collection", False,
+                "could not parse pytest collection output")
+        return
+    collected = int(m.group(1))
+    ok = collected == declared
+    res.add("declared_test_count_matches_collection", ok,
+            f"declared {declared}, pytest collects {collected}"
+            + ("" if ok else " -- update TASK_STATE and README together"))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
@@ -265,6 +310,7 @@ def main() -> int:
     check_state_consistency(res)
     check_adr_claims_are_verifiable(res)
     check_readme_claims(res)
+    check_declared_test_count_matches_collection(res)
 
     if args.json:
         print(json.dumps(
