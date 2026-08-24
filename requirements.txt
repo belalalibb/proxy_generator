@@ -1,0 +1,34 @@
+# ATLAS PROXY FABRIC v4 — runtime dependencies
+#
+# Pinned to what is actually installed and verified in this environment
+# (Python 3.13.13). Versions recorded so a rebuild is reproducible rather
+# than "whatever pip resolves today".
+
+# ── async HTTP: source fetching + the probe pipeline ──────────────────────────
+# Replaces the legacy `requests` + ThreadPoolExecutor(100-150 threads) model,
+# which caused 2x HTTP 429 and 3x 403 against its own sources in one sweep (B-08).
+aiohttp==3.13.4
+
+# SOCKS support. ADR-005: protocol is DISCOVERED, not trusted -- a SOCKS list
+# named http.txt yielded 2 853 candidates the legacy code tested as HTTP and
+# discarded (B-12). Needed to probe socks4/socks5 properly.
+aiohttp-socks==0.10.1
+
+# ── config ───────────────────────────────────────────────────────────────────
+PyYAML==6.0.3
+
+# ── api surface ──────────────────────────────────────────────────────────────
+fastapi==0.121.2
+uvicorn==0.41.0
+
+# ── html table parsing (ADR-002 parser kind `html_table`) ─────────────────────
+# Recovered 6 live sources a regex-only audit discarded (P00.T4).
+beautifulsoup4==4.14.3
+
+# ── tests ────────────────────────────────────────────────────────────────────
+pytest==9.0.3
+pytest-asyncio==1.3.0
+
+# NOTE: `requests` is deliberately NOT a dependency of atlas/. It appears in the
+# environment only because engineering/tools/ and the legacy scripts use it, and
+# the legacy files must stay runnable so the baseline stays reproducible (ADR-001).
