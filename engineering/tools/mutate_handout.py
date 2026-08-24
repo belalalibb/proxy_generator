@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 """
-Mutation check for the P08 hand-out layer.
+Mutation check for the hand-out layer (P08, extended in P09.T2 by ADR-035).
+
+ANCHOR DRIFT IS A FAILURE, NOT A SKIP
+
+The ADR-035 rename (`target_ttl_s` -> `recheck_horizon_s`) left this file's
+`stale_reported_as_fresh` anchor matching no source text. The run reported
+`[ERROR] anchor text not found` and counted the mutant as a SURVIVOR rather than
+skipping it quietly, so a stale harness degraded loudly instead of inflating its
+own kill rate. That behaviour is load-bearing: a mutation tool that silently
+skips unmatched anchors reports a perfect score for testing nothing.
 
 WHY THIS EXISTS
 
@@ -82,13 +91,35 @@ MUTATIONS = [
     ),
     Mutation(
         "stale_reported_as_fresh",
-        old="""                stale_for_target = (
-                    age_s is None or age_s > self._policy.target_ttl_s
-                )""",
-        new="""                stale_for_target = False""",
+        old="        return age_s is None or age_s > self._policy.recheck_horizon_s",
+        new="        return False",
         rationale=(
-            "Present 900-second-old evidence as current, silently -- the B-16 "
-            "defect that made 97% of proxy.txt look alive."
+            "Present evidence older than the recheck horizon as current, "
+            "silently -- the B-16 defect that made 97% of proxy.txt look alive."
+        ),
+    ),
+    Mutation(
+        "never_checked_treated_as_fresh_via_comparison",
+        old="        return age_s is None or age_s > self._policy.recheck_horizon_s",
+        new="        return age_s is not None and age_s > self._policy.recheck_horizon_s",
+        rationale=(
+            "Drop the never-checked arm so an unverified proxy reports INSIDE "
+            "the horizon. This is the mutant that SURVIVED while the test "
+            "restated the boolean inline instead of calling `_past_horizon` -- "
+            "a test that re-implements the code under test measures the test "
+            "(ADR-035). It dies only because the predicate is now callable."
+        ),
+    ),
+    Mutation(
+        "unfireable_horizon_accepted",
+        old="        if self._policy.recheck_horizon_s >= self._scoring.max_age_s:",
+        new="        if False:",
+        rationale=(
+            "Drop the ADR-035 construction guard, permitting a horizon at or "
+            "above max_age_s. `rank(include_stale=False)` then drops every row "
+            "the flag could describe, so the flag can never fire and all served "
+            "proxies report fresh at any age -- staleness reported as freshness "
+            "by CONFIGURATION rather than by code."
         ),
     ),
     Mutation(
