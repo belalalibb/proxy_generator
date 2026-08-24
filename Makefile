@@ -12,14 +12,14 @@ TOOLS   := engineering/tools
 
 .DEFAULT_GOAL := help
 .PHONY: help doctor gate test test-unit test-integration lint typecheck \
-        install verify-evidence state clean legacy-baseline sources-audit
+        install verify-evidence state clean legacy-baseline sources-audit test-scope
 
 help:  ## show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
 	  | awk 'BEGIN{FS=":.*?## "}{printf "  \033[1m%-20s\033[0m %s\n", $$1, $$2}'
 
 # ── the gate ──────────────────────────────────────────────────────────────────
-doctor: gate test  ## FULL GATE: evidence integrity, then the test suite
+doctor: gate test  ## FULL GATE: evidence integrity, then the test suite (unit + integration)
 	@echo ""
 	@echo "═══════════════════════════════════════════════════════════════════"
 	@echo " doctor: evidence verified AND tests green."
@@ -28,9 +28,13 @@ doctor: gate test  ## FULL GATE: evidence integrity, then the test suite
 
 gate:  ## verify declared evidence exists + tests are not vacuous (ADR-010)
 	@$(PY) $(TOOLS)/gate_check.py
+	@$(PY) $(TOOLS)/check_test_scope.py
 
-test:  ## run the whole suite
+test:  ## run the whole suite (unit AND integration -- verified by `make test-scope`)
 	@$(PYTEST) -q
+
+test-scope:  ## prove `make test` really includes the integration tests
+	@$(PY) $(TOOLS)/check_test_scope.py
 
 test-unit:  ## unit tests only (must need no network)
 	@$(PYTEST) -q atlas/tests/unit
@@ -39,13 +43,18 @@ test-integration:  ## integration tests (may touch sqlite/network)
 	@$(PYTEST) -q atlas/tests/integration
 
 # ── evidence tooling ──────────────────────────────────────────────────────────
-verify-evidence:  ## re-derive the Phase-0 figures and reconcile them
+verify-evidence:  ## re-derive the measured figures and reconcile them
 	@$(PY) $(TOOLS)/verify_bug_lines.py
 	@$(PY) $(TOOLS)/verify_geonode_parser.py
+	@$(PY) $(TOOLS)/verify_baseline_streams.py
+	@$(PY) $(TOOLS)/measure_lease_concurrency.py
 
+# reprobe_empty.py was lost to a platform sync and its structured parsers were
+# absorbed into probe_legacy_sources.py (see TASK_STATE.superseded_files), so the
+# single probe pass now covers json_path + html_table. Invoking the deleted tool
+# here made `make sources-audit` fail on a missing file.
 sources-audit:  ## re-probe the legacy source list (NETWORK; new dated snapshot)
 	@$(PY) $(TOOLS)/probe_legacy_sources.py
-	@$(PY) $(TOOLS)/reprobe_empty.py
 
 legacy-baseline:  ## re-measure the legacy baseline (NETWORK, slow)
 	@$(PY) $(TOOLS)/measure_baseline.py
