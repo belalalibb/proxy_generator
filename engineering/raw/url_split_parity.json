@@ -1,0 +1,28 @@
+{
+  "generated_by": "engineering/tools/url_split_parity.py",
+  "oracle": "urllib.parse.urlsplit (CPython 3.13.13)",
+  "curated_cases": 32,
+  "fuzz_cases": 200000,
+  "divergences": 0,
+  "divergence_examples": [],
+  "stricter_refusals": 1,
+  "stricter_examples": [
+    {
+      "url": "http://.]0@2@[::?:9[-",
+      "kind": "stricter_refusal",
+      "mine": [
+        "http",
+        null,
+        null,
+        "MALFORMED"
+      ],
+      "oracle": [
+        "http",
+        "::",
+        null,
+        null
+      ]
+    }
+  ],
+  "verdict": "PARITY"
+}
