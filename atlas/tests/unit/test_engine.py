@@ -503,12 +503,30 @@ async def test_max_sources_bounds_the_cycle():
 
 @runs_async
 async def test_max_probes_bounds_total_work():
+    """
+    The budget is a CEILING ON WORK DONE, not merely a ceiling.
+
+    `assert report.probed <= 3` alone is satisfied by a cycle that probes
+    NOTHING, so it cannot tell "budget enforced" from "engine starved". Proven by
+    mutation: starving run_cycle (never probing) left that assertion green, while
+    deleting the clamp did fail it. A one-sided bound is half a test -- the
+    ADR-010 "test that cannot fail" class, in its subtler form where the test
+    fails for the mutant you thought of and passes for the one you did not.
+
+    So both sides are asserted: the cap holds AND the cap is what stopped it.
+    8 candidates are offered and exactly 3 must be probed -- equality, so
+    over-probing and under-probing are both failures.
+    """
     probe = ScriptedProbe({f"45.62.100.{i}:80": {"samples": [200.0] * 5}
                            for i in range(1, 9)})
     cands = tuple(f"45.62.100.{i}:80" for i in range(1, 9))
     eng = engine(probe, FakeSourcePort({"s1": okfetch("s1", cands)}), FakeStore())
     report, _ = await eng.run_cycle((mksource(),), CycleBudget(max_probes=3))
-    assert report.probed <= 3
+    assert report.probed == 3, (
+        f"expected the budget to bind at exactly 3, got {report.probed} "
+        "(0 means the engine was starved, not bounded)")
+    # and the probe itself agrees -- the report is not just self-consistent
+    assert len(probe.sampled) == 3
 
 
 def test_a_zero_budget_is_refused():
