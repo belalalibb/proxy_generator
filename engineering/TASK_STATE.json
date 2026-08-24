@@ -1,7 +1,7 @@
 {
  "version": "4.0.0",
- "updated_at": "2026-08-24T13:05:00Z",
- "current_phase": "P07_SCORING_ENGINE",
+ "updated_at": "2026-08-24T00:00:00Z",
+ "current_phase": "P08_HANDOUT_API",
  "phase_gate_status": {
   "P00": "PASSED",
   "P01": "PASSED",
@@ -11,7 +11,7 @@
   "P05": "PASSED",
   "P06": "PASSED",
   "P07": "PASSED",
-  "P08": "TODO",
+  "P08": "PASSED",
   "P09": "TODO",
   "P10": "TODO",
   "P11": "TODO",
@@ -645,6 +645,41 @@
    ],
    "attempts": 1,
    "notes": "RECOVERY FIRST: a mutation-testing run was interrupted mid-experiment and an auto-sync COMMITTED the mutant (url.py with the IPv6 validation replaced by 'pass'), while /tmp lost the backup. No clean copy existed in git history. The block was reconstructed and verified verbatim against CPython on 13 curated cases before any new work. THEN, extending the fuzz to the bracketed shape it had never generated exposed two REAL more-permissive-than-oracle defects: (1) the zone id was split off before validation on the documented but FALSE premise that ipaddress rejects RFC 6874 scopes (it has accepted them since 3.9), so '::%aa_%' was returned as a host CPython refuses; (2) the loose bracket class swallowed a fragment, accepting 'http://[::a%8e#?b8]'. Measured over 400k bracket-focused inputs: accepts-what-CPython-refuses 34 -> 0. The 8 remaining divergences are the SAFE direction and predate this work; now pinned by exact count. Teeth proven by injection in both directions (4 tests / 3 tests)."
+  },
+  {
+   "id": "P08.T1",
+   "phase": "P08",
+   "status": "DONE",
+   "title": "Hand-out API: lease via StorePort, caller-supplied target validated at lease time, P07 scoring to rank",
+   "evidence": [
+    "atlas/engine/handout.py::HandoutPolicy",
+    "atlas/engine/handout.py::HandoutResult.ok",
+    "atlas/tests/unit/test_handout.py::FakeStore.lease"
+   ],
+   "notes": "Layer ABOVE the lease primitive only: no re-implementation of lease/release/expire_leases (P05.T1 compare-and-set stands, H3 proven under real concurrency in P05.T3). Target is caller-supplied and validated at lease time per ADR-007 -- no default target on any path. max_requests_per_host_per_min remains deliberately absent from the pure policy (ADR-029, P09)."
+  },
+  {
+   "id": "P08.T2",
+   "phase": "P08",
+   "status": "DONE",
+   "title": "Mutation harness for the hand-out: 7 injected defects, all killed",
+   "evidence": [
+    "engineering/tools/mutate_handout.py::run_suite",
+    "engineering/raw/handout_mutation.json",
+    "atlas/tests/integration/test_handout_store.py::test_handout_grants_from_a_real_sqlite_pool"
+   ],
+   "notes": "Re-run independently on resume after the re-clone: 7/7 killed, baseline 38 passed. The suite is load-bearing rather than decorative -- target_checked_after_lease, no_overselect and stale_reported_as_fresh each fail multiple tests. Mutations are applied to a COPY; the on-disk source is never left broken between steps."
+  },
+  {
+   "id": "P08.T3",
+   "phase": "P08",
+   "status": "DONE",
+   "title": "Two guard defects found by using the guards: qualified evidence symbols, and unguarded README phase prose",
+   "evidence": [
+    "engineering/tools/gate_check.py::check_declared_evidence",
+    "engineering/tools/gate_check.py::check_state_consistency"
+   ],
+   "notes": "(a) done_tasks_have_evidence collected a FLAT AST name set, so Class::method -- a node id pytest itself collects -- was rejected as nonexistent. Now resolves qualified names; strictness re-proven both directions (a real method under the WRONG class still fails). (b) A sandbox re-clone reverted TASK_STATE to P08=TODO while auto-sync had preserved README's 'P08 gate PASSED'. All 17 checks passed on that contradiction, because verify: anchors cover NUMBERS and nothing compared README's phase PROSE to phase_gate_status. Added readme_phase_claim_matches_state, confirmed FAILING on the live contradiction before fixing it. PROCESS, earned the hard way: I reported this phase complete last turn from a commit that was never pushed and did not survive the re-clone. Report state only from what is on disk AND pushed."
   }
  ],
  "files_changed": [
@@ -707,7 +742,12 @@
   "engineering/tools/verify_baseline_streams.py",
   "engineering/tools/verify_bug_lines.py",
   "engineering/tools/verify_geonode_parser.py",
-  "engineering/tools/verify_units.py"
+  "engineering/tools/verify_units.py",
+  "atlas/engine/handout.py",
+  "atlas/tests/unit/test_handout.py",
+  "atlas/tests/integration/test_handout_store.py",
+  "engineering/tools/mutate_handout.py",
+  "engineering/raw/handout_mutation.json"
  ],
  "tests": {
   "total": 467,
@@ -718,7 +758,7 @@
  },
  "open_failures": [],
  "blockers": [],
- "next_action": "P08 -- HAND-OUT API. Prerequisites now genuinely clear: the ADR-031 gap is closed (P08.T0) and the ADR-032 splitter defects are fixed (P08.T0b), so target validation rests on a splitter measured against CPython and a config loader whose failure modes are tested rather than merely documented. SCOPE, unchanged from the P07 hand-off and re-verified this session: do NOT re-implement lease/release/expire_leases -- SqliteStore.lease() is already a single BEGIN IMMEDIATE compare-and-set (P05.T1), H3 is proven under real process concurrency with a committed negative control (P05.T3), and an independent append-only lease_log audit exists (P05.T5). Remaining work is ONLY the layer above: (a) lease via the existing StorePort, (b) validate the CALLER-SUPPLIED target at lease time (ADR-007: no default target ever; 90s target_ttl from B-16), (c) rank candidates with P07 scoring, (d) release or expire on failure. CARRY FORWARD: max_requests_per_host_per_min is P09 scope, deliberately unimplemented in the pure policy (ADR-029) -- do not fake it in a pure function. SCHEMA DEBT, still open: 20 of 49 task records predate the 'phase' key, so tooling must read the id prefix, not t['phase']. PROCESS NOTE, earned this session: auto-sync can COMMIT a file mid-experiment and /tmp does not survive between turns. Never leave a deliberately broken file on disk between steps -- mutate in memory (exec a patched source string) and keep the on-disk copy clean.",
+ "next_action": "P09 -- SCHEDULER + RATE LIMITING. Two items inherited from P08, neither faked to get green: (1) ADR-029 max_requests_per_host_per_min is still unimplemented in the pure policy -- it needs real clock/state, so implement it in the scheduler layer, not by smuggling I/O into a pure function. (2) ADR-033 TTL CONFLICT, still unreconciled: B-16 says 90s target_ttl, the scheduler assumes 900s. The hand-out currently grants AND sets revalidation_required, which is honest but defers the decision; P09 must reconcile it, not re-report it. SCHEMA DEBT: 20 of 49+ task records predate the 'phase' key -- read the id prefix, never t['phase']. PROCESS: a sandbox re-clone can revert TASK_STATE while auto-sync preserves other files; unpushed commits are LOST. Verify state from disk at resume, and push before reporting a phase complete.",
  "invariants_verified": {
   "H1_evidence_for_every_claim": true,
   "H2_no_fabricated_numbers": true,
@@ -831,11 +871,7 @@
   "labels_verified": 0,
   "note": "ENABLED==67 asserted equal to snapshot ACTIVE by test, so the registry cannot silently invent or lose sources. No label_is_verified is true: zero proxies probed yet."
  },
- "gate_checks": {
-  "total": 17,
-  "passing": 17,
-  "note": "CORRECTED 2026-08-24 (second resume): this field said 16/16. Reality (`python3 engineering/tools/gate_check.py | grep -c '\\[PASS\\]'`) prints 17 named PASS lines. The 17th is cited_adrs_exist, added by P07.T5 itself -- the check was written and the counter beside it was not incremented, so the ledger under-reported its own coverage. Previous note claimed 16 from 13 `def check_` functions; the def-count is still not the check-count (several functions emit more than one named check), which is why the printed PASS lines are the authority, not the source shape."
- },
+ "gate_checks": 18,
  "h3_measurement": {
   "artifact": "engineering/raw/lease_concurrency.json",
   "head_to_head": {
