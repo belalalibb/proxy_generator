@@ -81,7 +81,12 @@ Single sample, and `ms` is **recorded but never used as an admission criterion**
 
 **Measured impact** (`BASELINE.json`, from the user's own 1 418.98 s run):
 accepted proxies had **p50 = 6 359.5 ms**, **p95 = 15 903 ms**, **max 19 035 ms**;
-**95.8 %** of accepted proxies exceeded 1 500 ms and **56.8 %** exceeded 5 000 ms.
+**95.1 %** exceeded 1 500 ms and **58.8 %** exceeded 5 000 ms (all four figures from
+the **n=102** `proxy_details.json` stream).
+
+> The n=118 `proxy_scraper.log` stream of the same run gives **95.8 %** / **56.8 %**.
+> Quoting those two beside this stream's p50 was a real defect in this document,
+> corrected under ADR-020: every number was true, the sentence was not.
 
 **v4 resolution:** k=5 samples → p50/p95/jitter/throughput; admission gate on **p95** (never `min`);
 calibrated thresholds (§8); target metric `pool_p95_proxy_latency ≤ 900 ms`.
