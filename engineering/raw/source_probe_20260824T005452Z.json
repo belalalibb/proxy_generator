@@ -1,0 +1,55 @@
+{
+  "task": "P00.T3/T4/T5",
+  "generator": "engineering/tools/probe_legacy_sources.py",
+  "rebuilt_after_sync_loss": true,
+  "snapshot_not_reproduction": true,
+  "network_used": true,
+  "measured_at_utc": "20260824T005452Z",
+  "note": "A past network read cannot be reproduced. This is a NEW snapshot; engineering/SOURCE_INVENTORY.json is retained unchanged as the 2026-08-23 record. Comparison is point-in-time, not a diff of truth.",
+  "params": {
+    "concurrency": 12,
+    "per_host_concurrency": 2,
+    "per_host_delay_s": 1.0,
+    "timeout_s": 20,
+    "excluded": "2captcha.com (H5/ADR-007), malformed bare scheme"
+  },
+  "wall_clock_s": 0.8,
+  "urls_probed": 1,
+  "verdicts": {
+    "ALIVE_JSON": 1
+  },
+  "total_unique_candidates": 500,
+  "recovered_by_structured_parser": 1,
+  "recovered_detail": [
+    {
+      "url": "https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc&protocols=https",
+      "parser": "json_path",
+      "candidates": 500
+    }
+  ],
+  "failure_breakdown": {},
+  "results": [
+    {
+      "url": "https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc&protocols=https",
+      "host": "proxylist.geonode.com",
+      "verdict": "ALIVE_JSON",
+      "elapsed_ms": 339.3,
+      "fetched_at_utc": "2026-08-24T00:54:52.021709+00:00",
+      "http_status": 200,
+      "bytes": 230019,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 500,
+        "html_table": 0
+      },
+      "best_parser": "json_path",
+      "unique_candidates": 500,
+      "recovered_by_structured_parser": true,
+      "body_bytes": 230067,
+      "content_length": null,
+      "content_type": "application/json",
+      "short_read": false,
+      "body_truncated_at_cap": false
+    }
+  ]
+}
