@@ -701,6 +701,24 @@
    ],
    "attempts": 1,
    "notes": "Lives in engine/, NOT core/policy: a limiter needs a clock and mutable state and core/ may have neither (test_architecture.py). Monotonic not wall-clock (a clock jump would bypass or lock out); sliding not fixed window (a fixed one admits 2x the rate across the boundary -- reproduced as a negative control that admits 6 where this admits 3); bounded host table that FAILS CLOSED (LIMITER_SATURATED) because evicting a live host would reset its budget and make the memory cap a bypass. check() and consume() are separate so a refusal elsewhere does not spend the host's budget. Host identity de-duplicated into core canonical_host(): check_target and host_matches_deny each had their own inline .lower().rstrip('.'), and a limiter with a different notion of identity would give 'a.com.' its own bucket and silently double the rate. Extraction verified behaviour-preserving by the 467 pre-existing tests. KNOWN LIMIT, stated in the class docstring: per-process only, so N workers means N budgets; a cross-process limit needs shared storage (P11)."
+  },
+  {
+   "id": "P09.T2",
+   "status": "DONE",
+   "title": "ADR-035: withdraw the unimplementable 90s per-target TTL; one horizon, the one the system drives",
+   "evidence": [
+    "atlas/engine/handout.py::HandoutPolicy",
+    "atlas/engine/handout.py::HandoutService",
+    "atlas/engine/handout.py::Granted",
+    "atlas/tests/unit/test_handout.py::TestFreshnessIsReported.test_the_deleted_90s_ttl_no_longer_flags_anything",
+    "atlas/tests/unit/test_handout.py::TestFreshnessIsReported.test_a_horizon_at_or_above_max_age_is_refused_at_construction",
+    "atlas/tests/unit/test_handout.py::TestFreshnessIsReported.test_never_checked_counts_as_past_the_horizon_not_inside_it",
+    "atlas/tests/unit/test_handout.py::TestFreshnessIsReported.test_the_horizon_boundary_is_not_off_by_one",
+    "atlas/tests/unit/test_handout.py::TestFreshnessIsReported.test_just_below_max_age_is_accepted_and_the_flag_is_observable",
+    "engineering/raw/handout_mutation.json",
+    "engineering/DECISIONS.md::ADR-035"
+   ],
+   "note": "Docs for this task were already on disk from a PARTIAL sync (see BLK-02); only the CODE was missing and was re-implemented against the synced ADR-035 spec, whose premise was independently re-verified against store_sqlite.py (single `last_checked TEXT`, no target-keyed table). 507 passed; 9/9 mutants killed with baseline 42 -- both matching the numbers ADR-035 and README already claimed, which is what closed the split-brain."
   }
  ],
  "files_changed": [
@@ -771,23 +789,30 @@
   "engineering/raw/handout_mutation.json"
  ],
  "tests": {
-  "total": 503,
-  "passed": 503,
+  "total": 507,
+  "passed": 507,
   "failed": 0,
-  "breakdown": "486 unit + 17 integration. P09.T1 added 36 unit (test_rate_limit.py) over the 467 at the P08 gate.",
+  "breakdown": "490 unit + 17 integration. P09.T2 added 4 net unit tests in test_handout.py (38 -> 42) over the 503 after P09.T1.",
   "note": "An intermittent single warning appears in roughly 1 run in 4, from integration teardown (SIGKILL child / multiprocessing). Not reproduced on demand; recorded rather than silently dropped."
  },
  "open_failures": [],
  "blockers": [
   {
    "id": "BLK-01",
-   "severity": "HIGH",
+   "severity": "LOW",
    "title": "git push fails: no GitHub credential in the sandbox",
-   "detail": "`git push -u origin genspark_ai_developer` -> 'could not read Username for https://github.com'; setup_github_environment reports no valid authorization. P09.T1 is committed locally (8eab856) with make doctor green at 18/18 and 503 tests, but it is NOT pushed. This project has already lost uncommitted work to a sandbox re-clone twice (most recently the previous session's rate_limit.py edits, which the edit tool reported as successful). An unpushed commit is one re-clone from the same fate, so work was STOPPED at this milestone rather than accumulating more unpushable progress.",
+   "detail": "`git push -u origin genspark_ai_developer` -> 'could not read Username for https://github.com'; setup_github_environment reports no valid authorization. P09.T1 is committed locally (8eab856) with make doctor green at 18/18 and 503 tests, but it is NOT pushed. This project has already lost uncommitted work to a sandbox re-clone twice (most recently the previous session's rate_limit.py edits, which the edit tool reported as successful). An unpushed commit is one re-clone from the same fate, so work was STOPPED at this milestone rather than accumulating more unpushable progress. [P09 UPDATE, corrected twice] The 3rd re-clone destroyed 3 local commits yet every file survived via platform sync; the 4th destroyed b91218d and this time the sync was PARTIAL (docs only, see BLK-02). Conclusion: persistence does not depend on my pushes, so stopping work over the push failure was an over-reaction -- but the sync is not atomic either, so a milestone can land half-applied. Neither mechanism is trustworthy alone: VERIFY FROM DISK at every resume, and treat `make doctor` as the detector of record. Push remains unavailable: a DELIVERY gap, not a data-loss risk.",
    "next_step": "Authorize GitHub (App or OAuth), re-run setup_github_environment, then `git push -u origin genspark_ai_developer` and open the PR to main. Re-verify from disk first: if the sandbox was re-cloned again, commit 8eab856 is gone and P09.T1 must be redone from the ADR-034 spec in DECISIONS.md, which IS pushed only if this commit landed -- check before assuming."
+  },
+  {
+   "id": "BLK-02",
+   "severity": "RESOLVED",
+   "title": "Partial platform sync produced a docs/code split-brain for P09.T2",
+   "detail": "Fourth sandbox re-clone. Commit b91218d (P09.T2) is gone -- `git cat-file -t b91218d` reports 'not a valid object name'. The platform sync committed the DOCUMENTATION side of T2 but NOT the code side: on disk we have ADR-035 (full spec), the B-16 correction, the ANALYSIS 3.3 row citing ADR-035, and README 'Tests 507' -- while atlas/engine/handout.py still has target_ttl_s=90.0 / revalidation_required, test_handout.py has 38 tests (not 42), mutate_handout.py still anchors on target_ttl_s, and handout_mutation.json is the P08 artifact (7 mutations, baseline 38) not T2's (9, baseline 42). `make doctor` caught it: readme_numbers_have_artifacts FAILED (TASK_STATE 503 vs README 507). So documentation described code that did not exist -- the exact ADR-014/022/023 defect class, this time created by infrastructure rather than by hand. [RESOLVED] The code side was re-implemented and now MATCHES the synced docs: 507 collected (README's claim), test_handout.py at 42, mutate_handout.py retargeted to the new predicate, handout_mutation.json regenerated at 9/9 with baseline 42 (ADR-035's claim). make doctor green at 18/18.",
+   "next_step": "Re-implement the T2 CODE to match the already-synced ADR-035 spec (which is authoritative and was independently re-verified against store_sqlite.py: single `last_checked TEXT`, no target-keyed table). Do NOT rewrite the synced docs."
   }
  ],
- "next_action": "BLOCKED ON PUSH (see blockers[BLK-01]) -- resolve the GitHub credential and push commit 8eab856 BEFORE starting new work; two sessions of work have already been lost to re-clones and an unpushed commit is at the same risk.\n\nTHEN P09.T2 -- RECONCILE THE ADR-033 TTL CONFLICT, do not re-report it. B-16 specifies target_ttl=90s for per-target validity; config.yaml scheduler.recheck_ready_after_s is 900s. Both cannot hold: refusing everything older than 90s serves almost nothing from a pool rechecked every 900s, and ignoring the TTL presents 900s-old evidence as current. P08 granted AND set revalidation_required, which is honest but defers. T2 must PICK a reconciliation and write an ADR justifying it. The two candidates identified so far: (a) drive recheck at the TTL for the READY subset only -- bounded extra probing, keeps the 90s claim truthful for served proxies; (b) redefine target_ttl as an evidence-age DISCLOSURE rather than a validity bound, and delete the 90s-as-guarantee reading from B-16. Do not add a third number. Then P09.T3 scheduler loop (recheck/discovery/retire over the injected clock), T4 mutation harness for the scheduler, T5 gate + push.\n\nPROCESS, RE-CONFIRMED THIS SESSION: a sandbox re-clone reverted the tree to the last pushed commit and silently discarded edits the tool had reported as applied. Verify from disk at resume; a green `make doctor` on 138/138 evidence paths is what confirmed P00-P08 this time. SCHEMA DEBT: the earliest task records predate the 'phase' key -- read the id prefix, never t['phase'].",
+ "next_action": "P09.T3 -- the scheduler loop. MEASURED, not assumed: scheduler.recheck_ready_after_s, discovery_interval_s, retire_after_consecutive_failures and max_pool_size have ZERO Python readers (only a comment in scoring.py and the handout.py docstring). That is the ADR-019 defect class for the sixth time, and ADR-035 has now made the 900 s value load-bearing on the serving path while nothing yet drives the recheck it names -- so past_recheck_horizon can currently only ever become MORE true. Build the loop that reads those four keys.",
  "invariants_verified": {
   "H1_evidence_for_every_claim": true,
   "H2_no_fabricated_numbers": true,
