@@ -143,7 +143,10 @@ def classify(status: int | None, body: str, err: str | None,
     )
     detail = {
         "http_status": status,
-        "bytes": len(body),
+        # ADR-015: `body` is the DECODED str, so len() is a CHARACTER count.
+        # Named accordingly; the true octet count is `body_bytes` in fetch_meta.
+        # Measured: geonode_body.txt is 230067 bytes but 230019 chars (45 non-ASCII).
+        "body_chars": len(body),
         "parsed": {"regex_adjacent": len(adj), "json_path": len(js),
                    "html_table": len(tbl)},
         "best_parser": best_name,
