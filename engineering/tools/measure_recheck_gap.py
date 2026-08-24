@@ -154,15 +154,22 @@ def _ready_row(host: str, *, last_checked: datetime | None) -> Proxy:
     )
 
 
-def measure_lease_clobber() -> dict:
+def measure_lease_clobber(after: bool = False) -> dict:
     """
-    Does a naive recheck write-back destroy a live lease?
+    Does a recheck write-back destroy a live lease?
 
     Sequence, all against a real store:
       1. a READY row, last checked long ago -> `plan()` calls it recheck_ready
       2. a consumer leases it (state LEASED, lease_id set)
-      3. the recheck finishes and upserts the probed copy it loaded at step 1
+      3. the recheck finishes and writes back the copy it loaded at step 1
       4. inspect what the pool holds
+
+    `after=False` writes back the way `process_source` does today
+    (`upsert_many`, unconditional). `after=True` uses the ADR-038 path
+    (`claim_for_probe` then `complete_probe`). SAME SEQUENCE, SAME HAZARD, one
+    variable changed -- otherwise the two arms would not be comparable and the
+    "after" column would be measuring a different experiment (the ADR-020/022
+    splice defect, which this project has now committed twice).
     """
     policy = SchedulerPolicy(recheck_ready_after_s=900.0)
     with tempfile.TemporaryDirectory() as tmp:
@@ -175,43 +182,82 @@ def measure_lease_clobber() -> dict:
             plan = sched.plan()
             selected = [p.endpoint.host for p in plan.recheck_ready]
 
+            # ADR-038 inserts the claim HERE, between planning and probing.
+            claimed = ()
+            if after:
+                claimed = store.claim_for_probe(
+                    tuple(p.fingerprint for p in plan.recheck_ready),
+                    now=NOW, probe_ms=60_000)
+
             # (2) a consumer takes it while the recheck is "in flight"
             leased = store.lease(count=1, min_grade=Grade.USABLE,
                                  lease_ms=60_000, now=NOW)
             lease_ids = [p.lease_id for p in leased]
 
-            # (3) the recheck writes back the copy it loaded at step 1, as
-            # `process_source` does today: probe -> record -> upsert_many.
+            # (3) the recheck writes back the copy it loaded at step 1.
             probed = (plan.recheck_ready[0]
                       .record_success(NOW)
                       .with_state(ProxyState.READY, reason="OK")
                       .graded(Grade.GOOD)) if plan.recheck_ready else None
+            writeback_applied = None
             if probed is not None:
-                store.upsert_many((probed,))
+                if after:
+                    writeback_applied = store.complete_probe(probed, now=NOW)
+                else:
+                    store.upsert_many((probed,))     # unconditional: the defect
 
-            after = store.get(stale.fingerprint)
+            row = store.get(stale.fingerprint)
+            clobbered = row is not None and row.lease_id is None and len(leased) == 1
+            # Be precise about WHICH way the hazard was closed. In the `after`
+            # arm the claim runs first, so `lease()` never sees a READY row and
+            # `lease_granted` is 0 -- the consumer was refused, the probe won.
+            # Reporting that as "the claim excluded the leased row" would invert
+            # the causality and describe an experiment that did not happen.
+            if clobbered:
+                verdict = "CLOBBERED: the recheck write-back erased a live lease"
+            elif after and not leased:
+                verdict = (
+                    "NO OVERLAP: the claim took the row to PROBING first, so "
+                    "the consumer's lease was REFUSED (lease_granted=0) and "
+                    "the write-back had no live lease to erase. The two never "
+                    "hold the row at once -- which side wins is a race, and "
+                    "both orders are asserted in test_recheck_store.py."
+                )
+            elif leased and row is not None and row.lease_id:
+                verdict = (
+                    "LEASE INTACT: the consumer won the row and the probe's "
+                    "write-back was refused by complete_probe"
+                )
+            else:
+                verdict = "lease survived"
             return {
+                "path": "claim_for_probe + complete_probe" if after
+                        else "upsert_many (unconditional)",
                 "selected_for_recheck_while_leasable": selected,
+                "claimed_for_probe": [p.endpoint.host for p in claimed],
                 "lease_granted": len(leased),
                 "lease_ids": lease_ids,
-                "state_after_writeback": after.state.value if after else None,
-                "lease_id_after_writeback": after.lease_id if after else None,
-                "lease_survived_the_recheck": bool(after and after.lease_id),
+                "writeback_applied": writeback_applied,
+                "state_after_writeback": row.state.value if row else None,
+                "lease_id_after_writeback": row.lease_id if row else None,
+                "lease_survived_the_recheck": bool(row and row.lease_id),
                 "audit_double_delivery": [
                     list(v) for v in store.double_delivery_violations()
                 ],
-                "verdict": (
-                    "CLOBBERED: the recheck write-back erased a live lease"
-                    if after and after.lease_id is None and len(leased) == 1
-                    else "lease survived"
-                ),
+                "verdict": verdict,
             }
         finally:
             store.close()
 
 
-def measure_double_probe() -> dict:
-    """Two passes, no claim step: do both select the same row?"""
+def measure_double_probe(after: bool = False) -> dict:
+    """
+    Two consecutive passes: do both select the same row?
+
+    `after=True` performs the ADR-038 claim between the passes, which is the
+    whole point of a claim: it makes a double pass IDEMPOTENT, because `PROBING`
+    is excluded from the claimable states.
+    """
     with tempfile.TemporaryDirectory() as tmp:
         store = SqliteStore(Path(tmp) / "double.db")
         try:
@@ -219,27 +265,36 @@ def measure_double_probe() -> dict:
             store.upsert_many((row,))
             sched = PoolScheduler(store, FixedClock(NOW))
             first = sched.plan()
-            second = sched.plan()  # nothing claimed anything in between
             a = {p.fingerprint for p in first.recheck_ready}
+            if after:
+                store.claim_for_probe(tuple(a), now=NOW, probe_ms=60_000)
+            second = sched.plan()
             b = {p.fingerprint for p in second.recheck_ready}
             return {
+                "claim_between_passes": bool(after),
                 "pass1_selected": len(a),
                 "pass2_selected": len(b),
                 "same_row_selected_twice": sorted(a & b),
                 "verdict": ("DUPLICATE WORK: no claim step, both passes own it"
-                            if a & b else "claimed, second pass skipped it"),
+                            if a & b else
+                            "CLAIMED: the second pass no longer selects it"),
             }
         finally:
             store.close()
 
 
-def measure_probing_absorbing() -> dict:
+def measure_probing_absorbing(after: bool = False) -> dict:
     """
     If a claim marks rows PROBING, is there any exit?
 
     Asked BEFORE building the claim, because adding PROBING without a reclaim
     would recreate ADR-036's absorbing state under a new name -- and this time
     with the crash window H8 already taught us to expect.
+
+    The `after` arm does not merely check that a method EXISTS: hasattr is
+    satisfied by a method that does nothing (the ADR-019 decorative defect). It
+    calls `reclaim_stale_probes` and then re-checks whether the row became
+    leasable again, which is the property that actually matters.
     """
     with tempfile.TemporaryDirectory() as tmp:
         store = SqliteStore(Path(tmp) / "probing.db")
@@ -254,20 +309,38 @@ def measure_probing_absorbing() -> dict:
                 "recheck": [p.endpoint.host for p in plan.recheck],
                 "recheck_ready": [p.endpoint.host for p in plan.recheck_ready],
             }
+            week = NOW + timedelta(days=7)
             leasable = store.lease(count=1, min_grade=Grade.USABLE,
-                                   lease_ms=1000, now=NOW + timedelta(days=7))
-            has_reclaim = any(
-                "PROBING" in m for m in dir(store)
-            ) or hasattr(store, "reclaim_stale_probes")
+                                   lease_ms=1000, now=week)
+            has_reclaim = hasattr(store, "reclaim_stale_probes")
+
+            # Does the exit actually WORK, not merely exist?
+            reclaimed = None
+            leasable_after_reclaim = None
+            if after and has_reclaim:
+                reclaimed = store.reclaim_stale_probes(now=week)
+                recovered = store.get(row.fingerprint)
+                # COOLING re-enters the ADR-006 ladder; a cooled row becomes
+                # RECHECK once its backoff elapses, so ask the scheduler.
+                plan2 = PoolScheduler(store, FixedClock(week)).plan()
+                leasable_after_reclaim = {
+                    "state": recovered.state.value if recovered else None,
+                    "reason_code": recovered.reason_code if recovered else None,
+                    "recheck_bucket": [p.endpoint.host for p in plan2.recheck],
+                }
             return {
                 "a_week_later_buckets": buckets,
                 "leasable_after_a_week": len(leasable),
                 "store_has_reclaim_method": bool(has_reclaim),
+                "rows_reclaimed": reclaimed,
+                "after_reclaim": leasable_after_reclaim,
                 "verdict": (
                     "PROBING WOULD BE ABSORBING: classified IN_FLIGHT forever, "
                     "never leasable, and no reclaim exists"
-                    if not has_reclaim and not leasable
-                    else "a reclaim path exists"
+                    if not has_reclaim and not leasable else
+                    "NOT ABSORBING: reclaim_stale_probes returns the row to "
+                    "COOLING, which re-enters the ADR-006 ladder"
+                    if reclaimed else "a reclaim path exists"
                 ),
             }
         finally:
@@ -299,24 +372,41 @@ def main() -> int:
         "consumers_of_recheck": _consumers_of(("recheck", "recheck_ready")),
         "probing_writes_in_production": _state_writes("PROBING"),
         "probing_membership_reads": _membership_reads("PROBING"),
-        "lease_clobber": measure_lease_clobber(),
-        "double_probe": measure_double_probe(),
-        "probing_absorbing": measure_probing_absorbing(),
+        "lease_clobber": measure_lease_clobber(args.after),
+        "double_probe": measure_double_probe(args.after),
+        "probing_absorbing": measure_probing_absorbing(args.after),
         "discovery_interval_readers": measure_interval_readers(),
     }
 
     payload = {}
     if OUT.exists():
         payload = json.loads(OUT.read_text(encoding="utf-8"))
-    payload["after" if args.after else "before"] = block
+
+    # A `before` arm is a HISTORICAL measurement of code that no longer exists.
+    # Re-running it after the fix does not reproduce it -- it silently rewrites
+    # it with hybrid numbers (measured this session: `store_has_reclaim_method`
+    # flipped to true under the key that documents the pre-fix world, which
+    # would have been a fabricated baseline). Once `before` is recorded, it is
+    # evidence, and evidence is append-only.
+    key = "after" if args.after else "before"
+    if key == "before" and "before" in payload:
+        print("REFUSED: `before` is already recorded and describes pre-fix "
+              "code. Re-running it now would overwrite a historical "
+              "measurement with numbers from the CURRENT tree.\n"
+              "         Use --after to record the post-fix arm, or delete the "
+              "artifact deliberately if you really mean to re-baseline.")
+        return 4
+    payload[key] = block
     payload["measured_at"] = datetime.now(timezone.utc).isoformat()
     payload["tool"] = "engineering/tools/measure_recheck_gap.py"
     payload["note"] = (
         "P10 evidence. `before` is the state ADR-036 shipped: the recheck seam "
         "has no consumer, PROBING is read by decide() and both store queries but "
         "written nowhere, and the obvious wiring (probe then upsert_many) erases "
-        "a live lease because the write-back carries a pre-lease snapshot. Re-run "
-        "with --after once the fix lands so the file holds the pair."
+        "a live lease because the write-back carries a pre-lease snapshot. "
+        "`after` runs the SAME three experiments against the ADR-038 path "
+        "(claim_for_probe + complete_probe + reclaim_stale_probes): one variable "
+        "changed, so the two arms are comparable rather than spliced."
     )
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(payload, indent=1, sort_keys=True) + "\n",
