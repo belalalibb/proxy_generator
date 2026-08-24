@@ -251,6 +251,30 @@ class Proxy:
         """
         return replace(self, grade=grade)
 
+    def retired(self, *, reason: str) -> Proxy:
+        """
+        Move to the one terminal state, and clear the lease (ADR-036).
+
+        Until ADR-036 this transition did not exist: `RETIRED` was assigned
+        nowhere in production code, so `COOLING` was an absorbing state
+        documented as a temporary one and a proxy that failed once was gone for
+        good. This is the exit.
+
+        `lease_id` is cleared because a retired row must not carry a live lease
+        pointer. Retiring a LEASED proxy is refused outright rather than handled:
+        the scheduler classifies LEASED as `IN_FLIGHT` and never asks, so
+        reaching this branch means a caller bypassed the policy, and silently
+        dropping the lease would let a size or lifecycle rule quietly break the
+        H3 guarantee that an admitted proxy is held by exactly one consumer.
+        """
+        if self.state is ProxyState.LEASED:
+            raise InvalidProxy(
+                f"refusing to retire a LEASED proxy (H3): {self.endpoint}; "
+                "release or expire the lease first"
+            )
+        return replace(self, state=ProxyState.RETIRED, lease_id=None,
+                       reason_code=reason)
+
     def __str__(self) -> str:
         return f"{self.protocol.value}://{self.endpoint} [{self.state.value}]"
 
