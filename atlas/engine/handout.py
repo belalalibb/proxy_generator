@@ -47,21 +47,27 @@ self-inflicted outage, and it would be invisible: the rows are not lost, just
 unavailable, so no error names the cause. B-02 (23 silent handlers) is what
 un-named unavailability costs.
 
-FRESHNESS, AND A CONFIG TENSION THIS MODULE REFUSES TO HIDE
+FRESHNESS: ONE HORIZON, AND IT IS THE ONE THIS SYSTEM DRIVES (ADR-035)
 
-B-16 specifies `target_ttl` = 90 s for per-target validity. `config.yaml` sets
-`scheduler.recheck_ready_after_s: 900`. Those two numbers cannot both be
-satisfied: a pool re-checked every 900 s cannot offer proxies validated within
-90 s, so a hand-out that REFUSED everything older than 90 s would serve almost
-nothing, and one that ignored the TTL would silently present 900-second-old
-evidence as current.
+P08 flagged every granted proxy against a 90 s `target_ttl` from B-16, while
+`config.yaml scheduler.recheck_ready_after_s` is 900 s, and recorded the
+conflict as an open scheduler decision. That framing was wrong, and ADR-035
+withdraws the 90 s claim rather than picking a winner between the two numbers.
 
-This module does neither. It hands the proxy out and reports
-`revalidation_required` per proxy plus a count on the result, so the caller
-learns that the evidence predates the TTL instead of inferring currency from
-silence. Reconciling the two config values is a scheduler decision (P09/P11),
-recorded as such rather than settled here by picking whichever number made this
-file simpler.
+The reason is not cost. `age_s` derives from `proxy.last_checked`: ONE timestamp
+per proxy, written by whatever probe last ran, against whatever target
+*discovery* used. There is no `(proxy, target)` row anywhere in the schema. So
+"validated against YOUR target within 90 s" is not a tight deadline this system
+misses -- it is a sentence the stored data cannot express AT ANY INTERVAL.
+Re-probing every 90 s would have made it worse: refreshing `last_checked`
+against the discovery target CLEARS the flag, turning an honest "revalidate this
+yourself" into a per-target guarantee no stored fact supports.
+
+So the flag is keyed to `recheck_horizon_s` (900 s, mirroring the scheduler
+interval) and named `past_recheck_horizon` for what it actually proves: THE
+SCHEDULER IS BEHIND ON THIS ROW. Keyed to 90 s against a 900 s pool it was True
+for ~90 % of everything served, and a warning that is almost always on trains
+the operator to ignore it -- B-02's lesson applied to an over-named state.
 
 WHAT THIS MODULE DELIBERATELY DOES NOT DO
 
@@ -128,7 +134,10 @@ class HandoutPolicy:
     max_lease_ms: int = 300_000           # config.yaml lease.max_ms
     overselect: int = 3
     max_overselect_rows: int = 200
-    target_ttl_s: float = 90.0            # B-16
+    # ADR-035: mirrors config.yaml scheduler.recheck_ready_after_s, the only
+    # freshness interval this system actually drives. NOT a per-target TTL --
+    # the schema cannot express one (see the module docstring).
+    recheck_horizon_s: float = 900.0
     reclaim_expired_first: bool = True
 
     def __post_init__(self) -> None:
@@ -154,8 +163,10 @@ class HandoutPolicy:
                 f"({self.max_count}): the row cap would truncate a legal request "
                 "below the count it asked for"
             )
-        if self.target_ttl_s <= 0:
-            raise ValueError(f"target_ttl_s must be > 0, got {self.target_ttl_s}")
+        if self.recheck_horizon_s <= 0:
+            raise ValueError(
+                f"recheck_horizon_s must be > 0, got {self.recheck_horizon_s}"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,7 +182,10 @@ class Granted:
 
     proxy: Proxy
     score: Score
-    revalidation_required: bool
+    # ADR-035. True means "the scheduler is behind on this row" -- NOT "stale for
+    # your target", which no stored fact can support. Renamed from
+    # `revalidation_required`, which asserted the latter.
+    past_recheck_horizon: bool
     age_s: float | None
 
     @property
@@ -198,7 +212,7 @@ class HandoutResult:
     released_surplus: int = 0
     released_unusable: int = 0
     reclaimed_expired: int = 0
-    revalidation_required: int = 0
+    past_recheck_horizon: int = 0
     lease_ms: int = 0
 
     def __post_init__(self) -> None:
@@ -211,9 +225,9 @@ class HandoutResult:
                 f"granted+released_surplus+released_unusable={accounted}. Every "
                 "leased proxy must be granted or released (H3 capacity leak)."
             )
-        if self.revalidation_required > len(self.granted):
+        if self.past_recheck_horizon > len(self.granted):
             raise ValueError(
-                f"revalidation_required ({self.revalidation_required}) exceeds "
+                f"past_recheck_horizon ({self.past_recheck_horizon}) exceeds "
                 f"granted ({len(self.granted)})"
             )
 
@@ -264,6 +278,28 @@ class HandoutService:
         self._target_policy = target_policy
         self._policy = policy or HandoutPolicy()
         self._scoring = scoring or ScoringPolicy()
+
+        # ── a hole neither policy can see on its own (ADR-035) ────────────────
+        # `rank(include_stale=False)` DROPS rows at or past `max_age_s`, so
+        # `past_recheck_horizon` is only observable in the band
+        # (recheck_horizon_s, max_age_s). Set the horizon at or above
+        # `max_age_s` and that band is EMPTY: the flag can never fire, and every
+        # served row reports fresh no matter how old it is. That is staleness
+        # reported as freshness -- the ADR-019 defect class reached by
+        # CONFIGURATION rather than by code.
+        #
+        # Neither dataclass can catch it: HandoutPolicy does not know
+        # `max_age_s`, ScoringPolicy does not know the horizon, and each
+        # validates itself happily in isolation. This constructor is the first
+        # place both are known, so the check lives here.
+        if self._policy.recheck_horizon_s >= self._scoring.max_age_s:
+            raise ValueError(
+                f"recheck_horizon_s ({self._policy.recheck_horizon_s}) >= "
+                f"scoring max_age_s ({self._scoring.max_age_s}): rank() drops "
+                "rows at or past max_age_s, so past_recheck_horizon could never "
+                "fire and every served proxy would report fresh regardless of "
+                "age. Lower the horizon below max_age_s."
+            )
 
     # ── the hand-out ──────────────────────────────────────────────────────────
     def handout(
@@ -367,12 +403,9 @@ class HandoutService:
 
             for p, score in keep:
                 age_s = self._age_s(p, now)
-                stale_for_target = (
-                    age_s is None or age_s > self._policy.target_ttl_s
-                )
                 granted.append(Granted(
                     proxy=p, score=score,
-                    revalidation_required=stale_for_target,
+                    past_recheck_horizon=self._past_horizon(age_s),
                     age_s=age_s,
                 ))
                 granted_fps.add(p.fingerprint)
@@ -416,8 +449,8 @@ class HandoutService:
             released_surplus=len(surplus),
             released_unusable=len(unusable),
             reclaimed_expired=reclaimed,
-            revalidation_required=sum(
-                1 for g in granted if g.revalidation_required
+            past_recheck_horizon=sum(
+                1 for g in granted if g.past_recheck_horizon
             ),
             lease_ms=effective_lease_ms,
         )
@@ -461,6 +494,27 @@ class HandoutService:
         if proxy.last_checked is None:
             return None
         return (now - proxy.last_checked).total_seconds()
+
+    def _past_horizon(self, age_s: float | None) -> bool:
+        """
+        Is this row past the recheck horizon? (ADR-035)
+
+        EXTRACTED, not inlined, and the reason is a test that passed while
+        proving nothing. The first attempt to pin the `age_s is None` arm
+        restated this boolean expression inside the test and asserted on the
+        copy. It passed -- and the mutation run STILL reported
+        `never_checked_treated_as_fresh_via_comparison` as a survivor, because a
+        test that re-implements the code under test measures the test. Making
+        the predicate callable is what let the suite reach the real branch.
+
+        `age_s is None` (never checked) is past the horizon, not inside it: the
+        unverified state is the LEAST fresh one, so it must never be reported as
+        within the horizon. That arm is unreachable through `handout()` today --
+        `rank(include_stale=False)` filters never-checked rows out first -- but
+        `include_stale` is a parameter, and a future caller that flips it must
+        not find a hand-out layer that calls unverified proxies fresh.
+        """
+        return age_s is None or age_s > self._policy.recheck_horizon_s
 
 
 def require_handout(result: HandoutResult) -> tuple[Granted, ...]:
