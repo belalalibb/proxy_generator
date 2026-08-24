@@ -237,6 +237,82 @@
         "atlas/tests/unit/test_registry.py::test_socks_list_http_txt_is_ambiguous_not_guessed",
         "atlas/tests/unit/test_registry.py::test_ssl_filter_does_not_override_declared_proxytype"
       ]
+    },
+    {
+      "id": "P03.T1",
+      "phase": "P03",
+      "title": "pure parsing module in core (json_path/regex_adjacent/html_table)",
+      "status": "DONE",
+      "evidence": [
+        "atlas/core/parsing/candidates.py",
+        "atlas/tests/unit/test_fetch.py::test_full_body_yields_the_pinned_500"
+      ],
+      "files_changed": [
+        "atlas/core/parsing/candidates.py",
+        "atlas/tests/unit/test_fetch.py"
+      ]
+    },
+    {
+      "id": "P03.T2",
+      "phase": "P03",
+      "title": "ADR-017: align ParserKind to measured+implemented vocabulary; derive VALID_PARSERS",
+      "status": "DONE",
+      "evidence": [
+        "atlas/core/domain/source.py",
+        "atlas/tests/unit/test_fetch.py::test_every_parser_kind_has_an_implementation",
+        "atlas/tests/unit/test_domain.py::test_parser_kinds_are_exactly_the_measured_formats"
+      ],
+      "files_changed": [
+        "atlas/core/domain/source.py",
+        "atlas/tests/unit/test_fetch.py",
+        "atlas/tests/unit/test_domain.py"
+      ]
+    },
+    {
+      "id": "P03.T3",
+      "phase": "P03",
+      "title": "row_to_source seam: registry rows -> domain Sources, refusing unrepresentable parsers",
+      "status": "DONE",
+      "evidence": [
+        "atlas/adapters/registry.py",
+        "atlas/tests/unit/test_fetch.py::test_row_to_source_rejects_an_unrepresentable_parser",
+        "atlas/tests/unit/test_fetch.py::test_a_row_with_no_parser_is_not_representable_as_a_source"
+      ],
+      "files_changed": [
+        "atlas/adapters/registry.py",
+        "atlas/tests/unit/test_fetch.py",
+        "atlas/tests/unit/test_fetch.py"
+      ]
+    },
+    {
+      "id": "P03.T4",
+      "phase": "P03",
+      "title": "HttpSourceAdapter: read-to-EOF + completeness proof (ADR-013)",
+      "status": "DONE",
+      "evidence": [
+        "atlas/adapters/http_source.py",
+        "atlas/tests/unit/test_fetch.py::test_read_to_eof_recovers_the_whole_body",
+        "atlas/tests/unit/test_fetch.py::test_adapter_reports_fetch_incomplete_not_empty"
+      ],
+      "files_changed": [
+        "atlas/adapters/http_source.py",
+        "atlas/tests/unit/test_fetch.py",
+        "atlas/tests/unit/test_fetch.py"
+      ]
+    },
+    {
+      "id": "P03.T5",
+      "phase": "P03",
+      "title": "separate FETCH_INCOMPLETE / SOURCE_THROTTLED / PARSE_EMPTY",
+      "status": "DONE",
+      "evidence": [
+        "atlas/tests/unit/test_fetch.py::test_throttled_short_body_is_not_an_empty_source",
+        "atlas/tests/unit/test_fetch.py::test_the_three_failures_are_distinct_reason_codes"
+      ],
+      "files_changed": [
+        "atlas/tests/unit/test_fetch.py",
+        "atlas/tests/unit/test_fetch.py"
+      ]
     }
   ],
   "files_changed": [
@@ -275,14 +351,14 @@
     "engineering/tools/verify_units.py"
   ],
   "tests": {
-    "total": 87,
-    "passed": 87,
+    "total": 113,
+    "passed": 113,
     "failed": 0,
-    "breakdown": "22 architecture/fitness + 36 domain + 29 registry"
+    "breakdown": "22 architecture/fitness + 36 domain + 29 registry + 26 fetch/parsing"
   },
   "open_failures": [],
   "blockers": [],
-  "next_action": "P03 \u2014 SOURCE FETCH ADAPTER: implement SourcePort against the registry using the ADR-013 read-to-EOF discipline (iter_chunked + FETCH_INCOMPLETE), with the three parsers (regex_adjacent/json_path/html_table) behind one interface, tested OFFLINE against stored bodies in engineering/raw/ so no test depends on live network.",
+  "next_action": "P04 \u2014 POOL + ADMISSION GATE: implement the in-memory proxy pool and the speed/reliability admission gate (H3/H7). The fetch path now yields candidates (67 fetchable sources, 59 regex_adjacent / 7 html_table / 1 json_path), but NOTHING measures or admits them yet: H3, H7 and H8 remain recorded false. Admission must refuse on zero evidence (NOT_MEASURED) rather than defaulting to admit.",
   "invariants_verified": {
     "H1_evidence_for_every_claim": true,
     "H2_no_fabricated_numbers": true,
