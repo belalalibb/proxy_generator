@@ -1,0 +1,104 @@
+{
+ "generated_at": "2026-08-24T21:42:39.179237+00:00",
+ "modules": [
+  "atlas/adapters/store_sqlite.py",
+  "atlas/engine/recheck.py"
+ ],
+ "suites": [
+  "atlas/tests/unit/test_recheck.py",
+  "atlas/tests/integration/test_recheck_store.py"
+ ],
+ "baseline": {
+  "unit": {
+   "passed": 31,
+   "failed": 0
+  },
+  "integration": {
+   "passed": 9,
+   "failed": 0
+  }
+ },
+ "mutations": [
+  {
+   "mutation": "read_then_write_claim",
+   "module": "atlas/adapters/store_sqlite.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 3,
+    "integration": 3
+   },
+   "rationale": "Drop the state predicate from the claiming UPDATE -- the check-then-write claim. It steals rows that are LEASED (breaking H3 from the other side) and RETIRED (resurrecting a deliberately removed row). Single-threaded tests cannot see this, which is why the integration suite exists."
+  },
+  {
+   "mutation": "unconditional_writeback",
+   "module": "atlas/adapters/store_sqlite.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 2,
+    "integration": 1
+   },
+   "rationale": "Make the probe write-back unconditional: the measured clobber. A consumer that leased the row mid-probe keeps using it while the row reads READY, and double_delivery_violations() stays silent because no second LEASE was ever appended."
+  },
+  {
+   "mutation": "writeback_carries_lease_columns",
+   "module": "atlas/adapters/store_sqlite.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 0,
+    "integration": 1
+   },
+   "rationale": "Let complete_probe assert something it has no evidence about. A probe measures latency and protocol, not ownership; carrying lease_id is precisely what made the clobber possible."
+  },
+  {
+   "mutation": "reclaim_promotes_to_ready",
+   "module": "atlas/adapters/store_sqlite.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 2,
+    "integration": 1
+   },
+   "rationale": "Treat an abandoned probe as proof of health. A measurement that never completed would hand out a proxy on no evidence -- H7's 'live is not good' inverted into 'unfinished is good'."
+  },
+  {
+   "mutation": "null_deadline_never_reclaimed",
+   "module": "atlas/adapters/store_sqlite.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 1,
+    "integration": 0
+   },
+   "rationale": "Stop treating a NULL deadline as expired, so a row left PROBING by a version that recorded no deadline is stranded forever -- the ADR-036 absorbing state rebuilt under a new name."
+  },
+  {
+   "mutation": "failed_rows_not_prioritised",
+   "module": "atlas/engine/recheck.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 1,
+    "integration": 0
+   },
+   "rationale": "Refresh healthy rows before recovering failed ones. Under a budget too small for both, capacity that is already serving wins and capacity that is lost stays lost."
+  },
+  {
+   "mutation": "lost_writeback_reported_as_applied",
+   "module": "atlas/engine/recheck.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 1,
+    "integration": 0
+   },
+   "rationale": "Count a refused write-back as applied, so the report claims to have refreshed rows it did not touch. A false success is worse than a failure: it removes the reason to look."
+  }
+ ],
+ "survivors": 0,
+ "killed": 7,
+ "working_tree_unchanged": true,
+ "method": "The package is copied to a temp tree and the COPY is patched; the real modules are never written. Both suites run for every mutant, because which suite catches a concurrency defect is the point: read_then_write_claim is expected to survive the unit suite and die under real process contention."
+}
