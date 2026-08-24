@@ -1,5 +1,12 @@
 [
   "atlas/tests/unit/test_architecture.py::test_adapters_do_not_import_api_or_engine",
+  "atlas/tests/unit/test_architecture.py::test_architecture_scan_is_not_vacuous",
+  "atlas/tests/unit/test_architecture.py::test_banned_target_scanner_allows_forensic_citation",
+  "atlas/tests/unit/test_architecture.py::test_banned_target_scanner_catches_real_violations[default_arg]",
+  "atlas/tests/unit/test_architecture.py::test_banned_target_scanner_catches_real_violations[dict_value]",
+  "atlas/tests/unit/test_architecture.py::test_banned_target_scanner_catches_real_violations[fstring]",
+  "atlas/tests/unit/test_architecture.py::test_banned_target_scanner_catches_real_violations[list_item]",
+  "atlas/tests/unit/test_architecture.py::test_banned_target_scanner_catches_real_violations[module_const]",
   "atlas/tests/unit/test_architecture.py::test_core_declares_no_module_level_mutable_state",
   "atlas/tests/unit/test_architecture.py::test_core_has_no_io_or_network_imports",
   "atlas/tests/unit/test_architecture.py::test_core_imports_are_on_the_allowlist",
