@@ -1610,3 +1610,81 @@ fixes have teeth proven by injection: re-introducing the zone split fails 4 test
 re-introducing the loose regex fails 3.
 
 **Verify:** `python3 -m pytest atlas/tests/unit/test_url_parity.py -q` (59 tests).
+
+---
+
+## ADR-033
+### The hand-out over-selects, because otherwise the four-term score cannot change who is served
+
+**Status.** Accepted (2026-08-24, P08).
+
+**Context.** P07 built a four-term score — latency (p95), reliability (lifetime success
+rate), freshness (the B-16 decay term), anonymity — and `rank()` orders proxies by it.
+`SqliteStore.lease()`, written earlier in P05, selects rows with
+
+```sql
+ORDER BY (p95_ms IS NULL), p95_ms ASC, fingerprint ASC
+```
+
+which is a **one-term** proxy for quality, evaluated in SQL where the score cannot reach.
+
+The obvious hand-out implementation is "lease `count` rows, then rank them". Measured
+consequence of that shape: ranking `count` rows can only *permute a set that has already
+been claimed*. It cannot change **which** proxies the caller receives. A transparent,
+1-of-10-reliable proxy with a 50 ms p95 would be leased and served ahead of an elite,
+10-of-10 proxy at 400 ms, because the store picked first and the score only got to sort
+what it was given.
+
+That would make P07 scoring **decorative on the serving path** — the ADR-019 defect class
+(a captured fact nothing reads) for the third time, after ADR-021 (a port filtering on a
+field the domain could not express) and ADR-029 (a policy nobody evaluated). The pattern is
+consistent enough to name: *a computed value that no decision consumes is not a feature, it
+is a comment with a runtime cost.*
+
+**Decision.** The hand-out **over-selects**: it leases up to `count * overselect`
+candidates (default 3, bounded by `max_overselect_rows`), ranks that pool with the full
+four-term score, grants the best `count`, and **releases the remainder immediately**.
+
+Bounds are part of the decision, not decoration. Every over-selected row is briefly
+unavailable to other consumers, so an unbounded factor would let one caller lease the pool
+in order to rank it — trading a ranking improvement for a starvation risk, which is
+precisely the trade ADR-027 refused elsewhere.
+
+`overselect=1` is *permitted* and is not the default. It disables score-based selection and
+restores the store's p95 order. That is a legitimate choice for a caller who wants the
+cheapest possible query, so it is supported — but its cost is pinned by a test
+(`test_overselect_one_disables_score_selection`) rather than left to be discovered.
+
+**A defect this decision's own test found.** The first implementation released
+`surplus + unusable` in the `finally`. Correct on the happy path — and it leaked **every
+leased row** when `rank()` raised, because the exception occurred *before* those lists were
+populated, so the `finally` dutifully released nothing. The invariant that actually holds is
+"release everything not granted", computed from `leased`, which is known *before* the risky
+work begins. `test_surplus_is_released_even_if_ranking_raises` failed against the first
+version; that is what found it.
+
+**Measured effect.**
+
+| property | evidence |
+|---|---|
+| score overrides p95 order | a 50 ms transparent/unreliable proxy loses to a 400 ms elite one |
+| no capacity leak | 7/7 injected defects killed, incl. the `finally` leak |
+| no double delivery through the hand-out | pool 12, 8 processes × 3 requested → **12 granted, 12 unique, 0 audit violations** |
+| non-vacuity | the concurrency test asserts `handed` is non-empty *before* asserting no overlap |
+
+**Deliberately not done here.** No per-**target** validation history: the schema records one
+`last_checked` per proxy, so this layer may truthfully say "verified 40 s ago" but may *not*
+say "verified against *your* target 40 s ago", and it does not. Per-target evidence needs a
+schema change and is named as future scope. Rate limiting remains P09 (ADR-029).
+
+**The B-16 tension, reported rather than resolved.** `target_ttl` is 90 s (B-16) while
+`config.yaml scheduler.recheck_ready_after_s` is 900 s. Both cannot hold: refusing
+everything older than 90 s would serve almost nothing, and ignoring the TTL would present
+900-second-old evidence as current. The hand-out therefore grants the proxy **and** reports
+`revalidation_required` per proxy plus a count on the result. Reconciling the two config
+values is a scheduler decision (P09/P11), recorded as open rather than settled by whichever
+number made this file simpler.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_handout.py atlas/tests/integration/test_handout_store.py -q`
+(38 unit + 8 integration) and `python3 engineering/tools/mutate_handout.py` (7/7 killed,
+→ `engineering/raw/handout_mutation.json`).
