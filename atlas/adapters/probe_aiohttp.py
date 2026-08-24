@@ -45,16 +45,17 @@ import aiohttp
 from atlas.core.domain.proxy import Anonymity, Protocol, Proxy
 from atlas.core.domain.source import Target
 from atlas.core.domain.verdict import ReasonCode
-from atlas.core.ports.probe import ProbePlan, ProbeResult
+from atlas.core.ports.probe import PROTOCOL_LADDER, ProbePlan, ProbeResult
 
 # Ordered cheapest-first. http is tried before the CONNECT tunnel because a plain
 # forward proxy answers it in one round trip.
-_PROTOCOL_LADDER: tuple[Protocol, ...] = (
-    Protocol.HTTP,
-    Protocol.HTTPS,
-    Protocol.SOCKS5,
-    Protocol.SOCKS4,
-)
+#
+# IMPORTED, NOT DECLARED (ADR-039). `claim_bound()` prices this ladder to size a
+# PROBING claim; if the adapter kept its own copy, adding a rung here would leave
+# the bound quietly short by one target timeout per probe -- and a short claim is
+# the double-probe defect P10 closed, returning through the timeout. The alias
+# keeps this module's existing references readable.
+_PROTOCOL_LADDER: tuple[Protocol, ...] = PROTOCOL_LADDER
 
 _AIOHTTP_SCHEME = {
     Protocol.HTTP: "http",
