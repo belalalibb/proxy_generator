@@ -217,7 +217,9 @@ def test_one_legacy(proxy: str) -> dict:
             ms = (time.time() - t0) * 1000
             if r.status_code == 200 and len(r.text) > LEGACY_MIN_BODY:
                 return {"proxy": proxy, "ok": True, "ms": round(ms, 1),
-                        "status": r.status_code, "bytes": len(r.text)}
+                        "status": r.status_code,
+                        # ADR-015: r.text is decoded -> characters, not octets.
+                        "body_chars": len(r.text), "body_bytes": len(r.content)}
         except Exception as exc:                      # noqa: BLE001 - reason recorded
             # NOT a silent handler (BUG_LEDGER B-02): the reason is returned.
             last = type(exc).__name__
