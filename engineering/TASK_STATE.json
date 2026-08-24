@@ -733,9 +733,9 @@
     "note": "ENABLED==67 asserted equal to snapshot ACTIVE by test, so the registry cannot silently invent or lose sources. No label_is_verified is true: zero proxies probed yet."
   },
   "gate_checks": {
-    "total": 15,
-    "passing": 15,
-    "note": "15th is makefile_tools_exist, added after `make sources-audit` was found to reference a tool a sync deleted. `make gate` also runs check_test_scope.py, which proves the default pytest run really reaches atlas/tests/integration (195 unit + 9 integration = 204)."
+    "total": 16,
+    "passing": 16,
+    "note": "CORRECTED 2026-08-24 on resume: this field said 15/15 while PROGRESS.md P06 said 16/16. Reality (`python3 engineering/tools/gate_check.py`) prints 16 named PASS lines from 13 `def check_` functions -- several functions emit more than one named check, so counting `def`s undercounts. The 16th is no_percentile_ordering_violation (P06.T6). `make gate` also runs check_test_scope.py, which proves the default pytest run really reaches atlas/tests/integration (235 unit + 9 integration = 244)."
   },
   "h3_measurement": {
     "artifact": "engineering/raw/lease_concurrency.json",
