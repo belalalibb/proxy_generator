@@ -1078,3 +1078,178 @@ alone would not have shown that it works on the real file.
   appear in prose; each new one must carry teeth tests in both directions.
 
 **Verify:** `python3 -m pytest atlas/tests/unit/test_architecture.py -q` (29 tests)
+
+---
+
+## ADR-024 — A "95th percentile" that returns the minimum
+
+**Status:** ACCEPTED · 2026-08-24 · P06 · relates to ADR-011, ADR-003, H2, H7
+
+### Context
+
+The first honest live calibration run (after the SOCKS-masking fix below) printed
+a record that cannot be true:
+
+```json
+{ "endpoint": "103.130.61.61:8081",
+  "samples_ms": [7659.2, 4100.7],
+  "p50_ms": 5880.0,
+  "p95_ms": 4100.7,          <-- tail BELOW the median
+  "reason": "UNRELIABLE" }
+```
+
+A 95th percentile below the 50th is arithmetically impossible. The cause is the
+ADR-011 floor rank, `sorted[int((n-1)*p/100)]`, at `p=95`:
+
+| k | index | which sample |
+|---|---|---|
+| 1 | 0 | the only sample — honest |
+| **2** | **0** | **the MINIMUM — the faster of the two** |
+| 3 | 1 | in the tail |
+| 102 | 95 | in the tail |
+| 118 | 111 | in the tail |
+
+At `k=2` the estimator reports the **best** case under the name of the worst.
+A randomised check violated the `p95 >= p50` ordering **4000/4000 times at n=2
+and 0/4000 at every other n** — the pathology is exactly `k=2`.
+
+`k=2` is not hypothetical: it is the normal outcome of ADR-003's own early-stop
+rule, which abandons sampling after consecutive failures. The live sweep produced
+6 proxies with 2+ samples, and `with_2plus_samples` is where every k>1 rule lives.
+
+**This is not a cosmetic reporting error — it is a false ADMIT.** Samples
+`(1400ms, 1600ms)` against the 1500 ms ceiling:
+
+| statistic | value | rule |
+|---|---|---|
+| p95 (floor rank) | 1400.0 | passes `max_p95_ms=1500` |
+| jitter | 0.094 | passes `max_jitter=0.5` |
+| success_ratio | 1.0 | passes `min_success_ratio=0.6` |
+| **verdict** | **OK / USABLE** | **admitted** |
+
+One request was *measured* over budget and the gate admitted it anyway. The gate
+whose entire purpose is rejecting the legacy system's slow proxies would admit a
+proxy it had itself measured too slow — H7's failure mode, reintroduced through
+the *estimator* rather than the threshold. Every unit test passed throughout,
+because they all use k=5.
+
+### Decision
+
+Split the two jobs the one function was doing:
+
+- **`pct_floor`** — FROZEN, unchanged, for **baseline parity only**. ADR-011
+  requires v4's p95 to be computed by the same function as the legacy figure, and
+  that requirement is about comparability, not correctness.
+- **`pct_tail`** — the estimator the **admission gate** uses. Identical to
+  `pct_floor` for all `k >= 3`; at `k == 2` it returns the **upper** sample,
+  which is the only defensible tail estimate from two observations.
+
+`build_profile` now calls `pct_tail`. Parity is untouched: the anchors are n=102
+and n=118, where the floor index is 95 and 111, nowhere near the k=2 case —
+asserted directly by `test_pct_tail_preserves_legacy_parity_for_every_k_above_two`.
+
+### Consequences
+
+- Re-running the sweep with the fix: **3 admitted** (was 1), `TOO_SLOW_P95` now
+  fires on live data (2), and **zero `p95 < p50` records** remain in the artifact.
+  Artifact: `engineering/raw/admission_live_adr024.json`.
+- Four regression tests, teeth proven by injection: deleting the k=2 branch fails
+  exactly 3 of them, including the false-admit case. A fifth
+  (`test_a_genuinely_fast_k2_proxy_is_still_admitted`) fails if the fix
+  over-corrects into rejecting everything at k=2 — returning `+inf` would satisfy
+  the others.
+- **The rule this generalises:** a statistic borrowed for *comparability* must not
+  be reused for *decisions* without re-deriving its behaviour at the sample sizes
+  the decision path actually produces. ADR-011 pinned the legacy method for
+  honest comparison and was right to; the error was letting the gate inherit it.
+  Small-k degenerate behaviour is invisible to tests written at the happy-path k.
+- The defect was found by an **artifact**, not by a test — the same way ADR-020's
+  splice was. Unit tests at k=5 could not see it; a printed number that contradicted
+  arithmetic could.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_policy.py -q` (54 tests)
+
+---
+
+## ADR-025 — A measured cause outranks a note about something never attempted
+
+**Status:** ACCEPTED · 2026-08-24 · P06 · relates to ADR-005, B-02, H2
+
+### Context
+
+The first live calibration sweep reported this, and it is nonsense:
+
+```
+tcp ok        : 24
+reached gate  : 0
+top reasons   : {'PROTO_MISMATCH': 24, 'TCP_TIMEOUT': 16}
+```
+
+All 24 endpoints that *completed a TCP handshake* were then filed as
+`PROTO_MISMATCH` with the detail `socks4 not testable: aiohttp lacks SOCKS`.
+Zero reached the gate, so the entire point of the run — exercising the k>1 rules —
+produced no data at all.
+
+`discover_protocol` walks a ladder of candidate protocols and keeps the last
+failure in a single variable:
+
+```python
+for protocol in ladder:
+    if scheme in ("socks4", "socks5"):
+        last = ProbeResult(ok=False, reason=PROTO_MISMATCH,
+                           detail=f"{protocol.value} not testable: ...")
+        continue                     # <-- overwrote the real result
+    result, _ = await self._request(...)
+    last = result
+return last
+```
+
+SOCKS sits at the **end** of the ladder. So for every proxy, the honest
+"I could not test this rung" placeholder was written *after* the real HTTP
+measurement and returned in its place. A connection that was **refused**, or a
+server that answered **500**, was reported as a note about a protocol that was
+never attempted.
+
+Both facts were individually true. The bug was in which one *survived*.
+
+That is **BUG_LEDGER B-02** — losing the cause at the point of discovery — and it
+appeared *inside the code written to avoid B-02*. The placeholder itself was added
+for an honest reason (refusing to fabricate a negative for an untested protocol,
+H2); it destroyed the evidence it was meant to sit beside.
+
+### Decision
+
+Two facts of different kinds get two variables:
+
+| variable | meaning |
+|---|---|
+| `last_tested` | something actually **measured** failing |
+| `untested` | a rung that could not be attempted at all |
+
+`return last_tested or untested or <no protocol succeeded>` — **a measurement
+always outranks an untested rung**, and the untestable note survives only when
+nothing could be measured. It is also recorded once (`if untested is None`) rather
+than overwritten per rung.
+
+### Consequences
+
+- The same sweep, rerun: `PROTO_MISMATCH: 24` became
+  `BAD_STATUS: 31, PROXY_AUTH_REQUIRED: 19, TCP_REFUSED: 44, TLS_FAILED: 1` and
+  **14 proxies reached the gate** (previously 0). The reasons were always there;
+  they were being discarded on the way out.
+- Directly unblocked P06: with real causes surfacing, `UNRELIABLE` and
+  `NOT_MEASURED` fired on live data for the first time, and the `p95 < p50`
+  record that exposed ADR-024 became visible. **One masking bug was hiding
+  another defect entirely.**
+- Two regression tests: `test_a_measured_failure_outranks_an_untestable_socks_rung`
+  (500 through the full ladder must report `BAD_STATUS`, not "not testable") and
+  `test_a_refused_endpoint_is_not_reported_as_untestable_socks` (the live symptom,
+  reduced). `test_socks_is_reported_untestable_rather_than_failed` still passes,
+  so the H2 honesty property is preserved rather than traded away.
+- **The rule this generalises:** when one variable accumulates results of
+  different epistemic status — measured vs. not-attempted vs. not-applicable —
+  loop order silently decides which one the caller sees. Rank them explicitly, or
+  the last iteration wins by accident. "No evidence" must never overwrite
+  "evidence".
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_probe.py -q` (28 tests)
