@@ -931,3 +931,116 @@ this session: the atomic lease **already exists and is proven** (single
 control, independent `lease_log` audit). Remaining work is only the layer above —
 lease via `StorePort`, validate the caller-supplied target at lease time
 (ADR-007, 90s `target_ttl`), rank with P07 scoring, release/expire on failure.
+
+---
+
+# P09 — SCHEDULER + RATE LIMITING (in progress)
+
+## Resume verification (2026-08-24)
+
+State was verified from disk **before** any code was written, and the check earned
+its keep. The previous session's final action — an edit to
+`atlas/engine/rate_limit.py` and `atlas/tests/unit/test_rate_limit.py` — had been
+reported as *applied* by the tooling, but **neither file existed on disk**: every
+tracked file shared one mtime, `git status` was clean, and `HEAD` was the last
+pushed commit. The sandbox had been re-cloned, discarding uncommitted work.
+
+That is the exact process risk `TASK_STATE.next_action` already warned about
+("a sandbox re-clone can revert TASK_STATE while auto-sync preserves other files;
+unpushed commits are LOST"), now confirmed a second time. **A tool reporting
+success is not evidence that a file changed.** Reality was re-measured instead of
+assumed:
+
+| claim in TASK_STATE | measured |
+|---|---|
+| 467 passed | **467 passed** ✅ |
+| 18 gate checks | **18/18 PASS** ✅ |
+| 52 tasks DONE | 52, and **138/138 evidence paths exist on disk** ✅ |
+| P00–P08 gates PASSED | consistent; no task downgraded |
+
+No DONE task lacked on-disk evidence, so nothing was redone. P09 started clean.
+
+## P09.T1 — the per-host rate limit stops being a comment (ADR-034)
+
+`config.yaml targets.allow_policy.max_requests_per_host_per_min: 60` has existed
+since **P01**. ADR-029 built the allow-policy and implemented three of its four
+keys, deliberately skipping this one because a limiter needs a clock and mutable
+state and `core/` may have neither; `handout.py` repeated the deferral. Both
+deferrals were honest and both were right — but the cumulative effect was that
+for two phases the number in the config file was read by **nobody**, which is the
+ADR-019 defect class (a captured value no decision consumes) for the fifth time.
+
+### What the tests are actually worth
+
+The limiter is a security control, so "36 tests pass" is a cheap claim. Nine real
+bypasses were injected into a **copy** of the module (never the working tree — the
+P08 lesson) and every one was caught:
+
+| injected bypass | tests that failed |
+|---|---|
+| fixed window instead of sliding | 1 |
+| wall-clock instead of monotonic | 1 |
+| `check()` records a hit | 3 |
+| evict a live host at the cap | 2 |
+| raw host as the bucket key | 1 |
+| off-by-one on the limit | 16 |
+| port included in the key | 1 |
+| unkeyable target waved through | 1 |
+| `retry_after` is a guess | 1 |
+
+**9/9 killed** → `engineering/raw/rate_limit_mutation.json`, with the working tree
+verified unchanged before and after.
+
+Two of those deserve naming, because they are the difference between a limiter and
+a decoration:
+
+* **Fixed vs sliding window.** A fixed 60 s bucket admits `limit` at 59.9 s and
+  `limit` again at 60.1 s — **2× the configured rate** across 200 ms. The wrong
+  design is *written out inside the test* and asserted to admit **6** where the
+  real one admits **3**, so the test cannot pass for both designs.
+* **The memory cap as a bypass.** Bounding the host table is obvious; what to do
+  when it fills is not. Evicting an *active* host would hand back its budget, so
+  spraying distinct hostnames would reset every real counter. Eviction is
+  therefore restricted to fully-drained hosts, and a saturated limiter **refuses**
+  (`LIMITER_SATURATED`). A limiter that fails open under pressure is not one.
+
+### A duplication the work forced out, and a dead guard removed
+
+The limiter must key on the same host identity as the deny-list. `check_target`
+and `host_matches_deny` each carried their own inline `.lower().rstrip(".")`, so a
+third copy here would have been a third rule that merely *happens* to agree — and
+if it disagreed, `a.com.` would get its own bucket and silently double the rate.
+Extracted to `canonical_host()` in core; the 467 pre-existing tests confirm the
+extraction changed no behaviour.
+
+The first draft of `_key_of` then re-lowered `split_url(...).host`. `split_url`
+already case-folds at every return path, so that call **did nothing** while
+reading as though this layer owned the normalisation. It was deleted rather than
+kept "for safety", and the upstream guarantee is pinned by
+`test_canonical_host_folds_case_via_split_url` instead — dead defensive code is
+worse than none, because it makes a future change to `split_url` look safe here
+when it is not.
+
+### Verification
+
+`make doctor`: **18/18 checks pass**, **503 tests green** (486 unit + 17
+integration, up from 467). The gate caught three of my own bookkeeping omissions
+before I could claim the milestone — code citing an ADR-034 that did not yet
+exist, an untracked test file, and a stale declared test count in both
+`TASK_STATE` and `README` — which is precisely what it was built for.
+
+**Stated limit, not implied away:** this is a **per-process** limiter. Two API
+workers get two independent budgets, so an operator who reads it as a
+deployment-wide cap would be wrong by a factor of the worker count. The class
+docstring says so; a cross-process limit needs shared storage (P11).
+
+## BLOCKER — cannot push, and the work is therefore at risk
+
+`git push` fails with `could not read Username for 'https://github.com'` and the
+environment reports no valid GitHub authorization. P09.T1 is **committed locally**
+(`8eab856`) and green, but this project has now lost uncommitted work to a
+re-clone **twice**, and an unpushed commit is one re-clone from the same fate.
+
+Work therefore **stopped here** rather than accumulating more unpushable
+milestones. Resolving the credential is the first action of the next session — see
+`TASK_STATE.blockers`.
