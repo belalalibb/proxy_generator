@@ -58,8 +58,10 @@ acceptable, explicit cost.
 
 **Context.** The legacy gate was `status == 200 and len(text) > 1000` with one sample
 (`proxy_generator_v2.py:380`). Its own recorded output shows what that admitted:
-p50 **6 359.5 ms**, p95 **15 903 ms**, max **19 035 ms**, with **95.8 %** of accepted proxies over
-1 500 ms and **56.8 %** over 5 000 ms (`BASELINE.json` §A).
+p50 **6 359.5 ms**, p95 **15 903 ms**, max **19 035 ms**, with **95.1 %** of accepted proxies over
+1 500 ms and **58.8 %** over 5 000 ms — all five figures from the **n=102**
+`proxy_details.json` stream (`BASELINE.json` §A). The 95.8 % / 56.8 % pair quoted here
+until 2026-08-24 came from the n=118 log stream; see ADR-020.
 
 **Decision.** k=5 samples per candidate → p50, p95, mean, stdev, `jitter = stdev/p50`,
 `success_ratio`, throughput. The gate uses **p95**.
@@ -685,3 +687,139 @@ Restoring 113 returns the gate to green.
   or a measurement.
 
 **Verify:** `python3 engineering/tools/gate_check.py` (and the negative control above)
+
+---
+
+## ADR-019 — A captured fact that nothing reads is a lost fact
+
+**Status:** ACCEPTED · 2026-08-24 · P04 · relates to ADR-005
+
+### Context
+
+`Endpoint.parse` matches candidates with this regex:
+
+```python
+_HOSTPORT = re.compile(r"^\s*(?:(?P<scheme>\w+)://)?(?P<host>[^:/@\s]+):(?P<port>\d{1,5})\s*$")
+```
+
+It has a **named capture group for the scheme**, and the function body never
+mentions `scheme` again. Verified directly:
+
+```
+socks5://1.2.3.4:1080  ->  1.2.3.4:1080
+http://1.2.3.4:1080    ->  1.2.3.4:1080
+1.2.3.4:1080           ->  1.2.3.4:1080     # indistinguishable
+```
+
+A `socks5://` prefix is the source declaring the protocol **in the candidate
+itself** — strictly better evidence than the filename hint that left
+`TheSpeedX/SOCKS-List/master/http.txt` labelled `ambiguous`. ADR-005 exists
+because that kind of evidence is scarce, and here it was being captured and
+dropped on the floor. Candidates would then be probed as HTTP, fail, and be
+discarded: the exact shape of B-12, which cost 2 853 candidates.
+
+Nothing caught it because `Endpoint` is a *host:port value object* and its own
+tests correctly assert host and port. The defect is not in what `Endpoint` does;
+it is that **no layer above it captured what `Endpoint` deliberately discards**.
+Until P04 there was no layer above it.
+
+### Decision
+
+`normalize_one` splits the scheme off first and returns it as
+`labelled_protocol` + `scheme_seen`, and `to_proxies` carries it into
+`Proxy.labelled_protocol` while leaving `protocol` UNKNOWN.
+
+Leaving `protocol` unset is deliberate: writing the label there would make
+`Proxy.protocol_mismatch` permanently false and destroy the ability to detect a
+lying source — trading a real capability for a cosmetic one.
+
+`socks://` maps to UNKNOWN, not socks5. It is genuinely ambiguous between v4 and
+v5, and ADR-005 forbids guessing.
+
+### Negative control (ADR-010)
+
+`test_endpoint_parse_discards_the_scheme_it_captures` pins the old behaviour, so
+if someone "fixes" `Endpoint` to smuggle the scheme in, the contradiction
+surfaces instead of silently changing identity semantics.
+`test_labelled_protocol_is_not_written_into_protocol` fails if the label is ever
+promoted to a measurement.
+
+### Consequences
+
+- The 616 seed candidates in `proxy.txt` arrive **label-free** — asserted, and
+  itself a finding: the legacy export dropped the scheme, so that evidence is
+  already gone for those.
+- **The rule this generalises:** a regex group, a return value or a column that
+  nothing reads is not "available for later" — it is deleted, silently, with a
+  comment implying otherwise.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_policy.py -k scheme -q`
+
+---
+
+## ADR-020 — Two true numbers can make a false sentence
+
+**Status:** ACCEPTED · 2026-08-24 · P04 · strengthens ADR-018
+
+### Context
+
+The legacy run left two independent records of itself:
+
+| stream | source | n | p50 | p95 | >1500ms | >5000ms |
+|---|---|---|---|---|---|---|
+| A | `proxy_details.json` | **102** | 6 359.5 | 15 903 | **95.1 %** | **58.8 %** |
+| B | `proxy_scraper.log` | **118** | 6 092.5 | 15 903 | **95.8 %** | **56.8 %** |
+
+`BASELINE.json` stores both correctly, each under its own key. The defect was in
+the **prose**. Six files wrote sentences of this shape:
+
+> "p50 6 359.5 ms and p95 15 903 ms (n=102), where 95.8 % exceeded 1 500 ms"
+
+Every number there is real and traceable. The sentence is still false: **no
+single distribution has those properties.** The n=102 stream's true figure is
+95.1 %.
+
+It reached `config.yaml`, `admission.py` and `verdict.py` as the stated
+justification for `max_p95_ms: 1500` — so the gate's own rationale was a splice.
+
+Why three separate guards missed it:
+
+- ADR-014(c) `<!--verify-->` tags check that a number **exists** in an artifact.
+  95.8 does exist — under stream B.
+- ADR-018 anchors counts in **executable reality**. Also satisfied: the figure is
+  real, just measured over a different population.
+- Both verify claims **one at a time**. The falsehood lives in the *conjunction*.
+
+The streams share p95, max and min exactly, and differ only on p50, mean and the
+two percentages. That partial agreement is what made the splice invisible.
+
+### Decision
+
+1. `engineering/tools/verify_baseline_streams.py` re-derives both streams and
+   **asserts** all eight fields per stream, so which figure belongs to which n is
+   executable rather than remembered.
+2. Every citation corrected to its own stream: the n=102 figures are **95.1 %**
+   and **58.8 %**.
+3. `gate_check.check_no_cross_stream_splice` fails the build if `95.8` or `56.8`
+   appears without naming its stream on the same line.
+
+### Negative control (ADR-010)
+
+```
+appended to README.md: "p50 6359.5 ms (n=102) where 95.8 % exceeded 1500 ms."
+  [FAIL] no_cross_stream_splice
+         n=118 figures cited without naming the stream: README.md:171
+```
+
+### Consequences
+
+- Gate checks: 11 → **12**.
+- The corrected 95.1 % is *weaker* for the project's argument than the 95.8 % it
+  replaces. It is also what the data says. Restating a target to flatter the
+  rebuild is the H2 violation ADR-011 already refused once.
+- **The rule this generalises:** verifying claims individually does not verify
+  them jointly. When several figures appear in one sentence, the sentence needs a
+  single provenance — otherwise each number defends itself while the claim they
+  form together is unowned.
+
+**Verify:** `python3 engineering/tools/verify_baseline_streams.py` (asserts all 16 fields)
