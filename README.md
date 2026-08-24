@@ -22,10 +22,11 @@ A measured rebuild of a legacy proxy scraper.
 
 | | |
 |---|---|
-| Phase | **P04 — POOL + ADMISSION GATE · gate PASSED** |
+| Phase | **P05 — STORE + LEASE · gate PASSED** |
 | Gate 0 | ✅ PASSED (re-earned twice after sync losses — ADR-010) |
-| Tests | **162 passed** — 22 architecture/fitness + 36 domain + 29 registry + 26 fetch/parsing + 49 policy/admission <!--verify:engineering/TASK_STATE.json:tests.passed:162--> |
-| Gate checks | **12/12 pass** (`make doctor`) |
+| Tests | **204 passed** — 195 unit + 9 integration (real concurrency, SIGKILL, negative control) <!--verify:engineering/TASK_STATE.json:tests.passed:204--> |
+| Gate checks | **14/14 pass** (`make doctor`) |
+| H3 no-double-delivery | **0 duplicates** across 12 processes; the same test catches **30** on a read-then-write store <!--verify:engineering/raw/lease_concurrency.json:real.duplicates:0--> |
 | Legacy proxies the v4 gate rejects | **97 of 102** (95.1 %) <!--verify:engineering/TASK_STATE.json:baseline_to_beat.v4_gate_replay.v4_reject_pct:95.1--> |
 | Sources | **67 ACTIVE** of 120 probed (range 67–69, see below) <!--verify:engineering/TASK_STATE.json:source_registry.active:67--> |
 | Candidates | **502 189** unique from one sweep <!--verify:engineering/TASK_STATE.json:source_registry.unique_candidates:502189--> |
