@@ -1,0 +1,14 @@
+[
+  "atlas/tests/unit/test_architecture.py::test_adapters_do_not_import_api_or_engine",
+  "atlas/tests/unit/test_architecture.py::test_core_declares_no_module_level_mutable_state",
+  "atlas/tests/unit/test_architecture.py::test_core_has_no_io_or_network_imports",
+  "atlas/tests/unit/test_architecture.py::test_core_imports_are_on_the_allowlist",
+  "atlas/tests/unit/test_architecture.py::test_core_modules_import_cleanly_without_side_effects",
+  "atlas/tests/unit/test_architecture.py::test_domain_does_not_import_policy_or_ports",
+  "atlas/tests/unit/test_architecture.py::test_no_bare_except_anywhere",
+  "atlas/tests/unit/test_architecture.py::test_no_captcha_or_bypass_machinery",
+  "atlas/tests/unit/test_architecture.py::test_no_default_target_url_constant",
+  "atlas/tests/unit/test_architecture.py::test_no_hardcoded_proxy_source_urls_in_code",
+  "atlas/tests/unit/test_architecture.py::test_no_silent_exception_handlers",
+  "atlas/tests/unit/test_architecture.py::test_no_tls_verification_disabled"
+]
