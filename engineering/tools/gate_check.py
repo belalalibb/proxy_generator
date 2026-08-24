@@ -64,8 +64,24 @@ def check_declared_evidence(res: Result) -> None:
         if t.get("status") != "DONE":
             continue
         for ev in t.get("evidence", []):
-            if not (ROOT / ev).exists():
-                bad.append(f"{t['id']} -> {ev}")
+            # Evidence may be "path" or "path::symbol" (e.g. a specific test).
+            # Verifying only the path would let a task cite a test that does not
+            # exist, so the symbol is checked too. Found 2026-08-24: this check
+            # had been stringly-comparing the whole "path::name" as a filename,
+            # so every ::-form silently "existed". Latent until P02 first used it.
+            path_part, _, symbol = ev.partition("::")
+            target = ROOT / path_part
+            if not target.exists():
+                bad.append(f"{t['id']} -> {ev} (no such file)")
+                continue
+            if symbol:
+                try:
+                    text = target.read_text(encoding="utf-8")
+                except OSError as exc:
+                    bad.append(f"{t['id']} -> {ev} (unreadable: {exc})")
+                    continue
+                if f"def {symbol}(" not in text:
+                    bad.append(f"{t['id']} -> {ev} (symbol not defined in file)")
     res.add("done_tasks_have_evidence", not bad,
             "missing: " + "; ".join(bad) if bad else
             "every DONE task's evidence exists on disk")
