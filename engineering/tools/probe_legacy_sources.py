@@ -123,14 +123,16 @@ def parse_html_table(body: str) -> set[str]:
     return out
 
 
-def classify(status: int | None, body: str, err: str | None) -> tuple[str, dict]:
+def classify(status: int | None, body: str, err: str | None,
+             fetch_meta: dict | None = None) -> tuple[str, dict]:
     """Returns (verdict, parse detail). THROTTLED is distinct from EMPTY (ADR-006)."""
+    fetch_meta = fetch_meta or {}
     if err:
-        return "ERROR", {"error": err}
+        return "ERROR", {"error": err, **fetch_meta}
     if status is None:
-        return "ERROR", {"error": "no status"}
+        return "ERROR", {"error": "no status", **fetch_meta}
     if status != 200:
-        return "DEAD", {"http_status": status}
+        return "DEAD", {"http_status": status, **fetch_meta}
 
     adj = parse_adjacent(body)
     js = parse_json_walk(body)
@@ -147,12 +149,30 @@ def classify(status: int | None, body: str, err: str | None) -> tuple[str, dict]
         "best_parser": best_name,
         "unique_candidates": len(best),
         "recovered_by_structured_parser": bool(best) and not adj,
+        **fetch_meta,
     }
     if best:
         verdict = {"regex_adjacent": "ALIVE", "json_path": "ALIVE_JSON",
                    "html_table": "ALIVE_HTML_TABLE"}[best_name]
         return verdict, detail
-    # nothing parsed: is it a throttle or a genuinely empty list?
+
+    # ── ADR-013(c)/(d): nothing parsed. Before blaming the SOURCE, rule out OUR
+    # OWN fetch. An incomplete body is our fault and must be re-fetched, never
+    # recorded as an empty source -- that error has already misclassified the
+    # GeoNode API twice, from two different causes.
+    if fetch_meta.get("short_read") or fetch_meta.get("body_truncated_at_cap"):
+        return "FETCH_INCOMPLETE", detail
+    ctype = (fetch_meta.get("content_type") or "").lower()
+    if "json" in ctype:
+        # served as JSON but nothing walked out of it => the bytes are suspect,
+        # not the source.
+        try:
+            json.loads(body)
+        except (json.JSONDecodeError, ValueError):
+            detail["json_parse_failed"] = True
+            return "FETCH_INCOMPLETE", detail
+
+    # genuinely empty vs throttled
     if len(body) < THROTTLE_BODY_BYTES:
         return "THROTTLED_OR_SHORT", detail
     return "TRULY_EMPTY", detail
@@ -171,13 +191,52 @@ async def fetch(session, url: str, host_locks, host_last) -> dict:
         status = None
         body = ""
         err = None
+        fetch_meta: dict = {}
         try:
             async with session.get(url, timeout=aiohttp.ClientTimeout(total=TIMEOUT_S),
                                    headers={"User-Agent": UA},
                                    allow_redirects=True) as resp:
                 status = resp.status
-                raw = await resp.content.read(BODY_CAP)
+                # ADR-013(a): read to EOF. `resp.content.read(n)` returns only what
+                # is CURRENTLY BUFFERED, up to n -- not n bytes -- so it silently
+                # truncates large bodies and a live source then looks empty.
+                chunks: list[bytes] = []
+                total = 0
+                for_truncated = False
+                async for chunk in resp.content.iter_chunked(64 * 1024):
+                    chunks.append(chunk)
+                    total += len(chunk)
+                    if total >= BODY_CAP:
+                        for_truncated = True
+                        break
+                raw = b"".join(chunks)
                 body = raw.decode("utf-8", errors="replace")
+                # ADR-013(b): record declared length so a short read is PROVABLE
+                # from the artifact rather than inferred later.
+                declared = resp.headers.get("Content-Length")
+                content_length = int(declared) if (declared or "").isdigit() else None
+                content_type = (resp.headers.get("Content-Type") or "").split(";")[0].strip()
+                encoding = (resp.headers.get("Content-Encoding") or "").strip().lower()
+                body_bytes = len(raw)
+                # HONESTY NOTE: aiohttp transparently decompresses, so for a gzip/br
+                # response `Content-Length` is the COMPRESSED size and is NOT
+                # comparable to len(raw). Measured example: TheSpeedX/http.txt
+                # reported Content-Length 20360 while the decoded body was 54 284
+                # bytes. Comparing them would be meaningless, so the check is only
+                # applied to identity-encoded responses and the reason is recorded.
+                comparable = content_length is not None and encoding in ("", "identity")
+                short_read = bool(
+                    comparable and not for_truncated and body_bytes < content_length
+                )
+                fetch_meta = {
+                    "body_bytes": body_bytes,
+                    "content_length": content_length,
+                    "content_encoding": encoding or None,
+                    "length_comparable": comparable,
+                    "content_type": content_type,
+                    "short_read": short_read,
+                    "body_truncated_at_cap": for_truncated,
+                }
         except asyncio.TimeoutError:
             err = "timeout"
         except (aiohttp.ClientError, OSError, UnicodeError) as exc:
@@ -186,7 +245,7 @@ async def fetch(session, url: str, host_locks, host_last) -> dict:
         finally:
             host_last[host] = time.monotonic()
 
-        verdict, detail = classify(status, body, err)
+        verdict, detail = classify(status, body, err, fetch_meta)
         return {"url": url, "host": host, "verdict": verdict,
                 "elapsed_ms": round((time.monotonic() - t0) * 1000, 1),
                 "fetched_at_utc": datetime.now(timezone.utc).isoformat(),
