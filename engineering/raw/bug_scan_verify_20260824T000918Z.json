@@ -1,0 +1,232 @@
+{
+  "task": "P00.T7",
+  "generator": "engineering/tools/verify_bug_lines.py",
+  "deterministic": true,
+  "network_used": false,
+  "measured_at_utc": "20260824T000918Z",
+  "totals": {
+    "bare_except": 9,
+    "captcha": 10,
+    "disable_warnings": 3,
+    "except_broad": 33,
+    "except_pass": 9,
+    "hardcoded_http_url": 257,
+    "input_call": 3,
+    "instagram_target": 2,
+    "max_workers_literal": 9,
+    "open_append": 2,
+    "open_write_truncate": 8,
+    "silent_handlers": 23,
+    "time_sleep": 13,
+    "verify_false": 9
+  },
+  "per_file": {
+    "v1.py": {
+      "disable_warnings": 1,
+      "except_broad": 10,
+      "hardcoded_http_url": 75,
+      "input_call": 1,
+      "instagram_target": 1,
+      "max_workers_literal": 3,
+      "open_write_truncate": 2,
+      "time_sleep": 4,
+      "verify_false": 3,
+      "silent_handlers": 3
+    },
+    "v2.py": {
+      "bare_except": 7,
+      "except_broad": 3,
+      "except_pass": 1,
+      "hardcoded_http_url": 10,
+      "input_call": 1,
+      "max_workers_literal": 2,
+      "open_write_truncate": 1,
+      "silent_handlers": 7
+    },
+    "v3.py": {
+      "bare_except": 1,
+      "disable_warnings": 1,
+      "except_broad": 10,
+      "hardcoded_http_url": 70,
+      "input_call": 1,
+      "instagram_target": 1,
+      "max_workers_literal": 3,
+      "open_write_truncate": 2,
+      "time_sleep": 4,
+      "verify_false": 3,
+      "silent_handlers": 2
+    },
+    "bebo.py": {
+      "captcha": 10,
+      "except_broad": 1,
+      "except_pass": 1,
+      "hardcoded_http_url": 3,
+      "open_append": 1,
+      "open_write_truncate": 1,
+      "time_sleep": 1,
+      "silent_handlers": 1
+    },
+    "proxychecker.py": {
+      "bare_except": 1,
+      "hardcoded_http_url": 5,
+      "silent_handlers": 1
+    },
+    "proxy_generator_v2.py": {
+      "disable_warnings": 1,
+      "except_broad": 9,
+      "except_pass": 7,
+      "hardcoded_http_url": 94,
+      "max_workers_literal": 1,
+      "open_append": 1,
+      "open_write_truncate": 2,
+      "time_sleep": 4,
+      "verify_false": 3,
+      "silent_handlers": 9
+    }
+  },
+  "silent_handlers": [
+    {
+      "file": "bebo.py",
+      "line": 8,
+      "handler": "except Exception:",
+      "body": "pass"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 191,
+      "handler": "except (ValueError, AttributeError):",
+      "body": "return False"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 237,
+      "handler": "except Exception:",
+      "body": "pass"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 281,
+      "handler": "except Exception:",
+      "body": "return set()"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 301,
+      "handler": "except Exception:",
+      "body": "pass"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 318,
+      "handler": "except Exception:",
+      "body": "pass"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 329,
+      "handler": "except Exception:",
+      "body": "pass"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 349,
+      "handler": "except Exception:",
+      "body": "pass"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 416,
+      "handler": "except FileNotFoundError:",
+      "body": "pass"
+    },
+    {
+      "file": "proxy_generator_v2.py",
+      "line": 529,
+      "handler": "except Exception:",
+      "body": "pass"
+    },
+    {
+      "file": "proxychecker.py",
+      "line": 18,
+      "handler": "except:",
+      "body": "return False"
+    },
+    {
+      "file": "v1.py",
+      "line": 220,
+      "handler": "except (ValueError, IndexError, AttributeError):",
+      "body": "continue"
+    },
+    {
+      "file": "v1.py",
+      "line": 318,
+      "handler": "except ValueError:",
+      "body": "continue"
+    },
+    {
+      "file": "v1.py",
+      "line": 343,
+      "handler": "except ValueError:",
+      "body": "continue"
+    },
+    {
+      "file": "v2.py",
+      "line": 96,
+      "handler": "except (ValueError, AttributeError):",
+      "body": "return False"
+    },
+    {
+      "file": "v2.py",
+      "line": 193,
+      "handler": "except:",
+      "body": "return []"
+    },
+    {
+      "file": "v2.py",
+      "line": 211,
+      "handler": "except:",
+      "body": "return []"
+    },
+    {
+      "file": "v2.py",
+      "line": 228,
+      "handler": "except:",
+      "body": "return []"
+    },
+    {
+      "file": "v2.py",
+      "line": 252,
+      "handler": "except:",
+      "body": "return []"
+    },
+    {
+      "file": "v2.py",
+      "line": 304,
+      "handler": "except:",
+      "body": "return False"
+    },
+    {
+      "file": "v2.py",
+      "line": 327,
+      "handler": "except:",
+      "body": "pass"
+    },
+    {
+      "file": "v3.py",
+      "line": 186,
+      "handler": "except (ValueError, AttributeError):",
+      "body": "return False"
+    },
+    {
+      "file": "v3.py",
+      "line": 402,
+      "handler": "except:",
+      "body": "return False"
+    }
+  ],
+  "silent_handler_count": 23,
+  "drift_vs_committed": [
+    "except_pass: committed=10 regenerated=9",
+    "max_workers_literal: committed=4 regenerated=9"
+  ]
+}
