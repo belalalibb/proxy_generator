@@ -353,3 +353,85 @@ Honest invariant status: H1 ✅ · H2 ✅ · H4 ✅ · H5 ✅ · H6 ✅ · H3/H7
 (`iter_chunked` + `FETCH_INCOMPLETE`), the three parsers behind one interface,
 tested **offline** against stored bodies in `engineering/raw/` so no test depends
 on the live network.
+
+---
+
+## 2026-08-24 — P03 · the fetch that cannot lie about a body, and a seam nobody had crossed
+
+**AR:** أخطر عيب ليس في مكوّن، بل في وصلة لم يعبرها أحد.
+**EN:** The most dangerous defect is not inside a component; it is at a seam that no
+code has crossed yet.
+
+### ADR-017 — one concept, two vocabularies, never introduced
+
+`ParserKind` (hand-written, P01) said `line_ipport / json_path / csv_columns /
+html_table / regex`. The registry (**generated from measured probe data**, P02)
+says `regex_adjacent / json_path / html_table`.
+
+| | |
+|---|---|
+| enum members with no implementation | `csv_columns`, `regex` |
+| enum members no source uses | `line_ipport` |
+| registry value the enum couldn't represent | **`regex_adjacent`** |
+| ENABLED rows affected | **59 of 67 — 88%** |
+
+Two green phase gates missed this because **nothing had ever converted a
+`SourceRow` into a `Source`**, so `ParserKind(row.parser)` had no execution path
+on which to fail. P03 is the first phase that must cross that seam.
+
+The pinning test looked adequate and was not: `{...} <= kinds` is a **subset**
+assertion, and cannot detect a vocabulary that is simultaneously too large *and*
+missing the one member that matters. It now asserts `==`, and `VALID_PARSERS` is
+**derived** from the enum rather than re-typed, so disagreement is no longer
+expressible.
+
+### The fetch discipline (ADR-013), now in production code
+
+`read_to_eof` + `verify_complete`, then parse — never the reverse. Proven against
+the stored 230 067-octet GeoNode body:
+
+| | |
+|---|---|
+| `read(n)` on a 74 241-octet buffer | 74 241 octets → **0 candidates** |
+| `iter_chunked` to EOF | **230 067 octets → 500 candidates** |
+
+Both directions are tested: a fixture reproduces the truncating `read(n)` *and*
+asserts the truncated JSON genuinely yields zero — otherwise the fix would only
+prove my fake is self-consistent.
+
+**Three facts, three codes**, no longer collapsible:
+`FETCH_INCOMPLETE` (our fault, says nothing about the source) ·
+`SOURCE_THROTTLED` (200 OK, tiny body — the 659-octet signature) ·
+`PARSE_EMPTY` (**intact** body, genuinely nothing there — the only one that is
+evidence about the source).
+
+One deliberate refusal: the adapter parses with the **declared** parser only. On
+the GeoNode body with `regex_adjacent` declared it returns `PARSE_EMPTY`, *not* a
+silent rescue by `json_path`. Falling back would hide a wrong declaration, and
+per-source attribution is what makes a bad source diagnosable.
+
+One near-miss avoided: comparing `Content-Length` to a decompressed body would
+raise a **false** `FETCH_INCOMPLETE` on every gzip response. `Content-Encoding`
+is now treated as *incomparable* — honestly unverifiable, not "verified".
+
+### Two errors of mine, corrected rather than hidden
+
+1. A test asserted `parser=None` rows convert to Sources. The registry disagreed:
+   **37 of 53** DISABLED rows have no parser — nothing ever parsed them, which is
+   *why* they're disabled. I corrected the test, not the model.
+2. My offline-guarantee guard scanned the file for banned strings and so matched
+   **its own list of banned strings** — failing on itself while proving nothing
+   about the other 25 tests. Rewritten over AST imports.
+
+### PHASE GATE 3 · **PASSED**
+
+`make doctor` → **10/10 gate checks PASS**, **113 tests** (up from 87). Negative
+controls: injecting `import aiohttp` fails the offline guard; adding
+`CSV_COLUMNS` fails the implementation guard; both restore green.
+
+Honest invariant status: H1 ✅ · H2 ✅ · H4 ✅ · H5 ✅ · H6 ✅ ·
+**H3/H7/H8 still `false`** — candidates can now be fetched and parsed, but
+nothing measures or admits them.
+
+**NEXT:** P04 — pool + admission gate (H3/H7). Admission must refuse on zero
+evidence (`NOT_MEASURED`) rather than defaulting to admit.
