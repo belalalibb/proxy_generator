@@ -24,9 +24,10 @@ A measured rebuild of a legacy proxy scraper.
 |---|---|
 | Phase | **P05 — STORE + LEASE · gate PASSED** |
 | Gate 0 | ✅ PASSED (re-earned twice after sync losses — ADR-010) |
-| Tests | **204 passed** — 195 unit + 9 integration (real concurrency, SIGKILL, negative control) <!--verify:engineering/TASK_STATE.json:tests.passed:204--> |
+| Tests | **211 passed** — 202 unit + 9 integration (real concurrency, SIGKILL, negative control) <!--verify:engineering/TASK_STATE.json:tests.passed:211--> |
 | Gate checks | **14/14 pass** (`make doctor`) |
-| H3 no-double-delivery | **0 duplicates** across 12 processes; the same test catches **30** on a read-then-write store <!--verify:engineering/raw/lease_concurrency.json:real.duplicates:0--> |
+| H3 no-double-delivery | **0 duplicates** vs **30** for a read-then-write store, at an *identical* config (pool 12, 6 procs × 6) <!--verify:engineering/raw/lease_concurrency.json:head_to_head.real_duplicates:0--> <!--verify:engineering/raw/lease_concurrency.json:head_to_head.naive_duplicates:30--> |
+| H3 under oversubscription | **24 of 24** handed out exactly once, 48 requested by 12 processes <!--verify:engineering/raw/lease_concurrency.json:real.unique_fingerprints:24--> |
 | Legacy proxies the v4 gate rejects | **97 of 102** (95.1 %) <!--verify:engineering/TASK_STATE.json:baseline_to_beat.v4_gate_replay.v4_reject_pct:95.1--> |
 | Sources | **67 ACTIVE** of 120 probed (range 67–69, see below) <!--verify:engineering/TASK_STATE.json:source_registry.active:67--> |
 | Candidates | **502 189** unique from one sweep <!--verify:engineering/TASK_STATE.json:source_registry.unique_candidates:502189--> |
