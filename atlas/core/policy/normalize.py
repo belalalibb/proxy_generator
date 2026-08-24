@@ -69,6 +69,35 @@ _SCHEME_RE = re.compile(r"^\s*(?P<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://(?P<rest>.*
 # proxy.txt shows real-world ports as diverse as 83, 999 and 3125.
 _IMPOSSIBLE_PORTS = frozenset({0})
 
+# RFC 6598 carrier-grade NAT. Named explicitly because `ipaddress` reports
+# is_private=False AND is_global=False for it, so it fell through every specific
+# check in normalize_one and was ACCEPTED -- while SECURITY.md P5 claimed it was
+# rejected "via ipaddress" (ADR-028).
+_CGNAT = ipaddress.ip_network("100.64.0.0/10")
+
+
+def is_globally_routable(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    """
+    Is this address routable on the public internet?
+
+    Exported so the SSRF rule has ONE implementation: the candidate path
+    (normalize_one, below) and the target path (policy/target_policy.py, ADR-029)
+    both call this. Two copies of a security predicate is two things to keep in
+    sync, and the one that drifts is the one nobody is testing.
+
+    This is deliberately NOT a replacement for the specific is_loopback /
+    is_multicast / is_private checks. Measured on CPython 3.13.13:
+
+        224.0.0.1        is_global=True   (multicast!)
+        239.255.255.250  is_global=True   (multicast!)
+        100.64.1.1       is_global=False  is_private=False  (CGNAT)
+
+    So `is_global` alone would newly ADMIT multicast, and the specific checks
+    alone miss CGNAT. Neither subsumes the other; normalize_one runs both, with
+    this as the closing catch-all.
+    """
+    return bool(ip.is_global)
+
 
 class DropReason:
     """
@@ -81,6 +110,9 @@ class DropReason:
     RESERVED_RANGE = "RESERVED_RANGE"
     MULTICAST = "MULTICAST"
     UNSPECIFIED = "UNSPECIFIED"
+    LINK_LOCAL = "LINK_LOCAL"
+    CGNAT_RANGE = "CGNAT_RANGE"
+    NOT_GLOBALLY_ROUTABLE = "NOT_GLOBALLY_ROUTABLE"
     BAD_PORT = "BAD_PORT"
     HAS_CREDENTIALS = "HAS_CREDENTIALS"
     NOT_AN_IP = "NOT_AN_IP"
@@ -185,12 +217,23 @@ def normalize_one(raw: str) -> tuple[NormalizedCandidate | None, str | None]:
     except ValueError:
         return None, DropReason.NOT_AN_IP
 
+    # ORDER IS PART OF THE CONTRACT (same principle as admission.py): the most
+    # specific true statement wins, and the catch-all closes the class last.
     if ip.is_unspecified:
         return None, DropReason.UNSPECIFIED
     if ip.is_loopback:
         return None, DropReason.LOOPBACK
     if ip.is_multicast:
         return None, DropReason.MULTICAST
+    if ip.is_link_local:
+        # Before is_private: 169.254.169.254 (the cloud metadata endpoint named
+        # in SECURITY.md P5) is BOTH, and LINK_LOCAL is the actionable reading.
+        return None, DropReason.LINK_LOCAL
+    if ip.version == 4 and ip in _CGNAT:
+        # ADR-028. This branch is why the bug existed: CGNAT satisfies NONE of
+        # the properties above and is_global is False, so before this check the
+        # candidate was accepted.
+        return None, DropReason.CGNAT_RANGE
     if ip.is_private:
         # Checked AFTER loopback and multicast so the reason is the most
         # specific true statement: 127.0.0.1 is private too, but LOOPBACK is
@@ -198,6 +241,11 @@ def normalize_one(raw: str) -> tuple[NormalizedCandidate | None, str | None]:
         return None, DropReason.PRIVATE_RANGE
     if ip.is_reserved:
         return None, DropReason.RESERVED_RANGE
+    if not is_globally_routable(ip):
+        # THE CATCH-ALL. Without this the check is an enumeration with no
+        # backstop, and the next reserved-but-unflagged allocation walks
+        # straight through -- which is exactly how CGNAT got in.
+        return None, DropReason.NOT_GLOBALLY_ROUTABLE
 
     return NormalizedCandidate(
         endpoint=endpoint,
@@ -258,5 +306,6 @@ def to_proxies(
 
 __all__ = [
     "DropReason", "NormalizeReport", "NormalizedCandidate",
+    "is_globally_routable",
     "normalize_batch", "normalize_one", "split_scheme", "to_proxies",
 ]
