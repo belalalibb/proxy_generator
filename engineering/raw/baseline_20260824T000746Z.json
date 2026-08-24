@@ -1,0 +1,68 @@
+{
+  "task": "P00.T6",
+  "generator": "engineering/tools/measure_baseline.py",
+  "measured_at_utc": "20260824T000746Z",
+  "historical": {
+    "available": true,
+    "deterministic": true,
+    "evidence": [
+      "proxy_details.json",
+      "proxy_scraper.log"
+    ],
+    "scan_date": "2025-09-01T18:11:48.009891",
+    "sources": 67,
+    "collected": 15000,
+    "working": 102,
+    "duration_s": 1418.98,
+    "admitted_latency": {
+      "n": 102,
+      "min_ms": 756.0,
+      "p50_ms": 6359.5,
+      "mean_ms": 7145.1,
+      "p95_ms": 15903.0,
+      "max_ms": 19035.0
+    },
+    "success_rate_pct": 0.68,
+    "collected_per_min": 634.3,
+    "working_per_min": 4.31,
+    "log_admitted": {
+      "n": 118,
+      "over_1500ms_pct": 95.8,
+      "over_5000ms_pct": 56.8,
+      "min_ms": 756.0,
+      "p50_ms": 6092.5,
+      "mean_ms": 7032.3,
+      "p95_ms": 15903.0,
+      "max_ms": 19035.0
+    }
+  },
+  "measured_now": {
+    "available": true,
+    "kind": "network_snapshot",
+    "bias_warning": "ADR-009: survivorship bias. These are survivors of a ~12-month-old list; the slow proxies died and were never recorded as deaths, so p95 looks flatteringly low. The HISTORICAL stream is the honest measure of what the legacy gate admitted.",
+    "target": "https://example.com",
+    "legacy_params": {
+      "timeout_s": 10,
+      "retries": 2,
+      "workers": 100,
+      "accept_rule": "status==200 and len(body)>1000"
+    },
+    "pool_available": 616,
+    "sample": 300,
+    "seed": 1337,
+    "live": 11,
+    "live_rate_pct": 3.67,
+    "wall_clock_s": 61.3,
+    "throughput_tested_per_s": 4.9,
+    "latency": {
+      "n": 11,
+      "min_ms": 135.9,
+      "p50_ms": 1107.8,
+      "mean_ms": 918.7,
+      "p95_ms": 1372.6,
+      "max_ms": 1473.0
+    },
+    "le_900ms_pct": 45.5,
+    "le_1500ms_pct": 100.0
+  }
+}
