@@ -40,6 +40,8 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
+import aiohttp
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
@@ -50,37 +52,61 @@ from atlas.core.domain.verdict import ReasonCode                      # noqa: E4
 from atlas.core.policy.admission import (                             # noqa: E402
     AdmissionPolicy, build_profile, decide,
 )
-from atlas.core.policy.normalize import normalize_many                # noqa: E402
+from atlas.core.policy.normalize import normalize_batch, to_proxies   # noqa: E402
 from atlas.core.ports.probe import ProbePlan                          # noqa: E402
+from atlas.adapters.http_source import HttpSourceAdapter              # noqa: E402
+from atlas.adapters.registry import fetchable_sources, load_registry  # noqa: E402
 
 
-def load_candidates(limit: int, seed: int) -> list[Proxy]:
+async def load_candidates(limit: int, seed: int, max_sources: int) -> list[Proxy]:
     """
-    Candidates from the newest pinned probe snapshot (ADR-002: never a hardcoded
-    source URL). Shuffled with a FIXED seed so a rerun probes the same set and the
-    numbers are comparable rather than merely similar.
+    Fetch candidates from the ENABLED registry sources.
+
+    The URLs come from atlas/data/sources/sources.json, never from a literal here
+    (ADR-002). The probe snapshots record only per-source COUNTS, not the
+    candidate strings, so candidates must be fetched -- which is the honest option
+    anyway, since a proxy list from a past sweep would be measuring the past.
+
+    Sources are shuffled with a FIXED seed so a rerun draws from the same set and
+    two runs are comparable rather than merely similar.
     """
-    snaps = sorted((ROOT / "engineering" / "raw").glob("source_probe_*.json"))
-    if not snaps:
-        raise SystemExit("no source_probe_*.json snapshot found")
-    snap = json.loads(snaps[-1].read_text(encoding="utf-8"))
-    rows = snap if isinstance(snap, list) else snap.get("results", [])
+    registry = load_registry()
+    enabled = list(fetchable_sources(registry))
+    picked = list(enabled)
+    random.Random(seed).shuffle(picked)
+    picked = picked[:max_sources]
 
     raw: list[str] = []
-    for row in rows:
-        for key in ("sample_candidates", "candidates", "samples"):
-            v = row.get(key)
-            if isinstance(v, list):
-                raw.extend(str(x) for x in v)
+    yielded = 0
+    timeout = aiohttp.ClientTimeout(total=25)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        adapter = HttpSourceAdapter(session)
+        results = await asyncio.gather(
+            *[adapter.fetch(src) for src in picked], return_exceptions=True)
+
+    for src, res in zip(picked, results):
+        if isinstance(res, BaseException):
+            # Reported, never swallowed (B-02 was 23 silent handlers).
+            print(f"    ! {src.id}: {type(res).__name__}: {res}")
+            continue
+        if res.candidates:
+            yielded += 1
+            raw.extend(res.candidates)
+        else:
+            print(f"    - {src.id}: no candidates ({res.reason.value})")
+
+    print(f"  sources    : {len(picked)} sampled of {len(enabled)} enabled, "
+          f"{yielded} yielded candidates")
+
     seen: set[str] = set()
     uniq = [c for c in raw if not (c in seen or seen.add(c))]
     random.Random(seed).shuffle(uniq)
 
-    report = normalize_many(tuple(uniq))
-    print(f"  snapshot   : {snaps[-1].name}")
-    print(f"  candidates : {len(uniq)} unique -> {len(report.accepted)} normalised "
-          f"({len(report.dropped)} dropped)")
-    return list(report.accepted[:limit])
+    report = normalize_batch(uniq)
+    proxies = to_proxies(report)
+    print(f"  candidates : {len(uniq)} unique -> {len(proxies)} normalised "
+          f"({len(report.dropped)} dropped by S1)")
+    return list(proxies[:limit])
 
 
 async def probe_one(probe: AiohttpProbe, proxy: Proxy, target: Target,
@@ -157,7 +183,10 @@ async def run(args) -> dict:
     print(f"  baseline   : direct egress IP established, marker "
           f"{baseline.body_marker!r} (no proxy)")
 
-    candidates = load_candidates(args.limit, args.seed)
+    candidates = await load_candidates(args.limit, args.seed, args.max_sources)
+    if not candidates:
+        raise SystemExit("no candidates fetched -- refusing to report a rate of 0 "
+                         "as if it were a measurement of proxy quality")
     print(f"  probing    : {len(candidates)} candidates, k={args.k}, "
           f"concurrency={args.concurrency}\n")
 
@@ -233,6 +262,8 @@ def main() -> int:
     ap.add_argument("--timeout-ms", type=int, default=8000)
     ap.add_argument("--tcp-timeout-ms", type=int, default=3000)
     ap.add_argument("--seed", type=int, default=20260824)
+    ap.add_argument("--max-sources", type=int, default=25,
+                    help="how many enabled registry sources to fetch from")
     # Required, no default (H5/ADR-007). httpbin/ipify are neutral endpoints that
     # exist to be fetched -- not a login-walled third party.
     ap.add_argument("--target", default="https://httpbin.org/get")
@@ -243,8 +274,13 @@ def main() -> int:
     report = asyncio.run(run(args))
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    out = Path(args.out) if args.out else (
-        ROOT / "engineering" / "raw" / f"admission_live_{stamp}.json")
+    # Resolve against ROOT so a relative --out lands in the repo, not the cwd,
+    # and so the summary line below can always be printed as a repo path.
+    out = (Path(args.out) if args.out else
+           ROOT / "engineering" / "raw" / f"admission_live_{stamp}.json")
+    if not out.is_absolute():
+        out = ROOT / out
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
     t = report["totals"]
