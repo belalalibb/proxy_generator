@@ -1,0 +1,63 @@
+{
+ "generated_at": "2026-08-24T15:58:21.559524+00:00",
+ "module": "atlas/engine/handout.py",
+ "suite": "atlas/tests/unit/test_handout.py",
+ "baseline": {
+  "passed": 38,
+  "failed": 0
+ },
+ "mutations": [
+  {
+   "mutation": "target_checked_after_lease",
+   "applied": true,
+   "killed_by": 6,
+   "survived": false,
+   "rationale": "Skip target validation entirely: the ADR-029 policy stops being consulted on the serving path, which is the exact state P08 set out to fix."
+  },
+  {
+   "mutation": "no_overselect",
+   "applied": true,
+   "killed_by": 4,
+   "survived": false,
+   "rationale": "Disable over-selection, so the store's one-term p95 order decides who is served and the four-term P07 score becomes decorative (ADR-033)."
+  },
+  {
+   "mutation": "leak_surplus",
+   "applied": true,
+   "killed_by": 1,
+   "survived": false,
+   "rationale": "Restore the ORIGINAL defect this suite found: release from the two buckets instead of from `leased`. Correct on the happy path, and it leaks every leased row when ranking raises."
+  },
+  {
+   "mutation": "stale_reported_as_fresh",
+   "applied": true,
+   "killed_by": 3,
+   "survived": false,
+   "rationale": "Present 900-second-old evidence as current, silently -- the B-16 defect that made 97% of proxy.txt look alive."
+  },
+  {
+   "mutation": "never_checked_looks_just_checked",
+   "applied": true,
+   "killed_by": 1,
+   "survived": false,
+   "rationale": "Report an unverified proxy's age as 0.0, making 'never checked' indistinguishable from 'just checked'."
+  },
+  {
+   "mutation": "all_stale_collapsed_into_pool_empty",
+   "applied": true,
+   "killed_by": 2,
+   "survived": false,
+   "rationale": "Collapse two facts that demand opposite operator responses: an empty pool (add sources) and a fully stale one (run discovery)."
+  },
+  {
+   "mutation": "accounting_identity_unchecked",
+   "applied": true,
+   "killed_by": 1,
+   "survived": false,
+   "rationale": "Stop enforcing the lease accounting identity, so a capacity leak can be constructed and reported as a normal result."
+  }
+ ],
+ "survivors": 0,
+ "working_tree_unchanged": true,
+ "method": "The package is copied to a temp tree and the COPY is patched; the real module is never written. A survivor means the suite cannot detect that defect and the claim it protects is unproven."
+}
