@@ -56,10 +56,16 @@ from dataclasses import dataclass
 # `userinfo` is `[^/?#]*` (NOT `[^/?#@]*`) so it consumes up to the LAST '@',
 # matching what every HTTP client does. See the docstring: the non-greedy form
 # was a deny-list bypass.
+#
+# The bracketed alternative excludes '/', '?' and '#' as well as ']' (ADR-032).
+# `\[[^\]]*\]` let a fragment be swallowed INTO the host: CPython strips the
+# fragment before it parses the authority, so `http://[::a%8e#?b8]` truncates to
+# an unterminated `[::a%8e` and is refused, while the looser class accepted the
+# whole thing as one literal. A delimiter can never occur inside a host.
 _URL = re.compile(
     r"^(?P<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://"
     r"(?:(?P<userinfo>[^/?#]*)@)?"
-    r"(?P<hostport>\[[^\]]*\]|[^/?#]*)"
+    r"(?P<hostport>\[[^\]/?#]*\]|[^/?#]*)"
     r"(?P<rest>[/?#].*)?$",
     re.DOTALL,
 )
@@ -146,10 +152,23 @@ def split_url(raw: str | None) -> UrlParts:
         # one. Character-class checks were not enough: `[:]` and `[b.c:9-01]`
         # pass any reasonable class yet CPython refuses them, leaving this
         # splitter more permissive than the oracle. `ipaddress` is already on
-        # core's allowlist and is the authority on the literal's shape, so the
-        # zone id is split off (RFC 6874 `%eth0`, which ipaddress rejects) and
-        # the address itself is parsed.
-        pass  # MUTANT: no IPv6 validation
+        # core's allowlist and is the authority on the literal's shape.
+        #
+        # ADR-032: the WHOLE literal is validated, zone id included. An earlier
+        # version split the zone off first (`host.split("%", 1)[0]`) on the
+        # stated belief that `ipaddress` rejects RFC 6874 scopes. That belief was
+        # false from Python 3.9 on -- IPv6Address('fe80::1%eth0') parses and
+        # exposes .scope_id -- so splitting only discarded the zone from
+        # VALIDATION while keeping it in the returned host. `[::%aa_%]` was
+        # accepted with host '::%aa_%' where CPython refuses the URL: an unparsed
+        # string reaching policy as a host, in the more-permissive-than-oracle
+        # direction this module exists to prevent.
+        if ":" not in host:
+            return UrlParts(scheme=scheme, error=UrlError.MALFORMED)
+        try:
+            ipaddress.IPv6Address(host)
+        except ValueError:
+            return UrlParts(scheme=scheme, error=UrlError.MALFORMED)
     else:
         # Split at the FIRST colon, as CPython does. An unbracketed authority
         # containing a second colon is not a valid host:port -- it is either a
