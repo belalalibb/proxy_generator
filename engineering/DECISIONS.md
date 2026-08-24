@@ -1455,3 +1455,158 @@ test rather than by a promise.
 which `test_the_legacy_default_target_is_refused` pins the ADR-007 case and
 `test_a_lookalike_host_is_not_refused` pins the false-positive direction — a deny-list that
 refuses everything would pass the first test alone.
+
+---
+
+## ADR-030
+### A pure URL splitter in core/, proven against CPython by differential test
+
+**Status.** Accepted (2026-08-24, P08 preparation).
+
+**Context.** `core/policy/target_policy.py` (ADR-029) must know the scheme, host and port of
+a caller-supplied target URL in order to enforce the deny-list and the SSRF rules. The
+obvious implementation is `urllib.parse.urlsplit` — but `test_architecture.py` (ADR-012)
+bans `urllib` inside `atlas/core/`, and the guard caught my own code importing it.
+
+The ban is correct and was not waived. `urllib.parse` is pure *today*, but it lives in the
+same package as `urllib.request`, which opens sockets; allowlisting the package name is
+precisely how a module that must never touch the network acquires an import that can. The
+alternative — a hand-written parser — is the class of code that is *believed* correct and is
+in fact the single most security-critical line in the target path: whatever this function
+calls "the host" is what the deny-list checks, while a real HTTP client dials whatever *it*
+thinks the host is. Any disagreement between the two is a deny-list bypass.
+
+**Decision.** `atlas/core/parsing/url.py` — a pure `re`-based splitter returning
+`UrlParts(scheme, host, port, error)` with **named** refusals (ADR-029: a caller told "no"
+without being told why cannot produce a diagnosable failure). Correctness is not asserted by
+inspection; it is **measured** against CPython by a differential test that lives outside
+`core/` where `urllib` is legal (`atlas/tests/unit/test_url_parity.py`), over curated cases
+plus seeded fuzz. Two differences are deliberate and documented (empty host reported as `''`
+not `None`; port 0 refused as `BAD_PORT`), and both are *stricter*, never more permissive.
+
+**What it caught immediately — a real deny-list bypass.** The first draft matched userinfo
+non-greedily (`[^/?#@]*@`):
+
+| URL | draft host | host a real client dials |
+|---|---|---|
+| `https://x@evil.com@instagram.com/` | `evil.com@instagram.com` | `instagram.com` |
+
+The deny-list is checked against the host, so that URL would have been **ALLOWED** while
+every real client connects to the denied host. Userinfo must be greedy — the authority ends
+at the LAST `@`. Three further defects followed, all the same shape (more permissive than
+the oracle): stray brackets parsed `http://9001]9:0_@-a` as host `-a`; `http://[#12]` parsed
+as host `#12`; `http://[b.c:9-01]` parsed as a host that is not an IPv6 literal.
+
+**Consequence.** `core/` still imports no `urllib`. The parser deliberately does **no**
+percent-decoding and **no** IDNA conversion: decoding would create two spellings of one host
+(the ADR-017 defect class) and IDNA needs `encodings.idna` tables. Both belong at connect
+time in the adapter, which is where the real client resolves the name anyway.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_url_parity.py -q`.
+
+---
+
+## ADR-031
+### config.yaml is authoritative: the deny-list is DATA, loaded by an adapter
+
+**Status.** Accepted (2026-08-24, P07/P08 boundary). Retro-documented 2026-08-24 — the code
+shipped citing this number while the ADR itself was missing; caught by
+`gate_check.py::cited_adrs_exist` (the reverse-edge check added in P07.T5), which is the
+check working as intended on its own author.
+
+**Context.** `config.yaml` has carried a `targets.allow_policy` block since P01. ADR-029
+built the code that *evaluates* it (`core/policy/target_policy.py`) but not the code that
+*reads* it: the deny-list was a hardcoded default inside the policy dataclass. Two
+consequences, and the build caught the first:
+
+1. `test_no_default_target_url_constant` **failed**. Naming instagram.com / facebook.com /
+   tiktok.com in executable code is banned by H5 / ADR-007 / ADR-012 — that ban exists so the
+   legacy default target cannot creep back in, and a "default deny-list" is exactly that
+   creep wearing a safety label.
+2. `config.yaml` stayed decorative in a subtler way. With the hosts compiled in, editing the
+   file could **add** a denied host but never **remove** one, so the file was not
+   authoritative. ADR-029 was written to stop a policy file being decorative; hardcoding its
+   contents recreated that very defect one layer down.
+
+**Decision.** `atlas/adapters/config.py`. `core` owns the RULE (`check_target`, pure,
+exhaustively testable); `adapters` owns the DATA (this loader), because reading a file is I/O
+and `core/` may not do I/O (ADR-012). Failures are **loud**: a missing file, unreadable file,
+invalid YAML, non-mapping root, missing `targets:`/`allow_policy:` block, a `deny_hosts` that
+is a string rather than a list (which would iterate character by character and produce a
+deny-list of *letters*), a non-string entry, or a non-boolean `deny_private_ranges` each
+raise `ConfigError` naming the key. A loader that returns a silent empty default is how a
+security control becomes a no-op without a single line of security code being edited (B-02,
+23 silent handlers).
+
+`load_default_target_is_absent()` is exposed so the API layer can refuse to start against a
+config that has quietly grown a `default_target`, rather than trusting a YAML comment.
+
+**Consequence.** The three denied hosts appear nowhere in executable code. Delete a host from
+the file and it is genuinely no longer denied; add one and it is.
+
+**KNOWN GAP, recorded rather than claimed closed.** The happy path is covered — 
+`test_target_policy.py` calls `load_target_policy()` against the real `config.yaml`, so a
+regression there fails 24 tests — but **none of the 8 `ConfigError` branches has a test**.
+The loud-failure behaviour this ADR advertises as its main safety property is therefore
+*implemented but unverified*, which is the ADR-014 defect class (documented ≠ demonstrated).
+Assigned to P08 as `P08.T0` rather than left as an implicit to-do.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_target_policy.py -q` covers the happy
+path only; the negative-branch tests do not exist yet (see gap above).
+
+---
+
+## ADR-032
+### A bracketed IPv6 literal is validated WHOLE, and delimiters can never be inside it
+
+**Status.** Accepted (2026-08-24, P08 preparation). Amends ADR-030.
+
+**Context.** Two further more-permissive-than-CPython defects in the ADR-030 splitter, both
+found by *extending the fuzz to a shape it had never generated*, not by reading the code.
+
+The ADR-030 fuzz drew `[` and `%` from its alphabet, but the authority shape `http://[...]`
+is vanishingly rare in uniform random strings, so the IPv6 branch was almost never entered.
+**Coverage of a line is not coverage of a shape** — the branch was "covered" by curated
+cases and still shipped two defects.
+
+1. **Zone id never validated.** The code ran `ipaddress.IPv6Address(host.split("%", 1)[0])`,
+   justified by a comment stating that `ipaddress` rejects RFC 6874 scope ids. That claim is
+   **false**, and has been since Python 3.9: `IPv6Address('fe80::1%eth0')` parses and exposes
+   `.scope_id`. So the zone was stripped from *validation* while remaining in the *returned
+   host*: `http://[::%aa_%]` yielded host `'::%aa_%'` where CPython refuses the URL — an
+   unparsed string handed to policy as a host.
+2. **Fragment swallowed into the host.** `\[[^\]]*\]` accepted `http://[::a%8e#?b8]` as one
+   literal. CPython strips the fragment *before* parsing the authority, leaving an
+   unterminated `[::a%8e`, and refuses.
+
+Defect 1 is the more instructive: the comment did not merely fail to describe the code, it
+asserted a **testable falsehood about a dependency** that no test checked. This is the
+fourth recurrence of the prose-vs-code drift class (ADR-022 fsync guard, ADR-023 TLS guard,
+ADR-014 README numbers) — the first three were guards matching their own documentation;
+this one is documentation justifying a weaker check.
+
+**Decision.** Validate the entire bracketed literal, zone id included, with no pre-split;
+and exclude `/`, `?`, `#` from the bracketed alternative in the grammar, since a delimiter
+can never legitimately appear inside a host. A scoped literal (`fe80::1%eth0`) therefore
+still parses — `ipaddress` accepts it — so the fix is a genuine tightening rather than a
+blanket refusal.
+
+**Measured effect** (400 000 bracket-focused fuzz inputs, seeded):
+
+| | accepts what CPython refuses | refuses what CPython accepts |
+|---|---|---|
+| before | 34 | 8 |
+| after | **0** | 8 |
+
+The 8 remaining are the *safe* direction — stray-bracket junk (`http://[::1]:]`) that
+CPython accepts leniently and this splitter refuses, consistent with the module's stated
+policy of reporting `MALFORMED` rather than guessing. They **predate** this ADR and are now
+pinned by an exact count, so a *new* strictness divergence cannot hide inside a vague
+"stricter is fine" allowance.
+
+**Consequence.** `atlas/tests/unit/test_url_parity.py` gains a bracket-focused fuzz
+generator that constructs the `http://[...]` shape directly, alongside the general one. Both
+fixes have teeth proven by injection: re-introducing the zone split fails 4 tests,
+re-introducing the loose regex fails 3.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_url_parity.py -q` (59 tests).
