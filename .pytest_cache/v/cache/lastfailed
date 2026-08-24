@@ -12,8 +12,5 @@
   "atlas/tests/unit/test_engine_MUTANT.py::test_quality_rate_is_admitted_over_probed_not_raw_volume": true,
   "atlas/tests/unit/test_target_policy.py::test_the_default_policy_denies_the_config_hosts": true,
   "atlas/tests/unit/test_handout.py::TestPolicyBounds::test_target_ttl_must_be_positive": true,
-  "atlas/tests/unit/test_recheck.py::TestProbeLifetimeBound::test_the_measured_old_default_is_still_undersized": true,
-  "atlas/tests/unit/test_recheck.py::TestAbandonedRetirement::test_a_leased_row_is_never_retired_by_the_abandon_ladder": true,
-  "atlas/tests/unit/test_recheck.py::TestAbandonedRetirement::test_a_probing_row_is_never_retired_from_under_a_live_probe": true,
-  "atlas/tests/unit/test_recheck.py::TestAbandonedRetirement::test_an_already_retired_row_is_not_retired_twice": true
+  "atlas/tests/unit/test_recheck.py::TestProbeLifetimeBound::test_the_measured_old_default_is_still_undersized": true
 }
