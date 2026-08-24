@@ -1,10 +1,10 @@
 {
   "version": "4.0.0",
-  "updated_at": "2026-08-23T00:00:00Z",
+  "updated_at": "2026-08-24T01:00:00Z",
   "current_phase": "P01_ARCHITECTURE",
   "phase_gate_status": {
     "P00": "PASSED",
-    "P01": "IN_PROGRESS",
+    "P01": "PASSED",
     "P02": "TODO",
     "P03": "TODO",
     "P04": "TODO",
@@ -24,7 +24,9 @@
       "id": "P00.T1",
       "title": "Read every legacy file, assign verdict (ADOPT/ADAPT/REWRITE/RETIRE)",
       "status": "DONE",
-      "evidence": ["engineering/ANALYSIS.md"],
+      "evidence": [
+        "engineering/ANALYSIS.md"
+      ],
       "attempts": 1,
       "notes": "9 files, 2454 LOC of Python. Table in ANALYSIS.md section 1."
     },
@@ -55,11 +57,11 @@
       "title": "Re-probe EMPTY sources with structured parsers (regex under-detects JSON/HTML)",
       "status": "DONE",
       "evidence": [
-        "engineering/raw/reprobe_empty.json",
-        "engineering/tools/reprobe_empty.py"
+        "engineering/raw/source_probe_20260824T010038Z.json",
+        "engineering/tools/probe_legacy_sources.py"
       ],
-      "attempts": 1,
-      "notes": "Recovered 6 ALIVE_HTML_TABLE. 18 TRULY_EMPTY (JS-rendered)."
+      "attempts": 2,
+      "notes": "Evidence path CORRECTED 2026-08-24: reprobe_empty.py was lost to a sync and its structured parsers were absorbed into probe_legacy_sources.py (json_path + html_table are now part of the single probe pass). Latest snapshot recovers 8 sources by structured parsing."
     },
     {
       "id": "P00.T5",
@@ -67,10 +69,11 @@
       "status": "DONE",
       "evidence": [
         "engineering/raw/geonode_body.txt",
-        "engineering/tools/verify_geonode_parser.py"
+        "engineering/tools/verify_geonode_parser.py",
+        "engineering/raw/geonode_parser_verify.json"
       ],
-      "attempts": 1,
-      "notes": "Reprobe saw a 659-byte throttled body and filed TRULY_EMPTY. Fresh curl returned 230019 bytes valid JSON -> 500 unique proxies. Reclassified ALIVE_JSON. Lesson: per-host rate limiting + ETag mandatory; one bad fetch != dead source."
+      "attempts": 2,
+      "notes": "Tool REBUILT 2026-08-24 (offline, deterministic). Verifies the live parser against 230019 stored bytes -> exactly 500 unique proxies, regex_adjacent 0. Same source has now been misclassified 3x from 3 causes (regex adjacency, throttled body, truncated read/ADR-013)."
     },
     {
       "id": "P00.T6",
@@ -99,7 +102,9 @@
       "id": "P00.T8",
       "title": "Data archaeology: which sources actually yielded, which are dead",
       "status": "DONE",
-      "evidence": ["engineering/ANALYSIS.md"],
+      "evidence": [
+        "engineering/ANALYSIS.md"
+      ],
       "attempts": 1,
       "notes": "Section 5. raw.githubusercontent.com 649404 (but unattributable across ~50 repos), proxyspace.pro 244623, api.openproxylist.xyz 154290. Key finding: volume != value."
     },
@@ -107,7 +112,9 @@
       "id": "P00.T9",
       "title": "Migration ledger, 100% of legacy features, zero unknown rows",
       "status": "DONE",
-      "evidence": ["engineering/MIGRATION_LEDGER.md"],
+      "evidence": [
+        "engineering/MIGRATION_LEDGER.md"
+      ],
       "attempts": 1,
       "notes": "80 features mapped. ADOPTED 30, GENERALISED 19, REPLACED 14, RETIRED_HARMFUL 14, RETIRED_PROHIBITED 3. Zero unknown."
     },
@@ -115,7 +122,9 @@
       "id": "P00.T10",
       "title": "Write SECURITY.md recording the H5/section-20 commitment",
       "status": "DONE",
-      "evidence": ["engineering/SECURITY.md"],
+      "evidence": [
+        "engineering/SECURITY.md"
+      ],
       "attempts": 1,
       "notes": "Records the refusal to port the 2captcha code and the Instagram default target."
     },
@@ -135,80 +144,105 @@
     {
       "id": "P01.T1",
       "title": "Create atlas/ skeleton with core/ adapters/ engine/ api/ obs/ cli/ data/ tests/",
-      "status": "TODO",
-      "evidence": [],
-      "attempts": 0,
-      "notes": "Strict isolation: core/ must not import adapters/, api/, or any network library."
+      "status": "DONE",
+      "evidence": [
+        "atlas/core/domain/proxy.py",
+        "atlas/core/ports/clock.py"
+      ],
+      "attempts": 1,
+      "notes": "Skeleton exists: core/{domain,policy,ports}, adapters/, engine/, api/, obs/, cli/, tests/."
     },
     {
       "id": "P01.T2",
       "title": "tests/unit/test_architecture.py that FAILS if core/ imports I/O",
-      "status": "TODO",
-      "evidence": [],
-      "attempts": 0,
-      "notes": "AST-based import scan of every module under atlas/core/. Must be a real failing test, not a lint comment."
+      "status": "DONE",
+      "evidence": [
+        "atlas/tests/unit/test_architecture.py"
+      ],
+      "attempts": 1,
+      "notes": "AST-based. 7 core modules scanned. Includes vacuity guard + 7 negative controls (ADR-012)."
     },
     {
       "id": "P01.T3",
       "title": "Domain objects: Proxy, Source, Target, Verdict, Score (pure, no I/O)",
-      "status": "TODO",
-      "evidence": [],
-      "attempts": 0,
-      "notes": ""
+      "status": "DONE",
+      "evidence": [
+        "atlas/core/domain/proxy.py",
+        "atlas/core/domain/source.py",
+        "atlas/core/domain/verdict.py",
+        "atlas/tests/unit/test_domain.py"
+      ],
+      "attempts": 1,
+      "notes": "Behaviour tests added 2026-08-24. Caught a REAL defect: Endpoint.parse accepted the malformed quad '1.2.3.4.5:80' despite a comment claiming it was rejected (all-numeric TLD now refused)."
     },
     {
       "id": "P01.T4",
       "title": "Ports: SourcePort, ProbePort, StorePort, ClockPort (Protocols)",
-      "status": "TODO",
-      "evidence": [],
-      "attempts": 0,
-      "notes": "ClockPort exists so scheduler/cooldown logic is testable without sleeping."
+      "status": "DONE",
+      "evidence": [
+        "atlas/core/ports/clock.py",
+        "atlas/core/ports/probe.py",
+        "atlas/core/ports/source.py",
+        "atlas/core/ports/store.py"
+      ],
+      "attempts": 1,
+      "notes": "4 Protocol ports. cooldown_delay is pure, so ADR-006 backoff is verified without sleeping."
     },
     {
       "id": "P01.T5",
       "title": "config.yaml, requirements.txt, Makefile, .env.example, README.md",
-      "status": "TODO",
-      "evidence": [],
-      "attempts": 0,
-      "notes": "All tunables from sections 5/8/9/10 live in config.yaml, not in code."
+      "status": "DONE",
+      "evidence": [
+        "config.yaml",
+        "requirements.txt",
+        "Makefile",
+        "README.md"
+      ],
+      "attempts": 1,
+      "notes": "README corrected 2026-08-24: it claimed '19 passed' and '68 ACTIVE' before either was true (ADR-014)."
     }
   ],
   "files_changed": [
+    "Makefile",
+    "README.md",
+    "atlas/core/domain/proxy.py",
+    "atlas/core/domain/verdict.py",
+    "atlas/tests/unit/test_architecture.py",
+    "atlas/tests/unit/test_domain.py",
     "engineering/ANALYSIS.md",
-    "engineering/SOURCE_INVENTORY.json",
     "engineering/BASELINE.json",
     "engineering/BUG_LEDGER.md",
-    "engineering/MIGRATION_LEDGER.md",
-    "engineering/SECURITY.md",
     "engineering/DECISIONS.md",
+    "engineering/MIGRATION_LEDGER.md",
     "engineering/PROGRESS.md",
-    "engineering/TASK_STATE.json",
+    "engineering/RECONCILIATION.md",
     "engineering/RESUME_PROMPT.md",
-    "engineering/tools/extract_legacy_sources.py",
-    "engineering/tools/probe_legacy_sources.py",
-    "engineering/tools/reprobe_empty.py",
-    "engineering/tools/verify_geonode_parser.py",
-    "engineering/tools/measure_baseline.py",
-    "engineering/tools/verify_bug_lines.py",
-    "engineering/tools/inspect_inventory.py",
-    "engineering/tools/show_baseline.py",
-    "engineering/tools/check_geonode.py",
-    "engineering/raw/legacy_urls.json",
-    "engineering/raw/reprobe_empty.json",
+    "engineering/SECURITY.md",
+    "engineering/SOURCE_INVENTORY.json",
+    "engineering/TASK_STATE.json",
     "engineering/raw/bug_scan.json",
-    "engineering/raw/geonode_body.txt"
+    "engineering/raw/geonode_body.txt",
+    "engineering/raw/geonode_parser_verify.json",
+    "engineering/raw/legacy_urls.json",
+    "engineering/raw/source_probe_20260824T010038Z.json",
+    "engineering/tools/extract_legacy_sources.py",
+    "engineering/tools/gate_check.py",
+    "engineering/tools/measure_baseline.py",
+    "engineering/tools/probe_legacy_sources.py",
+    "engineering/tools/verify_bug_lines.py",
+    "engineering/tools/verify_geonode_parser.py"
   ],
   "tests": {
-    "passed": 0,
+    "passed": 58,
     "failed": 0,
     "skipped": 0,
-    "last_run": null,
-    "command": "pytest -q",
-    "note": "No atlas/ code exists yet; PHASE GATE 0 forbids writing it before the five evidence files. Test suite begins at P01.T2."
+    "last_run": "2026-08-24T01:00:00Z",
+    "command": "make doctor",
+    "note": "gate_check.py runs BEFORE pytest (ADR-010). 58 = 22 architecture/fitness + 36 domain behaviour."
   },
   "open_failures": [],
   "blockers": [],
-  "next_action": "P01.T1 - create the atlas/ package skeleton, then immediately P01.T2 (architecture isolation test) so the boundary is enforced from the very first commit rather than retrofitted.",
+  "next_action": "P02 \u2014 SOURCE REGISTRY: generate atlas/data/sources/sources.json from snapshot source_probe_20260824T005530Z.json (69 ACTIVE, each row carrying url/parser/labelled_protocol/state/disabled_reason), plus a loader test asserting zero hardcoded URLs in .py and that every DISABLED row names a reason.",
   "invariants_verified": {
     "H1_evidence_for_every_claim": true,
     "H2_no_fabricated_numbers": true,
@@ -222,7 +256,8 @@
   "invariant_notes": {
     "H3_no_double_delivery": "Not yet verifiable - the pool and lease protocol do not exist until P08.",
     "H7_live_not_good": "Not yet verifiable - the admission gate does not exist until P06/P07. The baseline PROVES the legacy system violated it (p50 6359ms admitted).",
-    "H8_crash_resume": "Not yet verifiable - storage layer arrives at P07."
+    "H8_crash_resume": "Not yet verifiable - storage layer arrives at P07.",
+    "H1_evidence_for_every_claim": "Re-earned 2026-08-24. Two ADRs were documented without implementation and the README cited unmeasured numbers; caught, recorded in RECONCILIATION.md 5-6, and now enforced by gate_check.adr_claims_are_verifiable (ADR-014)."
   },
   "baseline_to_beat": {
     "source": "engineering/BASELINE.json",
@@ -232,5 +267,27 @@
     "legacy_historical_admitted_p95_ms": 15903,
     "legacy_historical_success_rate_pct": 0.68,
     "legacy_pct_over_1500ms": 95.8
+  },
+  "source_registry": {
+    "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+    "urls_probed": 120,
+    "active": 67,
+    "alive_regex": 59,
+    "alive_html_table": 7,
+    "alive_json": 1,
+    "dead": 37,
+    "truly_empty": 14,
+    "throttled_or_short": 2,
+    "unique_candidates": 502189,
+    "point_in_time_variance": "Two sweeps 5 minutes apart gave ACTIVE 69 then 67 (candidates 504193 then 502189). The delta is upstream availability (transient 502/429/432/507), NOT a code change. Live source counts are a RANGE, not a constant: ACTIVE 67-69 on 2026-08-24. Both snapshots kept.",
+    "note": "ADR-013 fetch fix (iter_chunked to EOF) raised candidates from 74895 to ~502-504k on the same 120 URLs. short_read is only evaluated for identity-encoded responses: aiohttp auto-decompresses, so Content-Length is the COMPRESSED size for 83 of 120 URLs and is not comparable to the decoded body length."
+  },
+  "superseded_files": {
+    "note": "Lost to platform syncs and NOT rebuilt as separate tools. Their function was absorbed, so recreating them would be duplicate code pretending to be evidence.",
+    "engineering/tools/reprobe_empty.py": "structured parsers merged into probe_legacy_sources.py (json_path + html_table run in the single pass)",
+    "engineering/raw/reprobe_empty.json": "superseded by source_probe_<UTC>.json snapshots, which carry the same per-URL parser detail",
+    "engineering/tools/inspect_inventory.py": "ad-hoc viewer; `make state` covers it",
+    "engineering/tools/show_baseline.py": "ad-hoc viewer; measure_baseline.py --json covers it",
+    "engineering/tools/check_geonode.py": "replaced by verify_geonode_parser.py (offline, deterministic, asserted)"
   }
 }
