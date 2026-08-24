@@ -823,3 +823,167 @@ appended to README.md: "p50 6359.5 ms (n=102) where 95.8 % exceeded 1500 ms."
   form together is unowned.
 
 **Verify:** `python3 engineering/tools/verify_baseline_streams.py` (asserts all 16 fields)
+
+## ADR-021 — A port may not filter on a field the domain cannot express
+
+**Status:** ACCEPTED · 2026-08-24 · P05 · relates to ADR-017, ADR-003, ADR-004
+
+### Context
+
+`StorePort`, written in P01, declared:
+
+```python
+def lease(self, *, count: int, min_grade: Grade, lease_ms: int, now: datetime) -> ...
+def export_text(self, path: str, *, min_grade: Grade) -> int
+```
+
+Both filter the pool by `Grade`. `Proxy` had **no `grade` field**. Verified:
+
+```
+>>> [f.name for f in dataclasses.fields(Proxy)]   # P04 state
+[... 'consecutive_failures', 'total_successes', 'total_attempts',
+ 'first_seen', 'last_checked', 'lease_id', 'reason_code']       # no 'grade'
+```
+
+So the admission gate computed a `Grade` (P04), returned it inside a `Verdict`,
+and the pool **had nowhere to put it**. `lease(min_grade=...)` was unimplementable
+exactly as declared: any implementation had to either invent a grade at read time
+or ignore the parameter.
+
+This is the **ADR-017 shape a second time**, and it survived four green phase
+gates for the same reason: nothing had ever *crossed* the seam. P01 declared the
+port, P04 produced Grades, and no code in between ever had to persist one. A
+signature that is never called is a comment with parentheses.
+
+Three ways it could have been resolved, and why only one is honest:
+
+| option | consequence |
+|---|---|
+| drop `min_grade` from the port | the pool could not distinguish an ELITE proxy from a barely-USABLE one — throws away the gate's entire output |
+| recompute the grade on read | re-runs policy inside the storage layer, so a threshold change silently reinterprets history; ADR-004 says the DB is the source of truth |
+| **persist the verdict** | the gate's judgement becomes a durable fact about the proxy |
+
+### Decision
+
+`Proxy.grade: Grade = Grade.REJECTED`, persisted in the `proxies` table under a
+`CHECK` constraint, plus `Grade.rank` / `.meets()` / `.at_least()` so the SQL
+filter and the policy cannot disagree about what "USABLE or better" means.
+
+Two details that are load-bearing:
+
+1. **The default is `REJECTED`, not a neutral value.** An unjudged proxy must
+   never satisfy `lease(min_grade=USABLE)`. This is the same inversion as
+   `NOT_MEASURED` in the admission gate: absence of evidence is refusal, not
+   permission. `test_ungraded_proxies_are_never_leased` pins it against real SQL.
+
+2. **`Grade.rank` is an explicit mapping, not `list(Grade).index()`.** Definition
+   order is an accident of how the class was typed; deriving priority from it
+   means inserting an enum member silently reorders which proxies get leased
+   first. A cosmetic edit must not become a behaviour change.
+
+`graded()` deliberately does **not** change `state`. Grading is a judgement,
+admitting is a pool transition; collapsing them is how a REJECTED proxy ends up
+READY.
+
+### Negative control (ADR-010)
+
+`test_grade_rank_does_not_depend_on_declaration_order` reads `verdict.py` and
+fails if `rank` is ever re-derived from enum order.
+`test_rejected_never_satisfies_any_useful_minimum` fails if `REJECTED` leaks into
+any `at_least()` set.
+
+### Consequences
+
+- The 53 DISABLED registry rows and every unprobed candidate are `REJECTED` by
+  default — correct, and it makes "how much of the pool is actually judged" a
+  queryable number rather than an assumption.
+- **The rule this generalises:** an interface may only name a filter the domain
+  can represent. A port signature referencing a non-existent field is not a
+  design intention, it is an error that the type system cannot see because nobody
+  has called it yet. The remaining unimplemented ports (`ProbePort`) must be
+  checked against the domain *before* they are implemented, not after.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_store.py -k "grade or leas" -q`
+
+---
+
+## ADR-022 — Atomicity is a structural property, so it must be asserted structurally
+
+**Status:** ACCEPTED · 2026-08-24 · P05 · relates to ADR-010, H3, H8
+
+### Context
+
+A correct `lease()` and a broken read-then-write `lease()` are **behaviourally
+identical** in every single-threaded test. Both return N distinct proxies, both
+mark them LEASED, both pass any assertion about their return value. The
+difference appears only under concurrency, and concurrency tests have a specific
+pathology: **an ineffective one is indistinguishable from a passing one.** If the
+processes never actually overlap, the test reports success and proves nothing.
+
+Measured, on this machine — same test body, same 12-proxy pool, 6 processes each
+requesting 6:
+
+| implementation | handed out | unique | duplicates |
+|---|---|---|---|
+| `SqliteStore.lease` (CAS) | 12 | 12 | **0** |
+| `NaiveStore.lease_naive` (read-then-write) | 36 | 6 | **30** |
+
+### Decision
+
+H3/H8 are established by **three independent mechanisms**, because no single one
+is sufficient:
+
+1. **Real concurrency** — `multiprocessing` with `spawn`, separate processes and
+   separate sqlite connections. Not threads: the GIL can hide a race that
+   separate processes expose. One parametrisation deliberately **over-subscribes**
+   the pool (48 requested, 24 available), because contention is where
+   read-then-write breaks.
+
+2. **A negative control that must fail** — `NaiveStore` is committed, deliberately
+   wrong code whose only purpose is to be caught. `test_the_h3_test_would_catch_a_
+   read_then_write_store` asserts duplicates > 0 against it. If that assertion
+   ever stops holding, the H3 test above is not exercising concurrency and its
+   green result is meaningless.
+
+3. **An independent audit** — the append-only `lease_log` table plus
+   `double_delivery_violations()`, which reconstructs the LEASE/RELEASE/EXPIRE
+   sequence per fingerprint. This does not ask the leasing code whether it
+   behaved; it examines what happened. A test that only inspects `lease()`'s
+   return value is asking the accused to testify.
+
+Plus **AST guards** on structure, since behaviour cannot distinguish the two
+implementations: the claiming `UPDATE` must re-check `state='READY'` in its own
+`WHERE`, every mutating method must use `BEGIN IMMEDIATE` (a `DEFERRED`
+transaction upgrades to a write lock only on first write — the very window being
+closed), and `export_text` must `fsync` *before* `os.replace`.
+
+For H8, the child process ends with `os.kill(os.getpid(), signal.SIGKILL)` and
+the test asserts `returncode == -9`. Signal 9 cannot be caught, so no `finally`,
+no `atexit` and no context manager runs — otherwise the test would be measuring
+my own shutdown code rather than durability.
+
+### The defect this decision immediately caught
+
+The structural guard for `export_text` **failed on its first run** — and was
+right to. It searched the method for `os.fsync` and `os.replace(`, and matched
+the **docstring**, which names both while explaining them. The code was correct;
+the guard was reading prose. This is the third instance of the same class in this
+project (P03: an offline-guard that matched its own list of banned strings). The
+helper now strips the docstring via AST before searching, and
+`test_the_structural_guards_read_code_not_comments` fails if it ever leaks back.
+
+A guard satisfied by a comment describing the behaviour is worse than no guard:
+it reports that the mechanism exists.
+
+### Consequences
+
+- `atlas/tests/integration/naive_store.py` is intentionally-wrong code in the
+  repository. It is documented as such at the top of the file so no one "fixes"
+  it, which would silently disarm the control.
+- `make test-integration` becomes meaningful, and `make doctor` now runs it.
+- **The rule this generalises:** when correctness is a property of *structure*
+  rather than *output*, tests over output cannot establish it. Assert the
+  structure, and prove the assertion has teeth by running it against something
+  known to be broken.
+
+**Verify:** `python3 -m pytest atlas/tests/integration -q`
