@@ -437,10 +437,10 @@
     "engineering/tools/verify_units.py"
   ],
   "tests": {
-    "total": 162,
-    "passed": 162,
+    "total": 204,
+    "passed": 204,
     "failed": 0,
-    "breakdown": "22 architecture/fitness + 36 domain + 29 registry + 26 fetch/parsing + 49 policy/admission"
+    "breakdown": "22 architecture/fitness + 36 domain + 29 registry + 26 fetch/parsing + 49 policy/admission + 33 store/grade + 9 store integration (concurrency, SIGKILL, negative control)"
   },
   "open_failures": [],
   "blockers": [],
