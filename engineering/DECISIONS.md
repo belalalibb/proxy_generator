@@ -279,3 +279,95 @@ silently method-dependent.
 **Consequence.** The number v4 must beat remains **p50 6 359.5 ms / p95 15 903 ms at n=102**.
 `FINAL_AUDIT.md` must state the method *and* n beside every percentile, and must compute v4's
 own p95 with the **same** function for the comparison to be honest.
+
+---
+
+## ADR-012 — Fitness guards are scoped to *executable* code and must carry negative controls
+
+**Phase:** P01 · **Status:** ACCEPTED
+
+**Context.** Two architecture fitness tests failed on legitimate code, and the
+naive fix for either one would have quietly destroyed the guard's value:
+
+1. `test_core_declares_no_module_level_mutable_state` flagged
+   `core/ports/__init__.py:19 '__all__'`. `__all__` is a declaration to the import
+   machinery and must be a list of `str` by language convention — it cannot hold
+   accumulated state.
+2. `test_no_default_target_url_constant` flagged
+   `core/domain/source.py:131`, which is a **docstring** explaining that the legacy
+   code defaulted to a login-walled target and that v4 refuses to. The guard was a
+   line-level regex, so it could not tell a *prohibition* from a *violation* —
+   and `SECURITY.md` **requires** that refusal to be documented at the code it
+   governs.
+
+The dangerous part is the temptation: deleting the sentence, or loosening the
+regex, both turn a red test green while removing real protection. That is the
+ADR-010 failure mode (a guard that cannot fail) reappearing in a new form.
+
+**Decision.**
+(a) Scope the target guard to **executable string values** via AST, ignoring
+    docstrings only. Any prohibited host reaching a variable, default argument,
+    collection, dict value or f-string — the forms that actually cause traffic —
+    still fails.
+(b) Exempt exactly three import-machinery dunders (`__all__`, `__slots__`,
+    `__match_args__`) from the mutable-state guard; nothing else.
+(c) **Every guard that is relaxed must gain a negative control.** The scanner is
+    extracted as a callable and fed known-bad source in a parametrised test
+    (`module_const`, `default_arg`, `list_item`, `fstring`, `dict_value`), each
+    asserting the guard still fires. A companion test asserts a docstring citation
+    is *not* flagged, pinning the exemption. A third test asserts the scan set is
+    non-empty, so the suite itself detects vacuity rather than relying only on
+    `gate_check.py`.
+
+**Alternatives.**
+1. *Delete the explanatory docstring.* Rejected: it destroys the forensic record
+   `SECURITY.md` mandates, to satisfy a regex.
+2. *Add a `# noqa` to the docstring line.* Rejected: precedent for silencing
+   guards by annotation, which is how the legacy `except: pass` culture began.
+3. *Drop the host regex to code-only by stripping comments textually.* Rejected as
+   fragile; AST knows exactly what a docstring is.
+4. *Relax the guards and rely on review.* Rejected: unenforceable, and it is the
+   exact assumption ADR-010 disproved.
+
+**Consequence.** Guard count rises from 11 to 19 tests. The suite now proves its
+guards *can* fail, so a future edit that reduces one to a no-op turns the suite
+red instead of green.
+
+---
+
+## ADR-013 — A short or truncated read is a FETCH fault and may never be recorded as an empty source
+
+**Phase:** P01 (retrofit of P00.T4/T5 tooling) · **Status:** ACCEPTED
+
+**Context.** Rebuilding the lost `reprobe_empty.py`, the tool reported the GeoNode
+JSON API as `TRULY_EMPTY` from a **74 241-byte** body — the third time this one
+source has been misclassified, and the second distinct root cause.
+
+The bug was mine, in the new tool: `aiohttp`'s `resp.content.read(n)` returns
+whatever is **currently buffered**, up to `n` — *not* `n` bytes. It returned 74 241
+of 230 067 bytes, truncating the JSON mid-structure, so `json.loads()` failed and a
+live 500-proxy source looked empty.
+
+It was caught only because the parser was **validated against the stored evidence
+first**: `engineering/raw/geonode_body.txt` (230 019 bytes) yields exactly the
+documented **500** unique proxies. A parser proven correct on stored bytes means a
+live zero must be the *fetch*, not the parser. Without that ordering I would have
+written "GeoNode is now dead" into the record — a fabricated finding (H2).
+
+**Decision.**
+(a) Read bodies to EOF with `iter_chunked()`; never `read(n)` as a body read.
+(b) Record `Content-Length` and flag `short_read` when the body is shorter than
+    declared, plus `body_truncated_at_cap` when the size cap is hit.
+(c) Introduce the reason code **`FETCH_INCOMPLETE`**, distinct from `TRULY_EMPTY`
+    and from `SOURCE_THROTTLED`. An incomplete read is **our** fault and must be
+    re-fetched before any verdict.
+(d) Cross-check content type: a `application/json` response that fails to parse is
+    `FETCH_INCOMPLETE`, not empty.
+(e) **Validate a parser against stored evidence before trusting it live.**
+
+**Consequence.** The re-audit recovered **6** sources previously filed
+`TRULY_EMPTY` (12 remain), and the ACTIVE registry is **68** sources rather than
+the 63 documented in Phase 0 — an increase caused by fixing a defect in our own
+tooling, recorded as a new dated snapshot alongside the original, not over it.
+ADR-006 is reinforced: **one bad fetch must never kill a source**, and now we can
+also tell *whose fault* the bad fetch was.
