@@ -75,6 +75,35 @@ class Grade(str, Enum):
     USABLE = "USABLE"
     REJECTED = "REJECTED"
 
+    @property
+    def rank(self) -> int:
+        """
+        Quality order, ascending. REJECTED is 0 so `>= min_grade` arithmetic can
+        never accidentally include it.
+
+        Declaring the order EXPLICITLY rather than relying on Enum definition
+        order: `list(Grade)` order is an accident of how the class was typed, and
+        a future edit that inserts a member would silently reorder leasing
+        priority. ADR-021.
+        """
+        return {"REJECTED": 0, "USABLE": 1, "GOOD": 2, "ELITE": 3}[self.value]
+
+    def meets(self, minimum: Grade) -> bool:
+        """True if this grade is at least as good as `minimum`."""
+        return self.rank >= minimum.rank
+
+    @classmethod
+    def at_least(cls, minimum: Grade) -> tuple[Grade, ...]:
+        """
+        Every grade satisfying `minimum`, best first.
+
+        The store uses this to build its leasable set, so the SQL and the policy
+        cannot disagree about what "USABLE or better" means -- the ADR-017
+        failure mode (one concept, two vocabularies).
+        """
+        return tuple(sorted((g for g in cls if g.meets(minimum)),
+                            key=lambda g: -g.rank))
+
 
 @dataclass(frozen=True, slots=True)
 class Verdict:
