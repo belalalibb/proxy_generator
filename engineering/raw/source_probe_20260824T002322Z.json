@@ -1,0 +1,68 @@
+{
+  "task": "P00.T3/T4/T5",
+  "generator": "engineering/tools/probe_legacy_sources.py",
+  "rebuilt_after_sync_loss": true,
+  "snapshot_not_reproduction": true,
+  "network_used": true,
+  "measured_at_utc": "20260824T002322Z",
+  "note": "A past network read cannot be reproduced. This is a NEW snapshot; engineering/SOURCE_INVENTORY.json is retained unchanged as the 2026-08-23 record. Comparison is point-in-time, not a diff of truth.",
+  "params": {
+    "concurrency": 12,
+    "per_host_concurrency": 2,
+    "per_host_delay_s": 1.0,
+    "timeout_s": 20,
+    "excluded": "2captcha.com (H5/ADR-007), malformed bare scheme"
+  },
+  "wall_clock_s": 0.5,
+  "urls_probed": 2,
+  "verdicts": {
+    "ALIVE_HTML_TABLE": 1,
+    "THROTTLED_OR_SHORT": 1
+  },
+  "total_unique_candidates": 54,
+  "recovered_by_structured_parser": 1,
+  "recovered_detail": [
+    {
+      "url": "https://geonode.com/free-proxy-list",
+      "parser": "html_table",
+      "candidates": 54
+    }
+  ],
+  "failure_breakdown": {},
+  "results": [
+    {
+      "url": "https://geonode.com/free-proxy-list",
+      "host": "geonode.com",
+      "verdict": "ALIVE_HTML_TABLE",
+      "elapsed_ms": 375.1,
+      "fetched_at_utc": "2026-08-24T00:23:22.259739+00:00",
+      "http_status": 200,
+      "bytes": 311152,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 54
+      },
+      "best_parser": "html_table",
+      "unique_candidates": 54,
+      "recovered_by_structured_parser": true
+    },
+    {
+      "url": "https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc&protocols=https",
+      "host": "proxylist.geonode.com",
+      "verdict": "THROTTLED_OR_SHORT",
+      "elapsed_ms": 170.9,
+      "fetched_at_utc": "2026-08-24T00:23:22.057144+00:00",
+      "http_status": 200,
+      "bytes": 622,
+      "parsed": {
+        "regex_adjacent": 0,
+        "json_path": 0,
+        "html_table": 0
+      },
+      "best_parser": "regex_adjacent",
+      "unique_candidates": 0,
+      "recovered_by_structured_parser": false
+    }
+  ]
+}
