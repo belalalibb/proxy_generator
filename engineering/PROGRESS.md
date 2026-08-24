@@ -1034,13 +1034,150 @@ workers get two independent budgets, so an operator who reads it as a
 deployment-wide cap would be wrong by a factor of the worker count. The class
 docstring says so; a cross-process limit needs shared storage (P11).
 
-## BLOCKER — cannot push, and the work is therefore at risk
+## The push blocker, and the assumption it rested on (corrected twice)
 
 `git push` fails with `could not read Username for 'https://github.com'` and the
-environment reports no valid GitHub authorization. P09.T1 is **committed locally**
-(`8eab856`) and green, but this project has now lost uncommitted work to a
-re-clone **twice**, and an unpushed commit is one re-clone from the same fate.
+environment reports no valid GitHub authorization. P09.T1 was committed locally
+and green, so that session **stopped there**, reasoning that this project had
+already lost work to a re-clone twice and an unpushed commit was one re-clone
+from the same fate.
 
-Work therefore **stopped here** rather than accumulating more unpushable
-milestones. Resolving the credential is the first action of the next session — see
-`TASK_STATE.blockers`.
+**That reasoning was wrong, and two more re-clones proved it — in different
+ways.**
+
+*Third re-clone.* All three local commits were destroyed (`git cat-file -t`
+reports them missing, HEAD elsewhere, branch back to `main`). Yet
+`rate_limit.py`, its tests, the mutation harness and its artifact were **all on
+disk at full length**, with `TASK_STATE` intact. An external platform sync had
+committed each file to `main` individually. Conclusion drawn: the durable path is
+the **sync**, not my pushes, so stopping over the push failure was an
+over-reaction that cost a session.
+
+*Fourth re-clone.* Commit `b91218d` (P09.T2) gone the same way — but this time
+the sync was **partial**. It had landed T2's *documentation* — `ADR-035` in full,
+the B-16 correction, the §3.3 row citing ADR-035, `README` "Tests **507**" —
+while `handout.py` still carried `target_ttl_s = 90.0` and
+`revalidation_required`, `test_handout.py` had 38 tests rather than 42,
+`mutate_handout.py` still anchored on `target_ttl_s`, and
+`handout_mutation.json` was the **P08** artifact (7 mutations, baseline 38)
+rather than T2's (9, baseline 42).
+
+So the corrected position is narrower than either earlier one: **neither
+mechanism is trustworthy alone.** Pushes do not persist; the sync persists but is
+**not atomic**, so a milestone can land half-applied. Nothing was lost — but for
+a while the repository *documented code that did not exist*, which is precisely
+the ADR-014 / ADR-022 / ADR-023 defect class this project has fixed three times
+by hand, arrived at here by infrastructure.
+
+**What caught it was the gate, not me.** `make doctor` failed
+`readme_numbers_have_artifacts`: `TASK_STATE` said 503, README said 507. A
+one-line numeric disagreement was the visible edge of a whole missing
+implementation. `BLK-01` is downgraded HIGH → LOW (a **delivery** gap, not a
+data-loss risk); `BLK-02` recorded the split-brain **before** any repair, so the
+state would stay honest if this session were lost too.
+
+---
+
+# P09.T2 — the TTL conflict, and why both offered reconciliations were wrong
+
+`ADR-033` left a conflict open and named it honestly: B-16 wants a 90 s
+`target_ttl` for per-target validity, `config.yaml` sets
+`scheduler.recheck_ready_after_s: 900`, and both cannot hold. The task framed T2
+as a choice between **(a)** driving recheck at the TTL or **(b)** redefining the
+TTL as disclosure, with an instruction not to invent a third number.
+
+**The framing was the defect, and finding that was the work.** `age_s` is
+computed from `proxy.last_checked`: **one timestamp per proxy**, written by
+whatever probe last ran, against whatever target *discovery* used. Re-verified
+from the schema this session rather than taken from the ADR:
+`store_sqlite.py` declares two tables (`proxies`, `lease_log`), a single
+`last_checked TEXT` column, and **no target-keyed row anywhere** — the only
+`target` matches in the file are local variables in the atomic-write helper.
+"Validated against **your** target within 90 s" is therefore not a deadline this
+system narrowly misses; it is **a sentence the stored data cannot express at any
+interval whatsoever**. The two candidates were two readings of a number whose
+*unit* was wrong.
+
+That verdict is what rules out candidate (a), and **not on cost grounds**.
+Re-probing every 90 s refreshes `last_checked` **against the discovery target**,
+which would *clear* the flag. An operator would read
+`revalidation_required: false` as "verified for my target 90 s ago" when the only
+fact behind it is "reachable for someone else's target 90 s ago". Candidate (a)
+would have spent **more** probing work to produce a **less** truthful system. The
+cheaper option being the honest one is not the usual shape of this trade-off,
+which is why ADR-035 records it.
+
+**Taken: (b), sharpened into a deletion.** The per-target claim is removed from
+`handout.py`, from B-16, and from the §3.3 table. `target_ttl_s` →
+`recheck_horizon_s` (900.0); `revalidation_required` → `past_recheck_horizon` on
+both `Granted` and `HandoutResult`. The rename is the point, not cosmetics: the
+old name asserted a per-target conclusion the data never supported, while the new
+one states the measurement — *the scheduler is behind on this row*. Keyed to 90 s
+against a 900 s pool the flag was `True` for ~90 % of everything served, and a
+warning that is almost always on is indistinguishable from no warning.
+
+## Two defects this found in my own work
+
+**A hole neither policy could see.** `HandoutPolicy` owns the horizon;
+`ScoringPolicy` owns `max_age_s` (3600); `rank(include_stale=False)` **drops**
+rows at or past `max_age_s` (`is_stale` uses `>=`, checked, not assumed). So the
+flag is observable only in `(recheck_horizon_s, max_age_s)` — set the horizon at
+or above `max_age_s` and that band is *empty*, the flag can never fire, and every
+served row reports fresh **at any age**. Staleness reported as freshness, reached
+**by configuration alone**. Both policies validate happily in isolation, so the
+guard can only live in `HandoutService.__init__`; it refuses there, and the
+boundary is pinned from both sides — 3600 rejected, 3599 accepted *and the flag
+observed firing* at age 3599.5, because asserting only that construction
+succeeds would pass even with an empty band.
+
+**A test that passed while measuring nothing.** The first attempt to pin the
+never-checked arm restated the boolean expression inside the test and asserted on
+the copy. It passed — and the mutation run *still* reported the
+never-checked mutant as a **SURVIVOR**, because a test that re-implements the
+code under test measures the test. `_past_horizon()` was extracted so the branch
+is callable and the test now invokes the real method; the mutant dies. Without
+mutation testing this would have read as green, covered, and hollow. It is now
+mutation `never_checked_treated_as_fresh_via_comparison`, so the tautology cannot
+come back unnoticed.
+
+**Two call sites the rename exposed.** The policy-bounds test, and — more
+interesting — a clock test that advanced **200 s**. That crossed the withdrawn
+90 s TTL but sits *inside* the 900 s horizon, so left unchanged it would have
+passed while asserting nothing about the new behaviour. Now 1000 s, still under
+`max_age_s` so the row is flagged rather than dropped.
+
+**Drift the harness caught, loudly.** The rename left `mutate_handout.py`'s
+anchor matching no source text. It reported `[ERROR] anchor text not found` and
+**counted the mutant as a survivor** rather than skipping it silently — a stale
+harness degraded into a visible failure instead of an inflated kill rate. Now
+documented in the tool's own docstring as load-bearing.
+
+## Evidence
+
+| property | evidence |
+|---|---|
+| suite green after the rename | **507 passed** (503 → 507; `test_handout.py` 38 → 42) |
+| horizon enforced both sides | boundary asserted at 899.9 / 900.1 |
+| the withdrawn claim cannot return | age 300 s asserted **clean**; `hasattr(..., "revalidation_required")` **False** on both types |
+| unreachable branch genuinely pinned | mutant killed via `_past_horizon` after the tautology version left it alive |
+| unfireable-flag config refused | horizon 3600 vs `max_age_s` 3600 raises; 3599 accepted **and** flag observed at 3599.5 |
+| bypasses detectable | **9/9** killed at baseline 42 → `engineering/raw/handout_mutation.json` |
+| gate | 18/18 — and it caught the split-brain first, then a stale test count, then dataclass *fields* cited where it verifies `def`/`class` |
+
+Every one of those figures was **already written down** by the synced docs before
+the code existed. Reproducing them exactly is what demonstrates the two sides
+agree again, rather than my having rewritten the docs to match whatever the code
+happened to do.
+
+**Deliberately not done:** no `(proxy, target)` table — the schema change that
+would make per-target freshness *sayable* is named as future scope, not implied.
+`config.yaml` is unchanged: 900 was already right.
+
+**NEXT:** P09.T3 — the scheduler loop. Measured, not assumed:
+`recheck_ready_after_s`, `discovery_interval_s`,
+`retire_after_consecutive_failures` and `max_pool_size` have **zero** Python
+readers; the only hits are a comment in `scoring.py` and a docstring in
+`handout.py`. That is the ADR-019 defect class for the **sixth** time — and
+ADR-035 has now made the 900 s value load-bearing on the serving path while
+nothing yet drives the recheck it names, so `past_recheck_horizon` can currently
+only ever become **more** true.
