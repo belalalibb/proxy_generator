@@ -84,14 +84,9 @@ CREATE TABLE IF NOT EXISTS proxies (
     last_checked        TEXT,
     lease_id            TEXT,
     lease_expires_at    TEXT,
+    probe_expires_at    TEXT,
     reason_code         TEXT
 );
-
--- Leasing selects on (state, grade) and orders by p95: without this index the
--- CAS statement degrades to a full scan while holding a write lock, which turns
--- a correctness mechanism into a throughput ceiling.
-CREATE INDEX IF NOT EXISTS idx_leasable ON proxies (state, grade, p95_ms);
-CREATE INDEX IF NOT EXISTS idx_lease_expiry ON proxies (state, lease_expires_at);
 
 -- Every lease and release, append-only. This is what makes an H3 violation
 -- PROVABLE after the fact rather than merely unlikely: if the same fingerprint
@@ -103,6 +98,29 @@ CREATE TABLE IF NOT EXISTS lease_log (
     at          TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_lease_log_fp ON lease_log (fingerprint, at);
+"""
+
+# Indexes are applied AFTER `_migrate`, not inside SCHEMA, because an index on a
+# column that migration is about to add cannot be created yet: on a pre-ADR-038
+# database `CREATE TABLE IF NOT EXISTS` is a no-op, so `probe_expires_at` does
+# not exist when SCHEMA runs and `CREATE INDEX ... (state, probe_expires_at)`
+# fails with "no such column". Found by `TestMigration`, which opened a
+# hand-built old-schema database -- the failure mode a fresh-file test cannot
+# reach, since there the table is created complete.
+INDEXES = """
+-- Leasing selects on (state, grade) and orders by p95: without this index the
+-- CAS statement degrades to a full scan while holding a write lock, which turns
+-- a correctness mechanism into a throughput ceiling.
+CREATE INDEX IF NOT EXISTS idx_leasable ON proxies (state, grade, p95_ms);
+CREATE INDEX IF NOT EXISTS idx_lease_expiry ON proxies (state, lease_expires_at);
+
+-- The scheduler's candidate filter is (state, last_checked); the recheck claim
+-- and its reclaim both select on (state, probe_expires_at). Without these two
+-- indexes each scheduler pass and each reclaim is a full scan of the pool while
+-- holding a write lock -- the same correctness-mechanism-becomes-a-throughput-
+-- ceiling problem idx_leasable exists to prevent (ADR-038).
+CREATE INDEX IF NOT EXISTS idx_schedulable ON proxies (state, last_checked);
+CREATE INDEX IF NOT EXISTS idx_probe_expiry ON proxies (state, probe_expires_at);
 """
 
 
@@ -152,7 +170,34 @@ class SqliteStore:
         self._db.execute(f"PRAGMA synchronous={synchronous}")
         self._db.execute("PRAGMA foreign_keys=ON")
         self._db.executescript(SCHEMA)
+        self._migrate()
+        self._db.executescript(INDEXES)
         self._writes = 0
+
+    def _migrate(self) -> None:
+        """
+        Add columns a pool created by an earlier version cannot have.
+
+        `CREATE TABLE IF NOT EXISTS` is a no-op on an existing table, so a new
+        column in SCHEMA is silently absent from every database already on disk
+        and the first query naming it fails with "no such column" -- at runtime,
+        far from this file. H8 is about not losing a pool to a crash; losing one
+        to an upgrade would be the same outcome by a slower route.
+
+        Additive only: it appends nullable columns and never drops, renames or
+        rewrites data. `probe_expires_at` defaults to NULL, which
+        `reclaim_stale_probes` reads as "no deadline recorded" and treats as
+        immediately reclaimable, so a row mid-probe during an upgrade is
+        recovered rather than stranded.
+        """
+        have = {r["name"] for r in
+                self._db.execute("PRAGMA table_info(proxies)").fetchall()}
+        if not have:  # brand-new file; SCHEMA just created it complete
+            return
+        for column, ddl in (("probe_expires_at", "TEXT"),):
+            if column not in have:
+                self._db.execute(
+                    f"ALTER TABLE proxies ADD COLUMN {column} {ddl}")
 
     # ── lifecycle ─────────────────────────────────────────────────────────────
     def close(self) -> None:
@@ -398,6 +443,171 @@ class SqliteStore:
             (int(limit),),
         ).fetchall()
         return tuple(self._from_row(r) for r in rows)
+
+    # ── ADR-038: claiming a row for re-probe ─────────────────────────────────
+    def claim_for_probe(self, fingerprints: tuple[str, ...], *,
+                        now: datetime, probe_ms: int) -> tuple[Proxy, ...]:
+        """
+        Move specific rows to `PROBING` and return the ones actually claimed.
+
+        THE SAME COMPARE-AND-SET AS `lease()`, FOR THE SAME REASON.
+
+            BEGIN IMMEDIATE
+            UPDATE proxies SET state='PROBING', probe_expires_at=?
+             WHERE fingerprint IN (...) AND state IN ('DISCOVERED','COOLING','READY')
+            RETURNING *
+
+        `plan()` selects candidates with a plain SELECT, so between planning and
+        probing a row can be leased, retired or claimed by another scheduler.
+        Measured (`engineering/raw/recheck_gap.json`): without this step two
+        consecutive passes select the SAME fingerprint, and a probe write-back
+        built from a pre-lease snapshot ERASES a live lease -- `state` and
+        `lease_id` both come from the stale in-memory copy, so the consumer keeps
+        using a proxy the pool believes is free. `double_delivery_violations()`
+        does not see it, because no second LEASE was ever recorded.
+
+        The state predicate is in the statement, not checked beforehand: a
+        check-then-write has exactly the window this closes. A row that was
+        leased in the meantime is simply not returned, and the caller sees a
+        shortfall rather than a silent overwrite.
+
+        `LEASED` is excluded because that row belongs to a consumer and to H3;
+        `RETIRED` because it is terminal and re-probing it would resurrect a row
+        the retirement decision deliberately removed; `PROBING` because it is
+        already claimed, which is what makes this idempotent under a double pass.
+        """
+        if not fingerprints:
+            return ()
+        if probe_ms <= 0:
+            raise ValueError(f"probe_ms must be positive, got {probe_ms}")
+        marks = ",".join("?" * len(fingerprints))
+        self._db.execute("BEGIN IMMEDIATE")
+        try:
+            rows = self._db.execute(
+                f"""
+                UPDATE proxies
+                   SET state = 'PROBING',
+                       probe_expires_at = ?
+                 WHERE fingerprint IN ({marks})
+                   AND state IN ('DISCOVERED', 'COOLING', 'READY')
+                RETURNING *
+                """,
+                (_iso(_add_ms(now, probe_ms)), *fingerprints),
+            ).fetchall()
+            self._db.execute("COMMIT")
+        except Exception:
+            self._db.execute("ROLLBACK")
+            raise
+        self._after_write(len(rows))
+        return tuple(self._from_row(r) for r in rows)
+
+    def reclaim_stale_probes(self, *, now: datetime) -> int:
+        """
+        Return rows whose probe deadline has passed to `COOLING`. Count reclaimed.
+
+        Without this, `PROBING` is an absorbing state and ADR-036's defect
+        returns under a new name: `decide()` classifies PROBING as `IN_FLIGHT`
+        and never touches it, `lease()` only sees `READY`, so a worker killed
+        mid-probe would strand its row FOREVER. Measured before building the
+        claim (`recheck_gap.json` probing_absorbing): a week later the row is
+        still IN_FLIGHT and still unleasable.
+
+        This is the `expire_leases()` mechanism applied to the probe path, and
+        the reason it must exist is H8: SIGKILL is uncatchable, so no `finally`
+        can release a claim. The deadline is stored in the row precisely so
+        recovery does not depend on the crashed process running any code.
+
+        Reclaims to `COOLING`, NOT `READY`. A probe that never reported is not
+        evidence of health, and promoting it to leasable would hand out a proxy
+        on the strength of a measurement that never completed -- H7's "live is
+        not good", inverted into "unfinished is not good". COOLING re-enters the
+        normal ADR-006 ladder, so the row is retried rather than trusted.
+
+        A NULL `probe_expires_at` counts as expired: it means a row was left
+        PROBING by a version that recorded no deadline (see `_migrate`), and the
+        safe reading of "no deadline" is "reclaim it", never "wait forever".
+        """
+        self._db.execute("BEGIN IMMEDIATE")
+        try:
+            rows = self._db.execute(
+                """
+                UPDATE proxies
+                   SET state = 'COOLING',
+                       probe_expires_at = NULL,
+                       reason_code = 'PROBE_ABANDONED'
+                 WHERE state = 'PROBING'
+                   AND (probe_expires_at IS NULL OR probe_expires_at <= ?)
+                RETURNING fingerprint
+                """,
+                (_iso(now),),
+            ).fetchall()
+            self._db.execute("COMMIT")
+        except Exception:
+            self._db.execute("ROLLBACK")
+            raise
+        self._after_write(len(rows))
+        return len(rows)
+
+    def complete_probe(self, proxy: Proxy, *, now: datetime) -> bool:
+        """
+        Write a finished probe back, but ONLY if we still hold the claim.
+
+        Returns True if the result was applied, False if the claim was lost.
+
+        `upsert_many` is unconditional: it sets `state` and `lease_id` from the
+        in-memory copy, which for a recheck was loaded BEFORE the probe ran. That
+        is the measured clobber -- a consumer leases the row mid-probe and the
+        write-back returns it to READY with `lease_id=NULL`, so two callers
+        believe they own it and the H3 audit log shows nothing, because no second
+        LEASE was ever written. Here the `WHERE ... AND state='PROBING'` makes the
+        write conditional on still owning the claim, so a lost race is REPORTED
+        (False) instead of resolved by overwriting whoever won.
+
+        `lease_id` and `lease_expires_at` are deliberately NOT in the SET list.
+        A probe measures latency and protocol; it has no business asserting
+        anything about leases, and the only reason the clobber was possible is
+        that the write path carried columns the writer had no evidence about.
+        Narrowing what a statement is allowed to say is what makes it safe.
+
+        A False return is normal operation, not an error: the next scheduler pass
+        reconsiders the row. Raising would turn a benign race into an incident;
+        silently reporting success would be the defect this method exists to fix.
+        """
+        row = self._to_row(proxy)
+        row["now"] = _iso(now)
+        self._db.execute("BEGIN IMMEDIATE")
+        try:
+            rows = self._db.execute(
+                """
+                UPDATE proxies
+                   SET state = :state,
+                       grade = :grade,
+                       protocol = :protocol,
+                       anonymity = :anonymity,
+                       samples_ms = :samples_ms,
+                       p50_ms = :p50_ms,
+                       p95_ms = :p95_ms,
+                       mean_ms = :mean_ms,
+                       stdev_ms = :stdev_ms,
+                       success_ratio = :success_ratio,
+                       consecutive_failures = :consecutive_failures,
+                       total_successes = :total_successes,
+                       total_attempts = :total_attempts,
+                       last_checked = :last_checked,
+                       reason_code = :reason_code,
+                       probe_expires_at = NULL
+                 WHERE fingerprint = :fingerprint
+                   AND state = 'PROBING'
+                RETURNING fingerprint
+                """,
+                row,
+            ).fetchall()
+            self._db.execute("COMMIT")
+        except Exception:
+            self._db.execute("ROLLBACK")
+            raise
+        self._after_write(len(rows))
+        return bool(rows)
 
     def delete_many(self, fingerprints: tuple[str, ...]) -> int:
         """
