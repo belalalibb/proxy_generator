@@ -31,10 +31,54 @@ from statistics import fmean, stdev
 
 
 def pct_floor(values: list[float] | tuple[float, ...], p: float) -> float:
-    """Lower-rank percentile: sorted[int((n-1)*p)]. The documented p95 method."""
+    """
+    Lower-rank percentile: sorted[int((n-1)*p)]. The documented LEGACY method.
+
+    FROZEN. This reproduces the legacy tool value-for-value on the n=102 and
+    n=118 streams and must not move, because ADR-011's whole purpose is that
+    every "v4 p95 vs legacy 15903ms" sentence compares the same statistic.
+
+    It is NOT safe as a tail estimator at k=2 -- see pct_tail() and ADR-024.
+    Production admission calls pct_tail(); this stays for baseline parity.
+    """
     if not values:
         return 0.0
     s = sorted(values)
+    return float(s[int((len(s) - 1) * (p / 100.0))])
+
+
+def pct_tail(values: list[float] | tuple[float, ...], p: float) -> float:
+    """
+    Upper-percentile estimator for LIVE admission. Identical to pct_floor for
+    every n >= 3, but honest at n == 2.
+
+    ADR-024. The floor rank is int((n-1)*p/100), so at p=95:
+
+        n=1  -> index 0   the only sample; honest
+        n=2  -> index 0   THE MINIMUM -- reports the FASTER of two samples
+        n>=3 -> index >=1 genuinely in the tail
+
+    At n=2 that inverts the statistic's meaning: a "95th percentile" that
+    returns the best case. It produced p95=4100.7 next to p50=5880.0 in
+    engineering/raw/admission_live_fixed.json -- a tail below the median, which
+    is arithmetically impossible for any real percentile and is the visible
+    symptom of the estimator reading the wrong end of the distribution.
+
+    It is not merely cosmetic: samples (1400ms, 1600ms) against a 1500ms ceiling
+    are ADMITTED as USABLE, because p95 reads 1400. Jitter is 0.09, far under the
+    0.5 ceiling, so no other rule catches it. The gate built to reject the legacy
+    system's slow proxies would admit a proxy measured OVER budget -- H7's exact
+    failure, reintroduced by the estimator rather than by the threshold.
+
+    With two samples the only defensible 95th percentile is the slower one: the
+    upper of two observations is the best available estimate of the tail. Every
+    n >= 3 keeps the frozen legacy index, so baseline parity is untouched.
+    """
+    if not values:
+        return 0.0
+    s = sorted(values)
+    if len(s) == 2 and p >= 50.0:
+        return float(s[1])
     return float(s[int((len(s) - 1) * (p / 100.0))])
 
 
@@ -68,4 +112,4 @@ def mean_ms(values: list[float] | tuple[float, ...]) -> float | None:
     return float(fmean(values)) if values else None
 
 
-__all__ = ["pct_floor", "pct_linear", "sample_stdev", "mean_ms"]
+__all__ = ["pct_floor", "pct_tail", "pct_linear", "sample_stdev", "mean_ms"]
