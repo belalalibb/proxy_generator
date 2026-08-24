@@ -1,13 +1,13 @@
 {
   "version": "4.0.0",
-  "updated_at": "2026-08-24T01:00:00Z",
-  "current_phase": "P02_SOURCE_REGISTRY",
+  "updated_at": "2026-08-24T02:10:00Z",
+  "current_phase": "P04_POOL_ADMISSION",
   "phase_gate_status": {
     "P00": "PASSED",
     "P01": "PASSED",
     "P02": "PASSED",
-    "P03": "TODO",
-    "P04": "TODO",
+    "P03": "PASSED",
+    "P04": "PASSED",
     "P05": "TODO",
     "P06": "TODO",
     "P07": "TODO",
@@ -84,7 +84,7 @@
         "engineering/tools/measure_baseline.py"
       ],
       "attempts": 1,
-      "notes": "Historical: 15000 collected -> 102 working (0.68%) in 1418.98s, accepted p50 6359.5ms p95 15903ms, 95.8% over 1500ms. Measured now: 9/300 live (3.0%), p95 1464ms, 68.5s."
+      "notes": "Historical: 15000 collected -> 102 working (0.68%) in 1418.98s, accepted p50 6359.5ms p95 15903ms, 95.1% over 1500ms (n=102 stream; the n=118 log stream reads 95.8% -- ADR-020). Measured now: 9/300 live (3.0%), p95 1464ms, 68.5s."
     },
     {
       "id": "P00.T7",
@@ -313,18 +313,101 @@
         "atlas/tests/unit/test_fetch.py",
         "atlas/tests/unit/test_fetch.py"
       ]
+    },
+    {
+      "id": "P04.T1",
+      "phase": "P04",
+      "title": "pure percentile module with ADR-011 method parity against the baseline tool",
+      "status": "DONE",
+      "evidence": [
+        "atlas/core/policy/percentile.py",
+        "atlas/tests/unit/test_policy.py::test_percentile_methods_match_the_baseline_tool"
+      ],
+      "files_changed": [
+        "atlas/core/policy/percentile.py"
+      ]
+    },
+    {
+      "id": "P04.T2",
+      "phase": "P04",
+      "title": "admission gate: p95 of k samples, NOT_MEASURED refuses on zero evidence (H7/ADR-003)",
+      "status": "DONE",
+      "evidence": [
+        "atlas/core/policy/admission.py",
+        "atlas/tests/unit/test_policy.py::test_unmeasured_is_rejected_not_admitted",
+        "atlas/tests/unit/test_policy.py::test_gate_rejects_the_overwhelming_majority_of_legacy_admitted"
+      ],
+      "files_changed": [
+        "atlas/core/policy/admission.py"
+      ]
+    },
+    {
+      "id": "P04.T3",
+      "phase": "P04",
+      "title": "replay the 102 legacy-admitted proxies through the v4 gate (real data, k=1 caveat stated)",
+      "status": "DONE",
+      "evidence": [
+        "engineering/tools/replay_admission.py",
+        "engineering/raw/admission_replay_20260824T020209Z.json"
+      ],
+      "files_changed": [
+        "engineering/tools/replay_admission.py"
+      ]
+    },
+    {
+      "id": "P04.T4",
+      "phase": "P04",
+      "title": "ADR-019: normalizer preserves the scheme Endpoint.parse captured and dropped",
+      "status": "DONE",
+      "evidence": [
+        "atlas/core/policy/normalize.py",
+        "atlas/tests/unit/test_policy.py::test_normalizer_preserves_the_scheme_as_a_protocol_label",
+        "atlas/tests/unit/test_policy.py::test_endpoint_parse_discards_the_scheme_it_captures"
+      ],
+      "files_changed": [
+        "atlas/core/policy/normalize.py"
+      ]
+    },
+    {
+      "id": "P04.T5",
+      "phase": "P04",
+      "title": "ADR-020: cross-stream splice found and fenced (95.8/56.8 are n=118, not n=102)",
+      "status": "DONE",
+      "evidence": [
+        "engineering/tools/verify_baseline_streams.py",
+        "engineering/raw/baseline_streams.json",
+        "engineering/tools/gate_check.py::check_no_cross_stream_splice"
+      ],
+      "files_changed": [
+        "engineering/tools/verify_baseline_streams.py",
+        "engineering/tools/gate_check.py",
+        "README.md",
+        "config.yaml",
+        "engineering/BUG_LEDGER.md",
+        "engineering/RESUME_PROMPT.md",
+        "atlas/core/domain/verdict.py"
+      ]
     }
   ],
   "files_changed": [
     "Makefile",
     "README.md",
+    "atlas/adapters/http_source.py",
     "atlas/adapters/registry.py",
     "atlas/core/domain/proxy.py",
     "atlas/core/domain/verdict.py",
+    "atlas/core/parsing/candidates.py",
+    "atlas/core/policy/__init__.py",
+    "atlas/core/policy/admission.py",
+    "atlas/core/policy/normalize.py",
+    "atlas/core/policy/percentile.py",
     "atlas/data/sources/sources.json",
     "atlas/tests/unit/test_architecture.py",
     "atlas/tests/unit/test_domain.py",
+    "atlas/tests/unit/test_fetch.py",
+    "atlas/tests/unit/test_policy.py",
     "atlas/tests/unit/test_registry.py",
+    "config.yaml",
     "engineering/ANALYSIS.md",
     "engineering/BASELINE.json",
     "engineering/BUG_LEDGER.md",
@@ -336,6 +419,7 @@
     "engineering/SECURITY.md",
     "engineering/SOURCE_INVENTORY.json",
     "engineering/TASK_STATE.json",
+    "engineering/raw/baseline_streams.json",
     "engineering/raw/bug_scan.json",
     "engineering/raw/geonode_body.txt",
     "engineering/raw/geonode_parser_verify.json",
@@ -346,19 +430,21 @@
     "engineering/tools/gate_check.py",
     "engineering/tools/measure_baseline.py",
     "engineering/tools/probe_legacy_sources.py",
+    "engineering/tools/replay_admission.py",
+    "engineering/tools/verify_baseline_streams.py",
     "engineering/tools/verify_bug_lines.py",
     "engineering/tools/verify_geonode_parser.py",
     "engineering/tools/verify_units.py"
   ],
   "tests": {
-    "total": 113,
-    "passed": 113,
+    "total": 162,
+    "passed": 162,
     "failed": 0,
-    "breakdown": "22 architecture/fitness + 36 domain + 29 registry + 26 fetch/parsing"
+    "breakdown": "22 architecture/fitness + 36 domain + 29 registry + 26 fetch/parsing + 49 policy/admission"
   },
   "open_failures": [],
   "blockers": [],
-  "next_action": "P04 \u2014 POOL + ADMISSION GATE: implement the in-memory proxy pool and the speed/reliability admission gate (H3/H7). The fetch path now yields candidates (67 fetchable sources, 59 regex_adjacent / 7 html_table / 1 json_path), but NOTHING measures or admits them yet: H3, H7 and H8 remain recorded false. Admission must refuse on zero evidence (NOT_MEASURED) rather than defaulting to admit.",
+  "next_action": "P05 -- STORE + LEASE (H3/H8): SQLite WAL StorePort with lease() as a single BEGIN IMMEDIATE compare-and-set, atomic .tmp+os.replace exports, and SIGKILL durability. The pool can now be populated (normalizer) and judged (gate), but nothing PERSISTS it: H3 and H8 remain false. Leasing must be proven under real concurrency, not asserted.",
   "invariants_verified": {
     "H1_evidence_for_every_claim": true,
     "H2_no_fabricated_numbers": true,
@@ -366,12 +452,12 @@
     "H4_migration_ledger_complete": true,
     "H5_responsible_use": true,
     "H6_phase_gates": true,
-    "H7_live_not_good": false,
+    "H7_live_not_good": true,
     "H8_crash_resume": false
   },
   "invariant_notes": {
     "H3_no_double_delivery": "Not yet verifiable - the pool and lease protocol do not exist until P08.",
-    "H7_live_not_good": "Not yet verifiable - the admission gate does not exist until P06/P07. The baseline PROVES the legacy system violated it (p50 6359ms admitted).",
+    "H7_live_not_good": "EARNED 2026-08-24 (P04). The gate exists, is pure, and refuses on zero evidence (NOT_MEASURED). Replayed against the legacy system's OWN 102 admitted proxies it rejects 97 (95.1%), all on TOO_SLOW_P95. CAVEAT recorded honestly: that replay is k=1 because the legacy file holds one sample per proxy, so it tests the THRESHOLD only -- k=5 sampling, jitter and reliability are exercised by unit tests, not yet by live measurement. Live calibration is P06.",
     "H8_crash_resume": "Not yet verifiable - storage layer arrives at P07.",
     "H1_evidence_for_every_claim": "Re-earned 2026-08-24. Two ADRs were documented without implementation and the README cited unmeasured numbers; caught, recorded in RECONCILIATION.md 5-6, and now enforced by gate_check.adr_claims_are_verifiable (ADR-014)."
   },
@@ -382,7 +468,20 @@
     "legacy_historical_admitted_p50_ms": 6359.5,
     "legacy_historical_admitted_p95_ms": 15903,
     "legacy_historical_success_rate_pct": 0.68,
-    "legacy_pct_over_1500ms": 95.8
+    "legacy_pct_over_1500ms_n102": 95.1,
+    "legacy_pct_over_5000ms_n102": 58.8,
+    "legacy_pct_over_1500ms_n118_log": 95.8,
+    "stream_note": "ADR-020: 95.8/56.8 belong to the n=118 proxy_scraper.log stream; the n=102 proxy_details.json stream is 95.1/58.8. Six files quoted the n=118 pair beside the n=102 p50/p95.",
+    "v4_gate_replay": {
+      "legacy_admitted_n": 102,
+      "v4_would_admit": 5,
+      "v4_would_reject": 97,
+      "v4_reject_pct": 95.1,
+      "survivor_p50_ms": 1199.0,
+      "survivor_p95_ms": 1329.0,
+      "method": "k=1 (all the legacy file carries); tests the p95 threshold only",
+      "artifact": "engineering/raw/admission_replay_20260824T020209Z.json"
+    }
   },
   "source_registry": {
     "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
