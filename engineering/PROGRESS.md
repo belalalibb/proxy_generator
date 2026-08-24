@@ -435,3 +435,92 @@ nothing measures or admits them.
 
 **NEXT:** P04 — pool + admission gate (H3/H7). Admission must refuse on zero
 evidence (`NOT_MEASURED`) rather than defaulting to admit.
+
+---
+
+## 2026-08-24 — P04 · the gate itself, and two defects found in my own evidence
+
+**AR:** رقمان صحيحان قد يصنعان جملة كاذبة.
+**EN:** Two true numbers can make a false sentence.
+
+### THE GATE (H7 / ADR-003) — `atlas/core/policy/admission.py`
+
+Pure, no I/O, 260 lines. p95 of *k* samples — never one sample, never `min()`
+(its absence is asserted by AST, not by comment). Four rules in a **fixed order**,
+so the reason code is diagnostic rather than merely negative:
+
+| order | rule | reason code |
+|---|---|---|
+| 1 | zero evidence | `NOT_MEASURED` — a **refusal**, not a default-admit |
+| 2 | integrity (IP leak / body rewrite) | `TRANSPARENT_LEAK` · `CONTENT_MISMATCH` |
+| 3 | success ratio below floor | `UNRELIABLE` |
+| 4 | p95 over budget, then jitter | `TOO_SLOW_P95` · `TOO_JITTERY` |
+
+Integrity outranks speed deliberately: a 200 ms proxy that forwards the client IP
+is rejected *before* latency is considered. Speed is worthless if the proxy leaks.
+
+### Replay against the legacy system's own output
+
+Not a synthetic benchmark — `proxy_details.json`, the 102 proxies the legacy run
+**itself declared working**:
+
+| | |
+|---|---|
+| legacy-admitted | **102** |
+| v4 admits | **5** |
+| v4 rejects | **97 (95.1%)** — all `TOO_SLOW_P95` |
+| survivors | p50 **1199 ms** · p95 **1329 ms** |
+| legacy distribution | p50 6359.5 ms · p95 15903 ms · max 19035 ms |
+
+**Caveat stated in the artifact, not buried:** k=1, because the legacy file
+records one sample per proxy. This tests the **threshold only** — jitter and
+reliability are unmeasurable at n=1 — so the replay is *generous* to the legacy
+data. The most flattering reading available still rejects 95.1%.
+
+### ADR-019 — a captured fact that nothing reads is a lost fact
+
+`_HOSTPORT` has a named capture group for the scheme, and `Endpoint.parse` never
+read it: `socks5://1.2.3.4:1080` parsed **identically** to `1.2.3.4:1080`. That
+prefix is the source declaring its protocol *in the candidate itself* — stronger
+evidence than the filename hint ADR-005 was written for — and it was being
+discarded. Same shape as B-12, which cost 2853 candidates. The normalizer now
+keeps it as `labelled_protocol` while leaving `protocol` UNKNOWN, so
+`protocol_mismatch` can still catch a source that lies.
+
+### ADR-020 — two true numbers can make a false sentence
+
+The legacy run left **two** records: `proxy_details.json` (n=102) and
+`proxy_scraper.log` (n=118). "95.8% over 1500ms" and "56.8% over 5000ms" belong
+to the **n=118** stream. Six files — including `config.yaml` and `admission.py`,
+as the stated justification for `max_p95_ms: 1500` — quoted that pair beside the
+**n=102** p50/p95. Every number was real; no single distribution has those
+properties.
+
+| stream | n | over 1500ms | over 5000ms |
+|---|---|---|---|
+| `proxy_details.json` | 102 | **95.1%** | **58.8%** |
+| `proxy_scraper.log` | 118 | 95.8% | 56.8% |
+
+ADR-014(c) and ADR-018 both passed it because each verifies claims **one at a
+time**, and the falsehood lived in the *conjunction*. Corrected in all six files.
+Note the direction: the honest figure (95.1) is **weaker** for this project's
+argument than the spliced one it replaces.
+
+New guard `check_no_cross_stream_splice` (negative-controlled) fails the build if
+95.8/56.8 ever again appears without naming its n=118 stream.
+`verify_baseline_streams.py` re-derives all 16 fields from both raw files.
+
+### PHASE GATE 4 · **PASSED**
+
+`make doctor` → **12/12 gate checks PASS** (was 10), **162 tests** (was 113).
+The normalizer accepts all 616 real seed candidates; the accounting invariant
+`accepted + dropped == seen` is enforced by the report type itself, with 13 named
+drop reasons.
+
+Honest invariant status: H1 ✅ · H2 ✅ · H4 ✅ · H5 ✅ · H6 ✅ ·
+**H7 ✅ (with the k=1 caveat recorded)** · **H3/H8 still `false`** — the pool can
+be populated and judged, but nothing *persists* it.
+
+**NEXT:** P05 — STORE + LEASE (H3/H8). SQLite WAL, `lease()` as a single
+`BEGIN IMMEDIATE` compare-and-set, atomic `.tmp`+`os.replace` exports. Leasing
+must be proven under **real concurrency**, not asserted.
