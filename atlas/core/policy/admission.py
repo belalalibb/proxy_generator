@@ -55,7 +55,7 @@ from dataclasses import dataclass
 
 from atlas.core.domain.proxy import Anonymity, LatencyProfile, Proxy
 from atlas.core.domain.verdict import Grade, ReasonCode, Verdict
-from atlas.core.policy.percentile import mean_ms, pct_floor, pct_linear, sample_stdev
+from atlas.core.policy.percentile import mean_ms, pct_linear, pct_tail, sample_stdev
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,8 +111,10 @@ def build_profile(
     the samples that are missing from the list. Passing the denominator in is what
     makes UNRELIABLE detectable at all.
 
-    p95 uses the ADR-011 floor method so that every v4 p95 is directly comparable
-    to the legacy 15 903 ms figure (see percentile.py).
+    p95 uses pct_tail: the ADR-011 floor rank for every k >= 3 (so v4's p95 stays
+    directly comparable to the legacy 15 903 ms figure), corrected at k == 2 where
+    the floor rank returns the MINIMUM and would admit a proxy measured over
+    budget. See pct_tail and ADR-024.
     """
     if attempted < len(samples_ms):
         raise ValueError(
@@ -130,7 +132,7 @@ def build_profile(
     return LatencyProfile(
         samples_ms=tuple(samples_ms),
         p50_ms=round(pct_linear(samples_ms, 50), 1),
-        p95_ms=round(pct_floor(samples_ms, 95), 1),
+        p95_ms=round(pct_tail(samples_ms, 95), 1),
         mean_ms=round(mean_ms(samples_ms) or 0.0, 1),
         stdev_ms=(round(s, 1) if (s := sample_stdev(samples_ms)) is not None else None),
         success_ratio=(len(samples_ms) / attempted) if attempted else None,
