@@ -20,7 +20,7 @@ A measured rebuild of a legacy proxy scraper.
 |---|---|
 | Phase | **P01 — ARCHITECTURE · gate PASSED** |
 | Gate 0 | ✅ PASSED (re-earned twice after sync losses — ADR-010) |
-| Tests | **58 passed** — 22 architecture/fitness + 36 domain behaviour <!--verify:engineering/TASK_STATE.json:tests.passed:58--> |
+| Tests | **87 passed** — 22 architecture/fitness + 36 domain + 29 registry <!--verify:engineering/TASK_STATE.json:tests.passed:87--> |
 | Gate checks | **10/10 pass** (`make doctor`) |
 | Sources | **67 ACTIVE** of 120 probed (range 67–69, see below) <!--verify:engineering/TASK_STATE.json:source_registry.active:67--> |
 | Candidates | **502 189** unique from one sweep <!--verify:engineering/TASK_STATE.json:source_registry.unique_candidates:502189--> |
@@ -109,7 +109,7 @@ microseconds.
 | `save()` truncates with `open(...,'w')` | `.tmp` + `os.replace()` | 8 truncating writes (B-04) |
 | 23 silent `except: pass` handlers | Every failure carries a `ReasonCode` | 35 dead URLs retried forever |
 | TLS verification disabled in 9 places | TLS always on | MITM indistinguishable (B-09) |
-| One bad fetch ⇒ source treated as dead | Cooldown on **consecutive** failures | GeoNode: 230 067 B → 659 B → 230 019 B |
+| One bad fetch ⇒ source treated as dead | Cooldown on **consecutive** failures | GeoNode: 230 067 → 659 → 230 067 octets (ADR-015 units) |
 | Body read from the socket buffer, silently truncated | Read to **EOF**, `FETCH_INCOMPLETE` if not | **74 895 → 502 189** candidates (×6.7), ADR-013 |
 | Ships a 2captcha client | **Refused, not ported** | ADR-007, `SECURITY.md` |
 | Defaults to probing a login-walled site | **No default target, ever** | ADR-007 |
