@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-24T02:03:31.759600+00:00",
+  "generated_at": "2026-08-24T02:34:48.907361+00:00",
   "purpose": "prove which figure belongs to which stream (ADR-020)",
   "finding": "over_1500ms_pct=95.8 and over_5000ms_pct=56.8 belong to STREAM B (n=118). Six files quoted them beside STREAM A's p50/p95 (n=102). Stream A's true figures are 95.1% and 58.8%.",
   "streams": [
