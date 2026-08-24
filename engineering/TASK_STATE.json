@@ -1,11 +1,11 @@
 {
   "version": "4.0.0",
   "updated_at": "2026-08-24T01:00:00Z",
-  "current_phase": "P01_ARCHITECTURE",
+  "current_phase": "P02_SOURCE_REGISTRY",
   "phase_gate_status": {
     "P00": "PASSED",
     "P01": "PASSED",
-    "P02": "TODO",
+    "P02": "PASSED",
     "P03": "TODO",
     "P04": "TODO",
     "P05": "TODO",
@@ -200,15 +200,55 @@
       ],
       "attempts": 1,
       "notes": "README corrected 2026-08-24: it claimed '19 passed' and '68 ACTIVE' before either was true (ADR-014)."
+    },
+    {
+      "id": "P02.T1",
+      "title": "Generate atlas/data/sources/sources.json from the pinned snapshot (ADR-002)",
+      "status": "DONE",
+      "evidence": [
+        "engineering/tools/build_source_registry.py",
+        "atlas/data/sources/sources.json",
+        "engineering/raw/source_probe_20260824T010038Z.json"
+      ]
+    },
+    {
+      "id": "P02.T2",
+      "title": "Registry loader that ENFORCES its contract (DISABLED rows must name a reason)",
+      "status": "DONE",
+      "evidence": [
+        "atlas/adapters/registry.py",
+        "atlas/tests/unit/test_registry.py::test_every_disabled_row_names_a_reason"
+      ]
+    },
+    {
+      "id": "P02.T3",
+      "title": "ADR-002 guard: zero hardcoded source URLs in any atlas/*.py, with negative controls",
+      "status": "DONE",
+      "evidence": [
+        "atlas/tests/unit/test_registry.py::test_no_hardcoded_source_urls_in_python",
+        "atlas/tests/unit/test_registry.py::test_adr002_guard_has_teeth"
+      ]
+    },
+    {
+      "id": "P02.T4",
+      "title": "Protocol labels: ambiguity reported, never guessed (ADR-005)",
+      "status": "DONE",
+      "evidence": [
+        "atlas/tests/unit/test_registry.py::test_socks_list_http_txt_is_ambiguous_not_guessed",
+        "atlas/tests/unit/test_registry.py::test_ssl_filter_does_not_override_declared_proxytype"
+      ]
     }
   ],
   "files_changed": [
     "Makefile",
     "README.md",
+    "atlas/adapters/registry.py",
     "atlas/core/domain/proxy.py",
     "atlas/core/domain/verdict.py",
+    "atlas/data/sources/sources.json",
     "atlas/tests/unit/test_architecture.py",
     "atlas/tests/unit/test_domain.py",
+    "atlas/tests/unit/test_registry.py",
     "engineering/ANALYSIS.md",
     "engineering/BASELINE.json",
     "engineering/BUG_LEDGER.md",
@@ -225,24 +265,24 @@
     "engineering/raw/geonode_parser_verify.json",
     "engineering/raw/legacy_urls.json",
     "engineering/raw/source_probe_20260824T010038Z.json",
+    "engineering/tools/build_source_registry.py",
     "engineering/tools/extract_legacy_sources.py",
     "engineering/tools/gate_check.py",
     "engineering/tools/measure_baseline.py",
     "engineering/tools/probe_legacy_sources.py",
     "engineering/tools/verify_bug_lines.py",
-    "engineering/tools/verify_geonode_parser.py"
+    "engineering/tools/verify_geonode_parser.py",
+    "engineering/tools/verify_units.py"
   ],
   "tests": {
-    "passed": 58,
+    "total": 87,
+    "passed": 87,
     "failed": 0,
-    "skipped": 0,
-    "last_run": "2026-08-24T01:00:00Z",
-    "command": "make doctor",
-    "note": "gate_check.py runs BEFORE pytest (ADR-010). 58 = 22 architecture/fitness + 36 domain behaviour."
+    "breakdown": "22 architecture/fitness + 36 domain + 29 registry"
   },
   "open_failures": [],
   "blockers": [],
-  "next_action": "P02 \u2014 SOURCE REGISTRY: generate atlas/data/sources/sources.json from snapshot source_probe_20260824T005530Z.json (69 ACTIVE, each row carrying url/parser/labelled_protocol/state/disabled_reason), plus a loader test asserting zero hardcoded URLs in .py and that every DISABLED row names a reason.",
+  "next_action": "P03 \u2014 SOURCE FETCH ADAPTER: implement SourcePort against the registry using the ADR-013 read-to-EOF discipline (iter_chunked + FETCH_INCOMPLETE), with the three parsers (regex_adjacent/json_path/html_table) behind one interface, tested OFFLINE against stored bodies in engineering/raw/ so no test depends on live network.",
   "invariants_verified": {
     "H1_evidence_for_every_claim": true,
     "H2_no_fabricated_numbers": true,
@@ -289,5 +329,26 @@
     "engineering/tools/inspect_inventory.py": "ad-hoc viewer; `make state` covers it",
     "engineering/tools/show_baseline.py": "ad-hoc viewer; measure_baseline.py --json covers it",
     "engineering/tools/check_geonode.py": "replaced by verify_geonode_parser.py (offline, deterministic, asserted)"
+  },
+  "registry": {
+    "path": "atlas/data/sources/sources.json",
+    "total": 120,
+    "enabled": 67,
+    "disabled": 53,
+    "by_parser": {
+      "regex_adjacent": 59,
+      "html_table": 7,
+      "json_path": 1
+    },
+    "by_protocol_hint": {
+      "unknown": 38,
+      "https": 32,
+      "http": 48,
+      "ambiguous": 1,
+      "socks5": 1
+    },
+    "deterministic": "byte-identical on rebuild (verified via diff)",
+    "labels_verified": 0,
+    "note": "ENABLED==67 asserted equal to snapshot ACTIVE by test, so the registry cannot silently invent or lose sources. No label_is_verified is true: zero proxies probed yet."
   }
 }
