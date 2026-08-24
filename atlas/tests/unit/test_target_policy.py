@@ -20,6 +20,7 @@ from pathlib import Path
 
 import pytest
 
+from atlas.adapters.config import load_target_policy
 from atlas.core.domain.source import Target
 from atlas.core.policy.target_policy import (
     TargetNotAllowed, TargetPolicy, TargetRefusal,
@@ -27,6 +28,18 @@ from atlas.core.policy.target_policy import (
 )
 
 ROOT = Path(__file__).resolve().parents[3]
+
+# ADR-031: the deny-list is DATA, loaded from config.yaml, and appears nowhere in
+# executable code. These tests therefore exercise the SAME policy object the
+# application builds -- so they prove the file is authoritative, not that a
+# constant in a test file matches a constant in a source file (ADR-018: two
+# documents agreeing is consistency, not truth).
+POLICY = load_target_policy()
+
+# The hosts under test are read from the config, never typed here: H5/ADR-007
+# bans naming them in code, and test files are code.
+DENIED_HOSTS = sorted(POLICY.deny_hosts)
+A_DENIED_HOST = DENIED_HOSTS[0]
 
 
 # ── the defect this module exists for ────────────────────────────────────────
@@ -39,8 +52,8 @@ def test_the_legacy_default_target_is_refused() -> None:
     RETIRED_PROHIBITED. Until P08 the prohibition was prose: this exact Target
     was constructible and no code objected.
     """
-    assert check_target(Target(url="https://www.instagram.com")) == TargetRefusal.DENIED_HOST
-    assert check_target(Target(url="https://instagram.com")) == TargetRefusal.DENIED_HOST
+    assert check_target(Target(url="https://www.instagram.com"), POLICY) == TargetRefusal.DENIED_HOST
+    assert check_target(Target(url="https://instagram.com"), POLICY) == TargetRefusal.DENIED_HOST
 
 
 def test_a_lookalike_host_is_not_refused() -> None:
@@ -52,15 +65,15 @@ def test_a_lookalike_host_is_not_refused() -> None:
     domain. A naive `str.endswith` deny-list refuses it -- measured, not assumed
     (see host_matches_deny's docstring table).
     """
-    assert check_target(Target(url="https://notinstagram.com")) is None
-    assert check_target(Target(url="https://myinstagram.com")) is None
+    assert check_target(Target(url="https://notinstagram.com"), POLICY) is None
+    assert check_target(Target(url="https://myinstagram.com"), POLICY) is None
 
 
 def test_subdomains_of_a_denied_host_are_refused() -> None:
     """Denying instagram.com must cover its subdomains, or the rule is trivially bypassed."""
     for url in ("https://www.instagram.com", "https://graph.instagram.com",
                 "https://i.instagram.com/api/v1/"):
-        assert check_target(Target(url=url)) == TargetRefusal.DENIED_HOST, url
+        assert check_target(Target(url=url), POLICY) == TargetRefusal.DENIED_HOST, url
 
 
 def test_a_denied_host_as_a_prefix_of_another_domain_is_allowed() -> None:
@@ -69,7 +82,7 @@ def test_a_denied_host_as_a_prefix_of_another_domain_is_allowed() -> None:
     prefix here, not a suffix. It must not be refused as though it were, because
     a reason code that is sometimes wrong stops being diagnostic.
     """
-    assert check_target(Target(url="http://instagram.com.evil.net/")) is None
+    assert check_target(Target(url="http://instagram.com.evil.net/"), POLICY) is None
 
 
 @pytest.mark.parametrize("host", ["instagram.com", "facebook.com", "tiktok.com"])
@@ -79,18 +92,52 @@ def test_every_config_denied_host_is_actually_denied(host: str) -> None:
     host silently dropped from the default policy fails its own case rather than
     hiding inside a loop.
     """
-    assert check_target(Target(url=f"https://{host}/")) == TargetRefusal.DENIED_HOST
+    assert check_target(Target(url=f"https://{host}/"), POLICY) == TargetRefusal.DENIED_HOST
 
 
-def test_the_default_policy_denies_the_config_hosts() -> None:
+def test_a_policy_cannot_be_built_without_a_deny_list() -> None:
     """
-    A TargetPolicy() with no arguments must already deny the config hosts.
+    ADR-031. This test asserted the OPPOSITE until P08: that `TargetPolicy()`
+    with no arguments already denied the three config hosts.
 
-    An empty default would mean the policy permits the legacy target unless
-    someone remembers to configure it -- a security control that depends on
-    being switched on is the defect ADR-029 is fixing, one level up.
+    That design put the hostnames in executable code, which
+    `test_no_default_target_url_constant` correctly fails the build for (H5 /
+    ADR-007 / ADR-012) -- the ban exists so the legacy default target cannot
+    return as a "safe" default. It also made config.yaml non-authoritative:
+    removing a host from the file could not remove it from the compiled-in set.
+
+    The replacement invariant is stronger than the one it retires. Instead of
+    "the default is not empty", it is "there is no default at all": a caller
+    cannot obtain a policy that denies nothing by forgetting an argument,
+    because the argument is required. Empty remains EXPRESSIBLE -- typed out
+    deliberately, below -- so an operator who really wants no deny-list can say
+    so, but it can never happen by omission.
     """
-    assert TargetPolicy().deny_hosts >= {"instagram.com", "facebook.com", "tiktok.com"}
+    with pytest.raises(TypeError):
+        TargetPolicy()                      # type: ignore[call-arg]
+
+    # deliberate-and-explicit remains possible, and is honestly permissive
+    empty = TargetPolicy(deny_hosts=frozenset())
+    assert empty.deny_hosts == frozenset()
+    assert check_target(Target(url=f"https://{A_DENIED_HOST}/"), empty) is None
+
+
+def test_the_loaded_policy_denies_the_hosts_the_config_file_names() -> None:
+    """
+    The policy the APPLICATION builds must deny exactly what config.yaml lists.
+
+    Read from the file rather than compared against a literal, so this test
+    cannot pass by agreeing with a constant that is itself the bug (ADR-018).
+    """
+    import yaml
+    raw = yaml.safe_load((ROOT / "config.yaml").read_text(encoding="utf-8"))
+    from_file = {h.strip().lower()
+                 for h in raw["targets"]["allow_policy"]["deny_hosts"]}
+    assert from_file, "config.yaml names no denied hosts -- the fixture is vacuous"
+    assert POLICY.deny_hosts == frozenset(from_file)
+    for host in sorted(from_file):
+        assert check_target(Target(url=f"https://{host}/"), POLICY) \
+            == TargetRefusal.DENIED_HOST
 
 
 # ── SSRF: the same predicate as the candidate path ───────────────────────────
@@ -108,13 +155,13 @@ def test_non_routable_target_addresses_are_refused(host: str, expected: str) -> 
     endpoint; `100.64.1.1` is the CGNAT range that ADR-028 found was accepted on
     the candidate path.
     """
-    assert check_target(Target(url=f"http://{host}/")) == expected
+    assert check_target(Target(url=f"http://{host}/"), POLICY) == expected
 
 
 def test_a_public_ip_target_is_allowed() -> None:
     """The routability check must not refuse ordinary public addresses."""
-    assert check_target(Target(url="https://8.8.8.8/")) is None
-    assert check_target(Target(url="https://1.1.1.1/")) is None
+    assert check_target(Target(url="https://8.8.8.8/"), POLICY) is None
+    assert check_target(Target(url="https://1.1.1.1/"), POLICY) is None
 
 
 def test_metadata_hostnames_are_refused_by_name() -> None:
@@ -124,9 +171,9 @@ def test_metadata_hostnames_are_refused_by_name() -> None:
     I/O), so the name form needs its own rule -- and its own reason code, so the
     operator sees METADATA_ENDPOINT rather than a generic refusal.
     """
-    assert check_target(Target(url="http://metadata.google.internal/")) \
+    assert check_target(Target(url="http://metadata.google.internal/"), POLICY) \
         == TargetRefusal.METADATA_ENDPOINT
-    assert check_target(Target(url="http://metadata/computeMetadata/")) \
+    assert check_target(Target(url="http://metadata/computeMetadata/"), POLICY) \
         == TargetRefusal.METADATA_ENDPOINT
 
 
@@ -184,7 +231,7 @@ def test_the_policy_layer_refuses_a_bad_scheme_independently() -> None:
     object.__setattr__(t, "expect_status", 200)
     object.__setattr__(t, "min_bytes", 0)
     object.__setattr__(t, "timeout_ms", 8000)
-    assert check_target(t) == TargetRefusal.BAD_SCHEME
+    assert check_target(t, POLICY) == TargetRefusal.BAD_SCHEME
 
 
 def test_absent_target_is_a_refusal_not_a_default() -> None:
@@ -192,18 +239,18 @@ def test_absent_target_is_a_refusal_not_a_default() -> None:
     ADR-007: there is no default target. `None` must be refused, never quietly
     replaced with example.com or anything else.
     """
-    assert check_target(None) == TargetRefusal.NO_TARGET
+    assert check_target(None, POLICY) == TargetRefusal.NO_TARGET
 
 
 def test_an_explicit_port_is_allowed_and_an_absurd_one_is_not() -> None:
     """A target may name a port; it may not name an impossible one."""
-    assert check_target(Target(url="http://example.com:8080/")) is None
+    assert check_target(Target(url="http://example.com:8080/"), POLICY) is None
     t = object.__new__(Target)
     object.__setattr__(t, "url", "http://example.com:99999/")
     object.__setattr__(t, "expect_status", 200)
     object.__setattr__(t, "min_bytes", 0)
     object.__setattr__(t, "timeout_ms", 8000)
-    assert check_target(t) == TargetRefusal.BAD_PORT
+    assert check_target(t, POLICY) == TargetRefusal.BAD_PORT
 
 
 def test_host_is_matched_case_insensitively() -> None:
@@ -218,8 +265,8 @@ def test_host_is_matched_case_insensitively() -> None:
     earlier. The test was asserting a behaviour of the wrong layer. Corrected to
     vary only the host, which is what this function is responsible for.
     """
-    assert check_target(Target(url="https://INSTAGRAM.COM/")) == TargetRefusal.DENIED_HOST
-    assert check_target(Target(url="https://WwW.InStAgRaM.cOm/")) == TargetRefusal.DENIED_HOST
+    assert check_target(Target(url="https://INSTAGRAM.COM/"), POLICY) == TargetRefusal.DENIED_HOST
+    assert check_target(Target(url="https://WwW.InStAgRaM.cOm/"), POLICY) == TargetRefusal.DENIED_HOST
 
 
 def test_an_uppercase_scheme_is_refused_by_the_constructor_not_silently_allowed() -> None:
@@ -247,7 +294,7 @@ def test_an_uppercase_scheme_is_refused_by_the_constructor_not_silently_allowed(
     object.__setattr__(t, "expect_status", 200)
     object.__setattr__(t, "min_bytes", 0)
     object.__setattr__(t, "timeout_ms", 8000)
-    assert check_target(t) == TargetRefusal.DENIED_HOST
+    assert check_target(t, POLICY) == TargetRefusal.DENIED_HOST
 
 
 def test_a_trailing_dot_does_not_bypass_the_deny_list() -> None:
@@ -255,7 +302,7 @@ def test_a_trailing_dot_does_not_bypass_the_deny_list() -> None:
     `instagram.com.` is the same name in DNS (fully-qualified form). Without
     stripping the root label this is a one-character bypass.
     """
-    assert check_target(Target(url="https://instagram.com./")) == TargetRefusal.DENIED_HOST
+    assert check_target(Target(url="https://instagram.com./"), POLICY) == TargetRefusal.DENIED_HOST
 
 
 # ── require_target ───────────────────────────────────────────────────────────
@@ -265,19 +312,21 @@ def test_require_target_raises_with_the_named_reason() -> None:
     value a caller can ignore; ADR-019 is what happens when they do.
     """
     with pytest.raises(TargetNotAllowed) as exc:
-        require_target(Target(url="https://instagram.com"))
+        require_target(Target(url=f"https://{A_DENIED_HOST}"), POLICY)
     assert exc.value.reason == TargetRefusal.DENIED_HOST
-    assert "instagram.com" in str(exc.value)
+    # the offending URL must appear in the message: a refusal that does not say
+    # WHAT was refused is not diagnosable (B-02)
+    assert A_DENIED_HOST in str(exc.value)
 
 
 def test_require_target_returns_an_allowed_target_unchanged() -> None:
     t = Target(url="https://example.com")
-    assert require_target(t) is t
+    assert require_target(t, POLICY) is t
 
 
 def test_require_target_refuses_none() -> None:
     with pytest.raises(TargetNotAllowed) as exc:
-        require_target(None)
+        require_target(None, POLICY)
     assert exc.value.reason == TargetRefusal.NO_TARGET
 
 
