@@ -11,5 +11,13 @@
   "atlas/tests/unit/test_engine_MUTANT.py::test_private_range_candidates_are_dropped_with_a_named_reason": true,
   "atlas/tests/unit/test_engine_MUTANT.py::test_quality_rate_is_admitted_over_probed_not_raw_volume": true,
   "atlas/tests/unit/test_target_policy.py::test_the_default_policy_denies_the_config_hosts": true,
-  "atlas/tests/unit/test_handout.py::TestPolicyBounds::test_target_ttl_must_be_positive": true
+  "atlas/tests/unit/test_handout.py::TestPolicyBounds::test_target_ttl_must_be_positive": true,
+  "atlas/tests/unit/test_recheck.py::TestProbeLifetimeBound::test_the_bound_is_derived_from_the_real_probe_plan": true,
+  "atlas/tests/unit/test_recheck.py::TestProbeLifetimeBound::test_the_bound_grows_with_k": true,
+  "atlas/tests/unit/test_recheck.py::TestProbeLifetimeBound::test_the_bound_accounts_for_queueing_behind_the_semaphore": true,
+  "atlas/tests/unit/test_recheck.py::TestProbeLifetimeBound::test_partial_waves_round_up": true,
+  "atlas/tests/unit/test_recheck.py::TestProbeLifetimeBound::test_the_measured_old_default_is_still_undersized": true,
+  "atlas/tests/unit/test_recheck.py::TestProbeLifetimeBound::test_the_default_is_derived_not_hardcoded": true,
+  "atlas/tests/unit/test_recheck.py::TestProbeLifetimeBound::test_probe_ms_below_one_is_still_refused": true,
+  "atlas/tests/unit/test_recheck.py::TestProbeLifetimeBound::test_the_claim_outlives_a_probe_that_takes_the_worst_case": true
 }
