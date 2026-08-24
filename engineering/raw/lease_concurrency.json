@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-24T02:27:00.920458+00:00",
+  "generated_at": "2026-08-24T02:34:50.634560+00:00",
   "question": "under real process concurrency, is any proxy delivered twice?",
   "invariant": "H3 NO DOUBLE DELIVERY",
   "method": {
@@ -7,6 +7,28 @@
     "oversubscribed": "the real arm requests 48 from a pool of 24, because contention is where read-then-write breaks",
     "naive_gap_s": 0.25,
     "why_naive": "a control. 0 duplicates from an idle machine proves nothing; the naive arm shows the same test body DOES detect double delivery when it is present (ADR-022)"
+  },
+  "head_to_head": {
+    "note": "same pool (12), same processes (6), same request size (6). The ONLY difference is the lease implementation, which is what makes this a controlled comparison.",
+    "config": {
+      "processes": 6,
+      "requested_per_process": 6,
+      "pool_size": 12
+    },
+    "real_duplicates": 0,
+    "naive_duplicates": 30
+  },
+  "real_matched": {
+    "implementation": "real_matched",
+    "processes": 6,
+    "requested_per_process": 6,
+    "pool_size": 12,
+    "total_requested": 36,
+    "handed_out": 12,
+    "unique_fingerprints": 12,
+    "duplicates": 0,
+    "rows_left_in_leased_state": 12,
+    "audit_log_violations": 0
   },
   "real": {
     "implementation": "real",
