@@ -440,3 +440,104 @@ describing work that does not exist fails `make doctor` instead of becoming a
 false claim in the README.
 
 **Verify:** `python3 engineering/tools/gate_check.py` # adr_claims_are_verifiable PASS
+
+---
+
+## ADR-015 — A field named `bytes` must contain octets, not decoded characters
+
+**Status:** ACCEPTED · 2026-08-24 · supersedes the `bytes` key in probe artifacts
+
+### Context
+
+`probe_legacy_sources.py:146` recorded `"bytes": len(body)` where `body` is the
+result of `raw.decode("utf-8", errors="replace")`. `len()` of a `str` is a
+**character** count. For any non-ASCII response the two differ, so the field was
+silently wrong under exactly the conditions that matter (HTML pages with `—`, `©`,
+non-Latin text).
+
+Proven from stored evidence, no network needed:
+
+| `engineering/raw/geonode_body.txt` | value |
+|---|---|
+| `len(raw)` — octets | **230 067** |
+| `len(decoded str)` — characters | **230 019** |
+| non-ASCII characters | 45 |
+
+And across the pinned snapshot's 83 rows carrying both fields:
+
+| relation | rows |
+|---|---|
+| chars < bytes | 28 |
+| chars > bytes | **0** ← required if the cause is multi-byte decoding |
+| equal (pure ASCII) | 55 |
+
+Zero counterexamples in 83 rows. The cause is established, not guessed.
+
+### Consequences
+
+- The key is renamed **`body_chars`**; the octet count remains `body_bytes`.
+- `measure_baseline.py` had the same bug (`len(r.text)`) and now records both.
+- **My own earlier documentation repeated the error**: RECONCILIATION.md and
+  PROGRESS.md described `geonode_body.txt` as "230 019 B". That is the character
+  count. Corrected in place with a footnote rather than silently edited.
+- No verdict changes. The field was descriptive metadata, never an input to
+  ALIVE/DEAD/EMPTY classification — scope of impact stated so the reader need not
+  guess whether conclusions moved. (They did not.)
+
+### Why this is recorded rather than quietly renamed
+
+A wrong unit is how a "230 019" becomes an authoritative number in a later report.
+The measurement was never re-run to fix it: the old artifacts keep the old key, and
+the ADR states which key means what, so historical files stay readable.
+
+**Verify:** `python3 engineering/tools/verify_units.py`
+
+---
+
+## ADR-016 — Evidence of the form `path::symbol` must verify the *symbol*, not just the file
+
+**Status:** ACCEPTED · 2026-08-24 · strengthens ADR-010 and ADR-014
+
+### Context
+
+`gate_check.py`'s `done_tasks_have_evidence` resolved each evidence string with
+`(ROOT / ev).exists()`. For `path::test_name` evidence that asks the filesystem for
+a file literally named `atlas/tests/unit/test_registry.py::test_x`, which never
+exists — so the check reported *missing* for real tests, and would equally have
+reported *present* for none of them. The failure mode is asymmetric and worse than
+it looks: had the path check been written as a `startswith`, or had the evidence
+been listed file-first, **a task could cite a test that does not exist and pass.**
+
+It stayed latent through P00 and P01 because every earlier task cited plain file
+paths. **P02 was the first phase to cite individual test functions**, which is when
+the hole surfaced — as a false *failure*, luckily, rather than a false pass.
+
+### Decision
+
+Split evidence on `::`. Verify the file exists, then verify the file actually
+defines `def <symbol>(`. Report *which* half failed (`no such file` vs
+`symbol not defined in file`) so a reader is never left guessing.
+
+### Negative control (required by ADR-010 — a check that cannot fail is not a check)
+
+Injecting `atlas/tests/unit/test_registry.py::test_this_does_not_exist` into
+P02.T2's evidence:
+
+```
+[FAIL] done_tasks_have_evidence
+       missing: P02.T2 -> …::test_this_does_not_exist (symbol not defined in file)
+exit=1
+```
+
+Removing it restores `all checks passed`. The guard demonstrably bites.
+
+### Consequences
+
+- Task evidence may now name a specific test, and that citation is *enforced*.
+- This is the third self-inflicted verification defect found in two sessions
+  (ADR-013 truncated fetch, ADR-015 wrong units, ADR-016 unresolved symbols).
+  All three were in the machinery that *checks* the work, not in the work. Logged
+  plainly because the pattern matters more than any single bug: **tooling that
+  reports success is the least-tested code in the repository.**
+
+**Verify:** `python3 engineering/tools/gate_check.py` (and the negative control above)
