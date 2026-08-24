@@ -7,8 +7,9 @@ These tests exist to pin four things the lease itself cannot express:
   2. the four-term P07 score decides WHO is served, not just the order
      (the store's SQL orders by p95 alone),
   3. every leased row is granted or released -- no capacity leak,
-  4. evidence older than the 90 s B-16 TTL is REPORTED, not silently presented
-     as current.
+  4. evidence older than the 900 s recheck horizon is REPORTED, not silently
+     presented as current (ADR-035; the 90 s per-target TTL P08 flagged against
+     is WITHDRAWN, because the schema cannot express per-target validity).
 
 The store is a fake, so all of this runs without SQLite. H3 itself is NOT
 retested here: it belongs to the store and is proven under real process
@@ -348,34 +349,108 @@ class TestNoCapacityLeak:
 
 # ── B-16: the 90 s target TTL is reported, never silently ignored ────────────
 class TestFreshnessIsReported:
-    def test_fresh_evidence_needs_no_revalidation(self):
+    def test_fresh_evidence_is_not_flagged(self):
         store = FakeStore([mkproxy(age_s=10.0)])
         res = service(store).handout(target=GOOD_TARGET, count=1)
-        assert res.granted[0].revalidation_required is False
-        assert res.revalidation_required == 0
+        assert res.granted[0].past_recheck_horizon is False
+        assert res.past_recheck_horizon == 0
         assert res.granted[0].age_s == pytest.approx(10.0)
 
-    def test_evidence_older_than_the_ttl_is_flagged(self):
+    def test_evidence_past_the_recheck_horizon_is_flagged(self):
         """
-        THE B-16 TENSION, made visible. `scheduler.recheck_ready_after_s` is 900
-        while `target_ttl` is 90, so a pool proxy can be perfectly valid for the
-        pool and stale for THIS target. It is handed out WITH the flag rather
-        than refused (which would serve almost nothing) or presented as current
-        (which would be a lie).
+        The flag means THE SCHEDULER IS BEHIND ON THIS ROW (ADR-035), keyed to
+        `recheck_horizon_s` = 900 s. The proxy is still handed out -- refusing
+        would serve almost nothing -- but the caller learns the evidence is
+        older than the interval this system drives, instead of inferring
+        currency from silence.
+        """
+        store = FakeStore([mkproxy(age_s=1200.0)])
+        res = service(store).handout(target=GOOD_TARGET, count=1)
+        assert len(res.granted) == 1
+        assert res.granted[0].past_recheck_horizon is True
+        assert res.past_recheck_horizon == 1
+
+    def test_the_deleted_90s_ttl_no_longer_flags_anything(self):
+        """
+        THE WITHDRAWN CLAIM, pinned so it cannot creep back (ADR-035).
+
+        A proxy checked 300 s ago was `revalidation_required` under P08's 90 s
+        per-target TTL. That TTL is withdrawn -- the schema holds ONE
+        `last_checked` per proxy, so "validated against YOUR target 90 s ago" is
+        unsayable at any interval -- so 300 s must now report CLEAN.
+
+        The `hasattr` assertions are the actual regression guard: they fail if
+        anyone reintroduces the old field name alongside the new one, which is
+        how a withdrawn guarantee would quietly return.
         """
         store = FakeStore([mkproxy(age_s=300.0)])
         res = service(store).handout(target=GOOD_TARGET, count=1)
-        assert len(res.granted) == 1
-        assert res.granted[0].revalidation_required is True
-        assert res.revalidation_required == 1
+        assert res.granted[0].past_recheck_horizon is False
+        assert res.past_recheck_horizon == 0
+        assert not hasattr(res, "revalidation_required")
+        assert not hasattr(res.granted[0], "revalidation_required")
 
-    def test_the_ttl_boundary_is_not_off_by_one(self):
-        under = FakeStore([mkproxy(age_s=89.9)])
-        over = FakeStore([mkproxy(age_s=90.1)])
+    def test_the_horizon_boundary_is_not_off_by_one(self):
+        under = FakeStore([mkproxy(age_s=899.9)])
+        over = FakeStore([mkproxy(age_s=900.1)])
         assert service(under).handout(
-            target=GOOD_TARGET, count=1).revalidation_required == 0
+            target=GOOD_TARGET, count=1).past_recheck_horizon == 0
         assert service(over).handout(
-            target=GOOD_TARGET, count=1).revalidation_required == 1
+            target=GOOD_TARGET, count=1).past_recheck_horizon == 1
+
+    def test_never_checked_counts_as_past_the_horizon_not_inside_it(self):
+        """
+        Tested through the REAL predicate, which is the whole point.
+
+        The first version of this test restated `age_s is None or age_s > ...`
+        inline and asserted on its own copy. It passed while the mutation run
+        still reported `never_checked_treated_as_fresh_via_comparison` as a
+        SURVIVOR -- a test that re-implements the code under test measures the
+        test. `_past_horizon` was extracted so this can call the real branch.
+
+        Unreachable via `handout()` today (`rank(include_stale=False)` drops
+        never-checked rows first), so it is pinned here rather than left
+        unproven or deleted.
+        """
+        svc = service(FakeStore([]))
+        assert svc._past_horizon(None) is True
+        assert svc._past_horizon(10.0) is False
+        assert svc._past_horizon(1200.0) is True
+
+    def test_a_horizon_at_or_above_max_age_is_refused_at_construction(self):
+        """
+        A hole neither policy could see (ADR-035).
+
+        `rank(include_stale=False)` drops rows at or past `max_age_s`, so the
+        flag is only observable in (recheck_horizon_s, max_age_s). Configure the
+        horizon at or above `max_age_s` and that band is EMPTY: the flag can
+        never fire and every served row reports fresh at any age -- staleness
+        reported as freshness, by CONFIGURATION alone.
+
+        Both dataclasses validate happily in isolation, so the guard can only
+        live where both are known: `HandoutService.__init__`.
+        """
+        with pytest.raises(ValueError, match="could never|never fire"):
+            service(
+                FakeStore([]),
+                policy=HandoutPolicy(recheck_horizon_s=3600.0),
+                scoring=ScoringPolicy(max_age_s=3600.0),
+            )
+
+    def test_just_below_max_age_is_accepted_and_the_flag_is_observable(self):
+        """
+        The other side of the same boundary: 3599 is legal, and the flag must
+        actually FIRE there. Asserting only that construction succeeds would
+        pass even if the observable band were empty.
+        """
+        svc = service(
+            FakeStore([mkproxy(age_s=3599.5)]),
+            policy=HandoutPolicy(recheck_horizon_s=3599.0),
+            scoring=ScoringPolicy(max_age_s=3600.0),
+        )
+        res = svc.handout(target=GOOD_TARGET, count=1)
+        assert len(res.granted) == 1
+        assert res.past_recheck_horizon == 1
 
     def test_a_never_checked_proxy_is_never_granted(self):
         """
@@ -509,9 +584,9 @@ class TestPolicyBounds:
         with pytest.raises(ValueError, match="max_lease_ms"):
             HandoutPolicy(default_lease_ms=30_000, max_lease_ms=1_000)
 
-    def test_target_ttl_must_be_positive(self):
-        with pytest.raises(ValueError, match="target_ttl_s must be > 0"):
-            HandoutPolicy(target_ttl_s=0.0)
+    def test_recheck_horizon_must_be_positive(self):
+        with pytest.raises(ValueError, match="recheck_horizon_s must be > 0"):
+            HandoutPolicy(recheck_horizon_s=0.0)
 
 
 # ── the clock is injected, so freshness is testable without waiting ──────────
@@ -522,9 +597,13 @@ class TestClockIsInjected:
         svc = service(store, clock=clock)
 
         first = svc.handout(target=GOOD_TARGET, count=1)
-        assert first.revalidation_required == 0
+        assert first.past_recheck_horizon == 0
         svc.release_all(first)
 
-        clock.advance(200.0)
+        # Past the 900 s horizon (ADR-035) but still under ScoringPolicy's
+        # max_age_s of 3600, so the row is flagged rather than dropped by
+        # `rank`. The old version advanced 200 s, which crossed the withdrawn
+        # 90 s TTL and would now assert nothing.
+        clock.advance(1_000.0)
         second = svc.handout(target=GOOD_TARGET, count=1)
-        assert second.revalidation_required == 1
+        assert second.past_recheck_horizon == 1
