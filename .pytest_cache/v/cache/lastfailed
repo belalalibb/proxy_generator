@@ -1,3 +1,4 @@
 {
-  "atlas/tests/unit/test_policy.py::test_every_drop_has_a_named_reason[999.1.1.1:80-NOT_AN_IP]": true
+  "atlas/tests/unit/test_policy.py::test_every_drop_has_a_named_reason[999.1.1.1:80-NOT_AN_IP]": true,
+  "atlas/tests/unit/test_probe.py::test_407_is_proxy_auth_required_not_a_generic_failure": true
 }
