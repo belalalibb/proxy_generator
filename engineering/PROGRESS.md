@@ -1181,3 +1181,95 @@ readers; the only hits are a comment in `scoring.py` and a docstring in
 ADR-035 has now made the 900 s value load-bearing on the serving path while
 nothing yet drives the recheck it names, so `past_recheck_horizon` can currently
 only ever become **more** true.
+
+---
+
+## P09.T3 — the pool stops being a one-way funnel, and the ADR guard stops grading its own vocabulary
+
+**Resume state vs. reality.** TASK_STATE said `tests.passed: 507`; pytest
+collected **509**. That two-test gap was the whole thread. Pulling it:
+`atlas/engine/scheduler.py` and `atlas/core/policy/lifecycle.py` existed and were
+committed, but `atlas/tests/unit/test_scheduler.py` — the file ADR-036's
+`**Verify:**` line names — **did not exist**, and neither did
+`load_scheduler_policy()`, which ADR-036 decision 4 asserted was reading the four
+`scheduler.*` keys.
+
+A platform sync had erased the commit from the previous session. Production code
+survived because it had been committed; the test file was untracked when the sync
+ran, so it went. `tests_tracked_by_git` is the check that makes that loss visible
+instead of silent, and the operational lesson is now in ADR-037: **commit before
+running anything long.**
+
+**What the gate said about all this.** `adr_claims_are_verifiable`: **PASS — 36
+ADR(s) checked**. One line explains it:
+
+```python
+has_verify = "**Verify:**" in body
+```
+
+Presence of the *string*, never existence of what the string *names*. The guard
+written to catch ADRs describing non-existent work (ADR-014, earned when ADR-012
+and ADR-013 were committed while their code did not exist) was satisfied by a
+citation pointing at nothing.
+
+### What was built
+
+| | |
+|---|---|
+| `load_scheduler_policy()` | the four `scheduler.*` keys had **zero** Python readers; now read from the file, and a missing key **raises** rather than defaulting |
+| `test_scheduler.py` | **65 tests** — `decide()` incl. branch order, the absorbing-state negative control, `PoolScheduler` plan/apply, and the loader |
+| `adr_verify_targets_exist` | new gate check: repo-relative `**Verify:**` targets must resolve on disk |
+| suite | 509 → **574 passed** (557 unit + 17 integration) |
+| gate | 18 → **19/19** |
+
+### Why the negative control is the test that matters
+
+ADR-036's defect was that `COOLING` behaved as an absorbing state while its own
+docstring promised "eligible again after a cooldown". A test asserting only that
+`RETIRED` is terminal would have passed against the broken code. So the control
+is the **negative** one — and it was mutation-proven, not assumed: setting
+`is_terminal` to treat `COOLING` as terminal fails **3 tests**, including
+`test_cooling_is_not_absorbing_the_negative_control`. Restored, 65/65 green.
+
+### The new check was proven on the live defect, not a fixture
+
+With `test_scheduler.py` moved aside — the exact state ADR-036 shipped in:
+
+```
+[PASS] adr_claims_are_verifiable    36 ADR(s) checked
+[FAIL] adr_verify_targets_exist     dangling: ADR-036 -> atlas/tests/unit/test_scheduler.py
+```
+
+A synthetic case proves a check *can* fail. This proves it fails on the thing
+that actually got past it.
+
+### Two defects the new check found in itself
+
+Its first real run **failed on its own ADR** — `ADR-037 -> core/policy/lifecycle.py`
+and `-> adapters/config.py`, both of which exist. Two genuine bugs:
+it split on the **first** `**Verify:**` (and ADR-037 *quotes* that string while
+describing the hole, so it scanned the whole body) → now `rsplit`; and it did not
+try the `atlas/` prefix that ADR prose routinely omits → now tried before calling
+a claim dangling. Then `done_tasks_have_evidence` failed too: I had written
+P09.T3's evidence as `path -- prose` when the convention is `path::Symbol`, which
+the gate **resolves inside the file**. An evidence list that cannot be checked is
+the same defect as a Verify line naming nothing. Both recorded in ADR-037 rather
+than quietly patched.
+
+### Numbers reconciled, in both places at once
+
+`507` → `574` in TASK_STATE **and** README (`<!--verify:-->` anchored), `18` →
+`19` gate checks. The 507/509 disagreement is what found this defect; leaving a
+new one behind would be the same mistake with different digits.
+
+**Deliberately not done:** nothing re-probes yet. `plan()` returns the recheck
+set and `apply_retirements()` performs only state transitions — wiring it to
+`DiscoveryEngine.evaluate()` is P10. And `discovery_interval_s` is now *loaded*
+but no loop consults it: it is the one key of the four that still drives nothing,
+and it is named as such rather than counted as done.
+
+**NEXT:** P10 — wire `plan().recheck` to the probe path. Measured obstacle:
+`cycle.py` skips known fingerprints (`if self._store.get(...) is not None:
+continue`), so a COOLING row whose cooldown has elapsed is selected by
+`select_schedulable`, classified `RECHECK` by `decide()`, and then consumed by
+nobody.
