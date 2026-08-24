@@ -1,0 +1,39 @@
+{
+  "generated_at": "2026-08-24T02:03:31.759600+00:00",
+  "purpose": "prove which figure belongs to which stream (ADR-020)",
+  "finding": "over_1500ms_pct=95.8 and over_5000ms_pct=56.8 belong to STREAM B (n=118). Six files quoted them beside STREAM A's p50/p95 (n=102). Stream A's true figures are 95.1% and 58.8%.",
+  "streams": [
+    {
+      "stream": "A_proxy_details_json",
+      "provenance": "proxy_details.json::working_proxies",
+      "n": 102,
+      "min_ms": 756.0,
+      "p50_ms": 6359.5,
+      "p95_ms": 15903.0,
+      "mean_ms": 7145.1,
+      "max_ms": 19035.0,
+      "over_1500ms_pct": 95.1,
+      "over_5000ms_pct": 58.8,
+      "percentile_method": "ADR-011: p50 interpolated, p95 floor rank int((n-1)*0.95)"
+    },
+    {
+      "stream": "B_proxy_scraper_log",
+      "provenance": "proxy_scraper.log (regex '<n> ms')",
+      "n": 118,
+      "min_ms": 756.0,
+      "p50_ms": 6092.5,
+      "p95_ms": 15903.0,
+      "mean_ms": 7032.3,
+      "max_ms": 19035.0,
+      "over_1500ms_pct": 95.8,
+      "over_5000ms_pct": 56.8,
+      "percentile_method": "ADR-011: p50 interpolated, p95 floor rank int((n-1)*0.95)"
+    }
+  ],
+  "shared": {
+    "p95_ms": 15903.0,
+    "max_ms": 19035.0,
+    "min_ms": 756.0,
+    "note": "p95, max and min coincide across streams; p50, mean and both over_* percentages do NOT. Coincidence on some fields is exactly why the splice was easy to miss."
+  }
+}
