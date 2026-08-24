@@ -541,3 +541,147 @@ Removing it restores `all checks passed`. The guard demonstrably bites.
   reports success is the least-tested code in the repository.**
 
 **Verify:** `python3 engineering/tools/gate_check.py` (and the negative control above)
+
+---
+
+## ADR-017 — One concept must not have two vocabularies
+
+**Status:** ACCEPTED · 2026-08-24 · found while implementing P03
+
+### Context
+
+`ParserKind` (domain, written by hand in P01) declared five members:
+`line_ipport`, `json_path`, `csv_columns`, `html_table`, `regex`.
+
+`sources.json` (registry, **generated from measured probe results** in P02) uses
+three: `regex_adjacent`, `json_path`, `html_table`.
+
+These describe the same concept and did not agree:
+
+| | |
+|---|---|
+| enum members with no implementation | `csv_columns`, `regex` |
+| enum members no source ever used | `line_ipport` |
+| registry value the enum could not represent | **`regex_adjacent`** |
+| ENABLED rows carrying that value | **59 of 67 (88%)** |
+
+`adapters/registry.py` independently re-typed the correct three as a literal
+`VALID_PARSERS` frozenset, so the loader validated rows happily while the domain
+could not represent 88% of them.
+
+**Why two green phase gates missed it:** nothing had ever converted a `SourceRow`
+into a `Source`. `ParserKind(row.parser)` was never evaluated, so the
+contradiction had no execution path on which to fail. P03 is the first phase that
+must cross that seam — which is exactly when it surfaced.
+
+The pinning test made it worse by looking adequate:
+
+```python
+assert {"line_ipport", "json_path", "html_table"} <= kinds   # passes
+```
+
+A **subset** assertion cannot detect a vocabulary that is simultaneously *too
+large* (three unused members) and *missing the one member that matters*.
+
+### Decision
+
+1. `ParserKind` names **exactly** the three implemented, measured parsers.
+2. The domain test asserts `==`, not `<=`.
+3. `VALID_PARSERS` is **derived** — `frozenset(k.value for k in ParserKind)` —
+   never re-typed. Divergence becomes unrepresentable rather than merely tested.
+4. `row_to_source()` / `fetchable_sources()` cross the seam explicitly and raise
+   `RegistryError` on any parser the domain cannot represent.
+5. `test_fetch.py::test_every_parser_kind_has_an_implementation` ties the enum to
+   `_STRATEGIES`, so a declared parser with no implementation cannot exist.
+
+### A design question the data settled
+
+My first version of `row_to_source` was written to convert every row, and my
+first test asserted that a `parser=None` row becomes a DISABLED `Source`. The
+registry disagreed: **37 of the 53 DISABLED rows have no parser** — nothing ever
+parsed them, which is *why* they are disabled. A `Source` that cannot say how to
+read its own payload is not a source. The conversion now refuses, and
+auditability is unaffected because the reason lives on the registry row (ADR-002).
+I corrected the test rather than weakening the model to match my assumption.
+
+### Negative controls (ADR-010)
+
+```
+inject CSV_COLUMNS into ParserKind  -> test_every_parser_kind_has_an_implementation FAILS
+inject `import aiohttp` into tests  -> test_no_test_in_this_file_uses_the_network FAILS
+```
+
+Both restore green on removal.
+
+### Consequences
+
+- Adding a parser now means: implement it, add the enum member, add a source.
+  Any two without the third fails the gate.
+- **Generalised lesson:** ADR-013/015/016 were defects in *verification tooling*.
+  This one is different and worth naming separately — a defect at a **seam that
+  no code had crossed yet**. Two independently-correct components, never
+  introduced to each other. The fix is not more tests on each side but *deriving*
+  one side from the other so disagreement cannot be expressed.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_fetch.py atlas/tests/unit/test_domain.py -q`
+
+---
+
+## ADR-018 — Two documents agreeing is consistency, not truth
+
+**Status:** ACCEPTED · 2026-08-24 · strengthens ADR-014(c)
+
+### Context
+
+ADR-014(c) added `<!--verify:file:jsonpath:value-->` tags so numeric README
+claims are re-derived from an artifact instead of trusted. That caught a real
+`58 passed` drift in P02, so the mechanism works.
+
+It did not catch this one. After P03 the README said **87 passed** while the
+suite had grown to **113**. The tag pointed at
+`engineering/TASK_STATE.json:tests.passed`, and `TASK_STATE` *also* still said
+87. Both documents were stale **by the same amount**, so they agreed, and
+`readme_numbers_have_artifacts` reported PASS.
+
+The flaw is structural, not arithmetic: **the check compared two documents to
+each other, when neither is the source of truth.** The tests are. A pair of
+mutually-consistent stale numbers is indistinguishable from a pair of correct
+ones if you never look past them.
+
+Worth stating plainly: this is the same failure shape as ADR-017, one layer up.
+There, two *code* vocabularies described one concept and were never compared.
+Here, two *documents* describe one fact and were compared only with each other.
+
+### Decision
+
+Add `check_declared_test_count_matches_collection`: run
+`pytest --collect-only -q` and require `TASK_STATE.tests.passed` to equal the
+number of tests actually collected. The gate now reaches past every document to
+the code.
+
+Collection, not execution — `make doctor` runs the suite separately, because
+*existing* and *passing* are different facts and conflating them is precisely
+what ADR-010 forbids.
+
+### Negative control (ADR-010)
+
+```
+set tests.passed = 87 (the real historical staleness)
+  [FAIL] declared_test_count_matches_collection
+         declared 87, pytest collects 113 -- update TASK_STATE and README together
+exit=1
+```
+
+Restoring 113 returns the gate to green.
+
+### Consequences
+
+- README and `TASK_STATE` must now be updated **together**, and the truth is
+  arbitrated by pytest rather than by whichever document was edited last.
+- Gate checks: 10 → **11**.
+- **The rule this generalises:** a verification chain is only as strong as its
+  furthest anchor. If every link is a document, the chain is circular. At least
+  one link must terminate in executable reality — the code, the bytes on disk,
+  or a measurement.
+
+**Verify:** `python3 engineering/tools/gate_check.py` (and the negative control above)
