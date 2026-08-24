@@ -384,8 +384,96 @@ def test_the_structural_guards_read_code_not_comments() -> None:
     assert "os.replace(" in stripped, "the body must still be present"
 
 
-@pytest.mark.parametrize("method", ["lease", "release", "expire_leases", "upsert",
-                                    "upsert_many"])
+def _mutating_methods() -> list[str]:
+    """
+    Every public method that executes a DELETE/UPDATE/INSERT, discovered by AST.
+
+    FOUND BY ADDING A METHOD (ADR-036). This guard used to be parametrized over
+    a HAND-WRITTEN list -- ["lease", "release", "expire_leases", "upsert",
+    "upsert_many"] -- so `delete_many`, added for pool eviction, was not checked
+    for `BEGIN IMMEDIATE` and the suite stayed green while a new mutating path
+    went unguarded. A guard whose coverage is a literal list silently stops
+    covering the code as the code grows: it protects exactly the methods that
+    existed the day it was written.
+
+    Deriving the list means the guard's scope tracks the class. Add a mutating
+    method without the write lock and this fails, without anyone remembering to
+    edit a list.
+    """
+    text = _SRC.read_text(encoding="utf-8")
+    tree = ast.parse(text)
+
+    # SQL held in class/module attributes, e.g. `_UPSERT = "INSERT INTO ..."`.
+    # Methods reference it as `self._UPSERT`, so a scan of in-body literals alone
+    # reports `upsert` and `upsert_many` as non-mutating -- which the vacuity
+    # test below caught on the first run. Resolve the names.
+    consts: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant) \
+                and isinstance(node.value.value, str):
+            for tgt in node.targets:
+                if isinstance(tgt, ast.Name):
+                    consts[tgt.id] = node.value.value
+        # f-string / .format() SQL (the schema uses {_STATES}) reduces to its
+        # literal parts, which is enough to spot the verb.
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.JoinedStr):
+            for tgt in node.targets:
+                if isinstance(tgt, ast.Name):
+                    consts[tgt.id] = " ".join(
+                        v.value for v in node.value.values
+                        if isinstance(v, ast.Constant) and isinstance(v.value, str)
+                    )
+
+    found: list[str] = []
+    for cls in (n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)):
+        if cls.name != "SqliteStore":
+            continue
+        for fn in cls.body:
+            if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            if fn.name.startswith("_"):
+                continue
+            # Look at SQL the method actually EXECUTES, not its docstring:
+            # `lease`'s prose quotes the SQL it runs, and several docstrings
+            # mention DELETE while running nothing of the kind.
+            body = fn.body[1:] if (fn.body and isinstance(fn.body[0], ast.Expr)
+                                   and isinstance(fn.body[0].value, ast.Constant)
+                                   and isinstance(fn.body[0].value.value, str)
+                                   ) else fn.body
+            parts: list[str] = []
+            for stmt in body:
+                for node in ast.walk(stmt):
+                    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                        parts.append(node.value)
+                    elif isinstance(node, ast.Attribute) and node.attr in consts:
+                        parts.append(consts[node.attr])
+            sql = " ".join(parts).upper()
+            if any(verb in sql for verb in ("DELETE FROM", "UPDATE ", "INSERT ")):
+                found.append(fn.name)
+    assert found, "AST scan found no mutating methods -- the scan itself is broken"
+    return sorted(found)
+
+
+def test_the_mutating_method_scan_is_not_vacuous() -> None:
+    """
+    The derived list must contain the methods we already know mutate.
+
+    Without this, a scan that silently matched nothing would make
+    `test_every_mutating_method_takes_the_write_lock_immediately` pass by
+    iterating over an empty parametrize list -- green, and measuring nothing.
+    That exact vacuity is recorded in ADR-012 (architecture tests globbing an
+    empty core/) and again in ADR-035 (a test that restated the code it tested).
+    """
+    found = set(_mutating_methods())
+    for known in ("lease", "release", "expire_leases", "upsert", "upsert_many",
+                  "delete_many"):
+        assert known in found, (
+            f"{known} mutates the database but the AST scan missed it; the "
+            "write-lock guard would not cover it"
+        )
+
+
+@pytest.mark.parametrize("method", _mutating_methods())
 def test_every_mutating_method_takes_the_write_lock_immediately(method: str) -> None:
     """
     BEGIN IMMEDIATE, not a bare BEGIN. A DEFERRED transaction upgrades to a write
