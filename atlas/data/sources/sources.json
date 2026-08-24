@@ -1,0 +1,2193 @@
+{
+  "schema_version": 1,
+  "generator": "engineering/tools/build_source_registry.py",
+  "generated_from_snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+  "snapshot_measured_at_utc": "20260824T010038Z",
+  "network_used": false,
+  "deterministic": true,
+  "honesty_notes": [
+    "ADR-002: this file is the ONLY place source URLs live; no .py may hardcode one.",
+    "ADR-005: `labelled_protocol` is a HINT derived from URL tokens, never a measurement. `label_is_verified` is false for every row because no proxy has been probed yet.",
+    "State reflects ONE point in time (see snapshot). A DISABLED row is not proof a source is permanently dead: ACTIVE varied 67-69 across two sweeps 5 minutes apart."
+  ],
+  "counts": {
+    "total": 120,
+    "enabled": 67,
+    "disabled": 53,
+    "by_parser": {
+      "regex_adjacent": 59,
+      "html_table": 7,
+      "json_path": 1
+    },
+    "by_protocol_hint": {
+      "unknown": 38,
+      "https": 32,
+      "http": 48,
+      "ambiguous": 1,
+      "socks5": 1
+    },
+    "protocol_hint_unknown": 38
+  },
+  "sources": [
+    {
+      "id": "free-proxy-cz-en",
+      "url": "http://free-proxy.cz/en/",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 51212,
+        "fetched_at_utc": "2026-08-24T01:00:05.906288+00:00"
+      }
+    },
+    {
+      "id": "boys-here-com-newtest2-list0-txt",
+      "url": "http://www.boys-here.com/newtest2/list0.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 16,
+        "body_bytes": 1026642,
+        "fetched_at_utc": "2026-08-24T01:00:06.664134+00:00"
+      }
+    },
+    {
+      "id": "advanced-name-freeproxy",
+      "url": "https://advanced.name/freeproxy",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 133360,
+        "fetched_at_utc": "2026-08-24T01:00:06.889065+00:00"
+      }
+    },
+    {
+      "id": "advanced-name-freeproxy-type-https",
+      "url": "https://advanced.name/freeproxy?type=https",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "query_param:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 140477,
+        "fetched_at_utc": "2026-08-24T01:00:06.931097+00:00"
+      }
+    },
+    {
+      "id": "api-openproxy-space-lists-http",
+      "url": "https://api.openproxy.space/lists/http",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 521,
+        "unique_candidates": 0,
+        "body_bytes": 7014,
+        "fetched_at_utc": "2026-08-24T01:00:06.068523+00:00"
+      }
+    },
+    {
+      "id": "api-openproxylist-xyz-http-txt",
+      "url": "https://api.openproxylist.xyz/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 5778,
+        "body_bytes": 109472,
+        "fetched_at_utc": "2026-08-24T01:00:06.068259+00:00"
+      }
+    },
+    {
+      "id": "api-openproxylist-xyz-https-txt",
+      "url": "https://api.openproxylist.xyz/https.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 3522,
+        "body_bytes": 67357,
+        "fetched_at_utc": "2026-08-24T01:00:06.029462+00:00"
+      }
+    },
+    {
+      "id": "api-proxyscrape-com-request-getproxies-proxytype",
+      "url": "https://api.proxyscrape.com/?request=getproxies&proxytype=http&timeout=10000&country=all&ssl=yes&anonymity=all",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "query_param:http+ssl_filter_ignored",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 154,
+        "body_bytes": 3102,
+        "fetched_at_utc": "2026-08-24T01:00:06.072833+00:00"
+      }
+    },
+    {
+      "id": "api-proxyscrape-com-v2-request-displayproxies",
+      "url": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "query_param:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 432,
+        "unique_candidates": 0,
+        "body_bytes": 55,
+        "fetched_at_utc": "2026-08-24T01:00:05.908168+00:00"
+      }
+    },
+    {
+      "id": "api-proxyscrape-com-v2-request-displayproxies-2",
+      "url": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=https",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "query_param:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 1437,
+        "body_bytes": 31125,
+        "fetched_at_utc": "2026-08-24T01:00:07.360947+00:00"
+      }
+    },
+    {
+      "id": "api-proxyscrape-com-v2-request-get",
+      "url": "https://api.proxyscrape.com/v2/?request=get&protocol=http&timeout=10000&country=all&ssl=yes&anonymity=all",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_THROTTLED_OR_SHORT: short/identity-encoded read, unreliable",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "query_param:http+ssl_filter_ignored",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "THROTTLED_OR_SHORT",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 20,
+        "fetched_at_utc": "2026-08-24T01:00:07.306888+00:00"
+      }
+    },
+    {
+      "id": "api-proxyscrape-com-v3-free-proxy",
+      "url": "https://api.proxyscrape.com/v3/free-proxy-list/get?request=displayproxies&proxy_format=protocolipport&format=text",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 1446,
+        "body_bytes": 43536,
+        "fetched_at_utc": "2026-08-24T01:00:08.613074+00:00"
+      }
+    },
+    {
+      "id": "api-telegram-org-bot",
+      "url": "https://api.telegram.org/bot",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 55,
+        "fetched_at_utc": "2026-08-24T01:00:06.308267+00:00"
+      }
+    },
+    {
+      "id": "cdn-jsdelivr-net-gh-proxifly-free",
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/all/data.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 2474,
+        "body_bytes": 63999,
+        "fetched_at_utc": "2026-08-24T01:00:05.975884+00:00"
+      }
+    },
+    {
+      "id": "cdn-jsdelivr-net-gh-proxifly-free-2",
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 676,
+        "body_bytes": 16839,
+        "fetched_at_utc": "2026-08-24T01:00:06.997171+00:00"
+      }
+    },
+    {
+      "id": "cdn-jsdelivr-net-gh-proxifly-free-3",
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 1369,
+        "body_bytes": 34746,
+        "fetched_at_utc": "2026-08-24T01:00:06.990458+00:00"
+      }
+    },
+    {
+      "id": "databay-com-free-proxy-list",
+      "url": "https://databay.com/free-proxy-list",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 20,
+        "body_bytes": 639665,
+        "fetched_at_utc": "2026-08-24T01:00:06.219871+00:00"
+      }
+    },
+    {
+      "id": "fineproxy-org-free-proxy",
+      "url": "https://fineproxy.org/free-proxy/",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 1,
+        "body_bytes": 1201605,
+        "fetched_at_utc": "2026-08-24T01:00:06.507948+00:00"
+      }
+    },
+    {
+      "id": "free-proxy-list-net",
+      "url": "https://free-proxy-list.net/",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 300,
+        "body_bytes": 117238,
+        "fetched_at_utc": "2026-08-24T01:00:06.155513+00:00"
+      }
+    },
+    {
+      "id": "free-proxy-list-net-anonymous-proxy-html",
+      "url": "https://free-proxy-list.net/anonymous-proxy.html",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 200,
+        "body_bytes": 98248,
+        "fetched_at_utc": "2026-08-24T01:00:07.289225+00:00"
+      }
+    },
+    {
+      "id": "free-proxy-list-net-en-ssl-proxy",
+      "url": "https://free-proxy-list.net/en/ssl-proxy.html",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 100,
+        "body_bytes": 79087,
+        "fetched_at_utc": "2026-08-24T01:00:07.220629+00:00"
+      }
+    },
+    {
+      "id": "free-proxy-list-net-uk-proxy-html",
+      "url": "https://free-proxy-list.net/uk-proxy.html",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 100,
+        "body_bytes": 79291,
+        "fetched_at_utc": "2026-08-24T01:00:08.240578+00:00"
+      }
+    },
+    {
+      "id": "freeproxylist-org",
+      "url": "https://freeproxylist.org/",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 76396,
+        "fetched_at_utc": "2026-08-24T01:00:06.820698+00:00"
+      }
+    },
+    {
+      "id": "geonode-com-free-proxy-list",
+      "url": "https://geonode.com/free-proxy-list",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "html_table",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE_HTML_TABLE",
+        "http_status": 200,
+        "unique_candidates": 100,
+        "body_bytes": 805528,
+        "fetched_at_utc": "2026-08-24T01:00:07.183639+00:00"
+      }
+    },
+    {
+      "id": "hasdata-com-free-proxy-list",
+      "url": "https://hasdata.com/free-proxy-list",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 221123,
+        "fetched_at_utc": "2026-08-24T01:00:06.971413+00:00"
+      }
+    },
+    {
+      "id": "hide-mn-en-proxy-list",
+      "url": "https://hide.mn/en/proxy-list/",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "html_table",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE_HTML_TABLE",
+        "http_status": 200,
+        "unique_candidates": 64,
+        "body_bytes": 68270,
+        "fetched_at_utc": "2026-08-24T01:00:07.622240+00:00"
+      }
+    },
+    {
+      "id": "httpbin-org-ip",
+      "url": "https://httpbin.org/ip",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_THROTTLED_OR_SHORT: short/identity-encoded read, unreliable",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "THROTTLED_OR_SHORT",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 34,
+        "fetched_at_utc": "2026-08-24T01:00:06.950799+00:00"
+      }
+    },
+    {
+      "id": "iproyal-com-free-proxy-list",
+      "url": "https://iproyal.com/free-proxy-list/",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 403,
+        "unique_candidates": 0,
+        "body_bytes": 5535,
+        "fetched_at_utc": "2026-08-24T01:00:06.999931+00:00"
+      }
+    },
+    {
+      "id": "list-proxylistplus-com-ssl-proxy",
+      "url": "https://list.proxylistplus.com/SSL-proxy",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 507,
+        "unique_candidates": 0,
+        "body_bytes": 1497,
+        "fetched_at_utc": "2026-08-24T01:00:07.290678+00:00"
+      }
+    },
+    {
+      "id": "multiproxy-org-txt-all-proxy",
+      "url": "https://multiproxy.org/txt_all/proxy.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 3004,
+        "fetched_at_utc": "2026-08-24T01:00:07.551557+00:00"
+      }
+    },
+    {
+      "id": "openproxy-space-list-https",
+      "url": "https://openproxy.space/list/https",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 521,
+        "unique_candidates": 0,
+        "body_bytes": 6994,
+        "fetched_at_utc": "2026-08-24T01:00:07.292809+00:00"
+      }
+    },
+    {
+      "id": "openproxylist-com-proxy",
+      "url": "https://openproxylist.com/proxy/",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 43854,
+        "fetched_at_utc": "2026-08-24T01:00:08.061236+00:00"
+      }
+    },
+    {
+      "id": "proxy-list-download-api-v1-get",
+      "url": "https://proxy-list.download/api/v1/get?type=http",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "query_param:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 429,
+        "unique_candidates": 0,
+        "body_bytes": 7209,
+        "fetched_at_utc": "2026-08-24T01:00:07.342785+00:00"
+      }
+    },
+    {
+      "id": "proxy-list-download-api-v1-get-2",
+      "url": "https://proxy-list.download/api/v1/get?type=https",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "query_param:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 429,
+        "unique_candidates": 0,
+        "body_bytes": 7209,
+        "fetched_at_utc": "2026-08-24T01:00:07.319785+00:00"
+      }
+    },
+    {
+      "id": "proxy-tools-com-proxy-https",
+      "url": "https://proxy-tools.com/proxy/https",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 118871,
+        "fetched_at_utc": "2026-08-24T01:00:07.953936+00:00"
+      }
+    },
+    {
+      "id": "proxy5-net-free-proxy",
+      "url": "https://proxy5.net/free-proxy",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 45032,
+        "fetched_at_utc": "2026-08-24T01:00:07.694472+00:00"
+      }
+    },
+    {
+      "id": "proxybros-com-free-proxy-list",
+      "url": "https://proxybros.com/free-proxy-list/",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "html_table",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE_HTML_TABLE",
+        "http_status": 200,
+        "unique_candidates": 28,
+        "body_bytes": 205421,
+        "fetched_at_utc": "2026-08-24T01:00:08.171953+00:00"
+      }
+    },
+    {
+      "id": "proxydb-net",
+      "url": "https://proxydb.net/",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "html_table",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE_HTML_TABLE",
+        "http_status": 200,
+        "unique_candidates": 9,
+        "body_bytes": 41794,
+        "fetched_at_utc": "2026-08-24T01:00:07.963559+00:00"
+      }
+    },
+    {
+      "id": "proxydb-net-protocol-https",
+      "url": "https://proxydb.net/?protocol=https",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "html_table",
+      "labelled_protocol": "https",
+      "label_derivation": "query_param:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE_HTML_TABLE",
+        "http_status": 200,
+        "unique_candidates": 6,
+        "body_bytes": 40719,
+        "fetched_at_utc": "2026-08-24T01:00:07.923735+00:00"
+      }
+    },
+    {
+      "id": "proxydb-net-protocol-https-country",
+      "url": "https://proxydb.net/?protocol=https&country=",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "html_table",
+      "labelled_protocol": "https",
+      "label_derivation": "query_param:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE_HTML_TABLE",
+        "http_status": 200,
+        "unique_candidates": 6,
+        "body_bytes": 40809,
+        "fetched_at_utc": "2026-08-24T01:00:09.338067+00:00"
+      }
+    },
+    {
+      "id": "proxylist-geonode-com-api-proxy-list",
+      "url": "https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc&protocols=https",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "json_path",
+      "labelled_protocol": "https",
+      "label_derivation": "query_param:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE_JSON",
+        "http_status": 200,
+        "unique_candidates": 500,
+        "body_bytes": 230067,
+        "fetched_at_utc": "2026-08-24T01:00:07.781221+00:00"
+      }
+    },
+    {
+      "id": "proxyscrape-com-free-proxy-list",
+      "url": "https://proxyscrape.com/free-proxy-list",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 273305,
+        "fetched_at_utc": "2026-08-24T01:00:07.687013+00:00"
+      }
+    },
+    {
+      "id": "proxyspace-pro-http-txt",
+      "url": "https://proxyspace.pro/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 3592,
+        "body_bytes": 67636,
+        "fetched_at_utc": "2026-08-24T01:00:08.197087+00:00"
+      }
+    },
+    {
+      "id": "proxyspace-pro-https-txt",
+      "url": "https://proxyspace.pro/https.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 192,
+        "body_bytes": 3685,
+        "fetched_at_utc": "2026-08-24T01:00:07.984587+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-aliilapro-proxy-main",
+      "url": "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 841,
+        "body_bytes": 16944,
+        "fetched_at_utc": "2026-08-24T01:00:07.787621+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-anonym0uswork1221-free-proxies",
+      "url": "https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/http_proxies.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 3479,
+        "body_bytes": 64626,
+        "fetched_at_utc": "2026-08-24T01:00:07.842738+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-anonym0uswork1221-free-proxies-2",
+      "url": "https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/https_proxies.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 54,
+        "body_bytes": 1047,
+        "fetched_at_utc": "2026-08-24T01:00:08.860262+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-b4rc0de-tm-proxy",
+      "url": "https://raw.githubusercontent.com/B4RC0DE-TM/proxy-list/main/HTTP.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 3185,
+        "body_bytes": 57499,
+        "fetched_at_utc": "2026-08-24T01:00:08.858112+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-bardiafa-proxy-starter",
+      "url": "https://raw.githubusercontent.com/Bardiafa/Proxy-Starter/main/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:09.858117+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-bardiafa-proxy-starter-2",
+      "url": "https://raw.githubusercontent.com/Bardiafa/Proxy-Starter/main/https.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:09.897429+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-ercindedeoglu-proxies-main",
+      "url": "https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 59602,
+        "body_bytes": 1122326,
+        "fetched_at_utc": "2026-08-24T01:00:11.139781+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-ercindedeoglu-proxies-main-2",
+      "url": "https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/https.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 2996,
+        "body_bytes": 58972,
+        "fetched_at_utc": "2026-08-24T01:00:11.160416+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-hendrikbgr-free-proxy",
+      "url": "https://raw.githubusercontent.com/Hendrikbgr/Free-Proxy-Repo/master/proxy_list.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 684,
+        "body_bytes": 13275,
+        "fetched_at_utc": "2026-08-24T01:00:11.958558+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-hyperbeats-proxy-list",
+      "url": "https://raw.githubusercontent.com/HyperBeats/proxy-list/main/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:12.178399+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-kitsun3sec-proxylist-main",
+      "url": "https://raw.githubusercontent.com/Kitsun3Sec/ProxyList/main/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:12.982675+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-murongpig-proxy-master",
+      "url": "https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 101618,
+        "body_bytes": 1863659,
+        "fetched_at_utc": "2026-08-24T01:00:13.665509+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-obcbo-getproxy-master",
+      "url": "https://raw.githubusercontent.com/ObcbO/getproxy/master/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:14.045164+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-obcbo-getproxy-master-2",
+      "url": "https://raw.githubusercontent.com/ObcbO/getproxy/master/https.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:14.287928+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-rx4096-proxy-list",
+      "url": "https://raw.githubusercontent.com/RX4096/proxy-list/main/online/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:15.091996+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-shiftytr-proxy-list",
+      "url": "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 40,
+        "body_bytes": 742,
+        "fetched_at_utc": "2026-08-24T01:00:15.304824+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-thespeedx-proxy-list",
+      "url": "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 2853,
+        "body_bytes": 54284,
+        "fetched_at_utc": "2026-08-24T01:00:16.135533+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-thespeedx-proxy-list-2",
+      "url": "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/https.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:16.334011+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-thespeedx-socks-list",
+      "url": "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "ambiguous",
+      "label_derivation": "conflicting_path_tokens:http,socks",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 2200,
+        "body_bytes": 41901,
+        "fetched_at_utc": "2026-08-24T01:00:17.146377+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-tsprnay-proxy-lists",
+      "url": "https://raw.githubusercontent.com/Tsprnay/Proxy-lists/master/proxies/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 144173,
+        "body_bytes": 2680659,
+        "fetched_at_utc": "2026-08-24T01:00:17.910834+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-tsprnay-proxy-lists-2",
+      "url": "https://raw.githubusercontent.com/Tsprnay/Proxy-lists/master/proxies/https.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 52785,
+        "body_bytes": 936806,
+        "fetched_at_utc": "2026-08-24T01:00:18.408336+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-uptimerbot-proxy-list",
+      "url": "https://raw.githubusercontent.com/UptimerBot/proxy-list/main/proxies/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:18.419036+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-vann-dev-proxy",
+      "url": "https://raw.githubusercontent.com/Vann-Dev/proxy-list/main/proxies/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 897,
+        "body_bytes": 19612,
+        "fetched_at_utc": "2026-08-24T01:00:19.230377+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-vann-dev-proxy-2",
+      "url": "https://raw.githubusercontent.com/Vann-Dev/proxy-list/main/proxies/https.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 100,
+        "body_bytes": 1934,
+        "fetched_at_utc": "2026-08-24T01:00:19.435132+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-zaeem20-free-proxies",
+      "url": "https://raw.githubusercontent.com/Zaeem20/FREE_PROXIES_LIST/master/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 173,
+        "body_bytes": 3242,
+        "fetched_at_utc": "2026-08-24T01:00:20.237399+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-zeller-a-proxy",
+      "url": "https://raw.githubusercontent.com/Zeller-A/Proxy-Scraping/main/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:20.460621+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-zeller-a-proxy-2",
+      "url": "https://raw.githubusercontent.com/Zeller-A/Proxy-Scraping/main/https.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:21.299065+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-aslisk-proxyhttps-main",
+      "url": "https://raw.githubusercontent.com/aslisk/proxyhttps/main/https.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 2917,
+        "body_bytes": 75031,
+        "fetched_at_utc": "2026-08-24T01:00:21.527609+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-berkay-digital-proxy",
+      "url": "https://raw.githubusercontent.com/berkay-digital/Proxy-Starter/main/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:22.333637+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-caliphdev-proxy-list",
+      "url": "https://raw.githubusercontent.com/caliphdev/Proxy-List/master/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:22.513824+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-clarketm-proxy-list",
+      "url": "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 400,
+        "body_bytes": 7489,
+        "fetched_at_utc": "2026-08-24T01:00:23.351822+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-hookzof-socks5-list",
+      "url": "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "socks5",
+      "label_derivation": "path_token:socks5",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 142,
+        "body_bytes": 2755,
+        "fetched_at_utc": "2026-08-24T01:00:23.529351+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-im-razvan-proxy",
+      "url": "https://raw.githubusercontent.com/im-razvan/proxy_list/main/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 268,
+        "body_bytes": 4987,
+        "fetched_at_utc": "2026-08-24T01:00:24.377134+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-jetkai-proxy-list",
+      "url": "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 1801,
+        "body_bytes": 34484,
+        "fetched_at_utc": "2026-08-24T01:00:24.555584+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-jetkai-proxy-list-2",
+      "url": "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-https.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 2161,
+        "body_bytes": 41201,
+        "fetched_at_utc": "2026-08-24T01:00:25.419589+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-manugmg-proxy-365",
+      "url": "https://raw.githubusercontent.com/manuGMG/proxy-365/main/HTTP.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:25.591144+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-mertguvencli-http-proxy",
+      "url": "https://raw.githubusercontent.com/mertguvencli/http-proxy-list/main/proxy-list/data.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:26.434956+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-mmpx12-proxy-list",
+      "url": "https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:26.602183+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-mmpx12-proxy-list-2",
+      "url": "https://raw.githubusercontent.com/mmpx12/proxy-list/master/https.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:27.447735+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-monosans-proxy-list",
+      "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 336,
+        "body_bytes": 6443,
+        "fetched_at_utc": "2026-08-24T01:00:27.621442+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-monosans-proxy-list-2",
+      "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:28.471300+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-officialputuid-kangproxy-kangproxy",
+      "url": "https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/http/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:28.631044+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-proxifly-free-proxy",
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 2470,
+        "body_bytes": 63848,
+        "fetched_at_utc": "2026-08-24T01:00:29.507339+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-proxifly-free-proxy-2",
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 729,
+        "body_bytes": 18239,
+        "fetched_at_utc": "2026-08-24T01:00:29.651787+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-proxifly-free-proxy-3",
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/https/data.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 1361,
+        "body_bytes": 34538,
+        "fetched_at_utc": "2026-08-24T01:00:30.572359+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-proxy4parsing-proxy-list",
+      "url": "https://raw.githubusercontent.com/proxy4parsing/proxy-list/main/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 19031,
+        "body_bytes": 340890,
+        "fetched_at_utc": "2026-08-24T01:00:30.781802+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-prxchk-proxy-list",
+      "url": "https://raw.githubusercontent.com/prxchk/proxy-list/main/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 58,
+        "body_bytes": 1113,
+        "fetched_at_utc": "2026-08-24T01:00:31.573093+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-rdavydov-proxy-list",
+      "url": "https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 554,
+        "body_bytes": 10603,
+        "fetched_at_utc": "2026-08-24T01:00:31.683986+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-rdavydov-proxy-list-2",
+      "url": "https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies_anonymous/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 190,
+        "body_bytes": 3593,
+        "fetched_at_utc": "2026-08-24T01:00:32.592212+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-roosterkid-openproxylist-main",
+      "url": "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 86,
+        "body_bytes": 5649,
+        "fetched_at_utc": "2026-08-24T01:00:32.735497+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-roosterkid-openproxylist-main-2",
+      "url": "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 86,
+        "body_bytes": 1654,
+        "fetched_at_utc": "2026-08-24T01:00:33.603049+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-runarbu-proxymaid-master",
+      "url": "https://raw.githubusercontent.com/runarbu/ProxyMaid/master/lists/proxies.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 3051,
+        "fetched_at_utc": "2026-08-24T01:00:33.790581+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-saisuiu-lionkings-http",
+      "url": "https://raw.githubusercontent.com/saisuiu/Lionkings-Http-Proxys-Proxies/main/free.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 1000,
+        "body_bytes": 17934,
+        "fetched_at_utc": "2026-08-24T01:00:34.627186+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-saschazesiger-free-proxies",
+      "url": "https://raw.githubusercontent.com/saschazesiger/Free-Proxies/master/proxies/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:34.801855+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-sunny9577-proxy-scraper",
+      "url": "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/http_proxies.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 930,
+        "body_bytes": 23382,
+        "fetched_at_utc": "2026-08-24T01:00:35.636852+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-tuanminpay-live-proxy",
+      "url": "https://raw.githubusercontent.com/tuanminpay/live-proxy/master/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 7569,
+        "body_bytes": 143989,
+        "fetched_at_utc": "2026-08-24T01:00:35.884163+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-vakhov-fresh-proxy",
+      "url": "https://raw.githubusercontent.com/vakhov/fresh-proxy-list/master/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 524,
+        "body_bytes": 9789,
+        "fetched_at_utc": "2026-08-24T01:00:36.647454+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-yemixzy-proxy-list",
+      "url": "https://raw.githubusercontent.com/yemixzy/proxy-list/main/proxies/http.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:36.868733+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-yoannchb-pro-https",
+      "url": "https://raw.githubusercontent.com/yoannchb-pro/https-proxies/main/proxies.txt",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 14,
+        "fetched_at_utc": "2026-08-24T01:00:37.685016+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-zevtyardt-proxy-list",
+      "url": "https://raw.githubusercontent.com/zevtyardt/proxy-list/main/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 59595,
+        "body_bytes": 1131061,
+        "fetched_at_utc": "2026-08-24T01:00:38.138109+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-zloi-user-hideip",
+      "url": "https://raw.githubusercontent.com/zloi-user/hideip.me/main/http.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 125,
+        "body_bytes": 3603,
+        "fetched_at_utc": "2026-08-24T01:00:38.697664+00:00"
+      }
+    },
+    {
+      "id": "raw-githubusercontent-com-zloi-user-hideip-2",
+      "url": "https://raw.githubusercontent.com/zloi-user/hideip.me/main/https.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 1336,
+        "body_bytes": 37702,
+        "fetched_at_utc": "2026-08-24T01:00:38.926020+00:00"
+      }
+    },
+    {
+      "id": "spys-me-proxy-txt",
+      "url": "https://spys.me/proxy.txt",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 400,
+        "body_bytes": 11389,
+        "fetched_at_utc": "2026-08-24T01:00:33.733367+00:00"
+      }
+    },
+    {
+      "id": "spys-one-en-https-ssl",
+      "url": "https://spys.one/en/https-ssl-proxy/",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 403,
+        "unique_candidates": 0,
+        "body_bytes": 5438,
+        "fetched_at_utc": "2026-08-24T01:00:33.763884+00:00"
+      }
+    },
+    {
+      "id": "freeproxy-world",
+      "url": "https://www.freeproxy.world/",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "html_table",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE_HTML_TABLE",
+        "http_status": 200,
+        "unique_candidates": 50,
+        "body_bytes": 127251,
+        "fetched_at_utc": "2026-08-24T01:00:34.106439+00:00"
+      }
+    },
+    {
+      "id": "instagram-com",
+      "url": "https://www.instagram.com",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 399177,
+        "fetched_at_utc": "2026-08-24T01:00:34.242300+00:00"
+      }
+    },
+    {
+      "id": "media-io",
+      "url": "https://www.media.io/",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 512907,
+        "fetched_at_utc": "2026-08-24T01:00:34.216443+00:00"
+      }
+    },
+    {
+      "id": "proxies24-com-proxy-list-https",
+      "url": "https://www.proxies24.com/proxy-list/https-proxies",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 526,
+        "unique_candidates": 0,
+        "body_bytes": 7269,
+        "fetched_at_utc": "2026-08-24T01:00:34.316768+00:00"
+      }
+    },
+    {
+      "id": "proxy-list-download-http",
+      "url": "https://www.proxy-list.download/HTTP",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 502,
+        "unique_candidates": 0,
+        "body_bytes": 6456,
+        "fetched_at_utc": "2026-08-24T01:00:34.318751+00:00"
+      }
+    },
+    {
+      "id": "proxy-list-download-https",
+      "url": "https://www.proxy-list.download/HTTPS",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "path_token:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 502,
+        "unique_candidates": 0,
+        "body_bytes": 6456,
+        "fetched_at_utc": "2026-08-24T01:00:34.360407+00:00"
+      }
+    },
+    {
+      "id": "proxy-list-download-api-v1-get-3",
+      "url": "https://www.proxy-list.download/api/v1/get?type=http",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "http",
+      "label_derivation": "query_param:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 502,
+        "unique_candidates": 0,
+        "body_bytes": 6456,
+        "fetched_at_utc": "2026-08-24T01:00:35.349048+00:00"
+      }
+    },
+    {
+      "id": "proxy-list-download-api-v1-get-4",
+      "url": "https://www.proxy-list.download/api/v1/get?type=https",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "query_param:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 502,
+        "unique_candidates": 0,
+        "body_bytes": 6456,
+        "fetched_at_utc": "2026-08-24T01:00:35.387750+00:00"
+      }
+    },
+    {
+      "id": "proxy11-com-api-demoweb-proxy",
+      "url": "https://www.proxy11.com/api/demoweb/proxy.json?key=free-demo&country=&city=&port=&type=https",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_DEAD: transport or HTTP failure at snapshot time",
+      "parser": null,
+      "labelled_protocol": "https",
+      "label_derivation": "query_param:https",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "DEAD",
+        "http_status": 404,
+        "unique_candidates": 0,
+        "body_bytes": 207,
+        "fetched_at_utc": "2026-08-24T01:00:34.835525+00:00"
+      }
+    },
+    {
+      "id": "proxynova-com-proxy-server-list",
+      "url": "https://www.proxynova.com/proxy-server-list/",
+      "state": "DISABLED",
+      "disabled_reason": "probe_verdict_TRULY_EMPTY: 200 OK but no parser found candidates",
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "TRULY_EMPTY",
+        "http_status": 200,
+        "unique_candidates": 0,
+        "body_bytes": 128988,
+        "fetched_at_utc": "2026-08-24T01:00:35.231065+00:00"
+      }
+    },
+    {
+      "id": "sslproxies-org",
+      "url": "https://www.sslproxies.org/",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 100,
+        "body_bytes": 79087,
+        "fetched_at_utc": "2026-08-24T01:00:34.923072+00:00"
+      }
+    },
+    {
+      "id": "us-proxy-org",
+      "url": "https://www.us-proxy.org/",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "unknown",
+      "label_derivation": "no_token_in_url",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 200,
+        "body_bytes": 99117,
+        "fetched_at_utc": "2026-08-24T01:00:35.073792+00:00"
+      }
+    }
+  ]
+}
