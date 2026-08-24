@@ -1,0 +1,37 @@
+{
+  "generated_at": "2026-08-24T02:27:00.920458+00:00",
+  "question": "under real process concurrency, is any proxy delivered twice?",
+  "invariant": "H3 NO DOUBLE DELIVERY",
+  "method": {
+    "concurrency": "multiprocessing, spawn context, one sqlite connection per process (NOT threads: the GIL can hide a race that separate processes expose)",
+    "oversubscribed": "the real arm requests 48 from a pool of 24, because contention is where read-then-write breaks",
+    "naive_gap_s": 0.25,
+    "why_naive": "a control. 0 duplicates from an idle machine proves nothing; the naive arm shows the same test body DOES detect double delivery when it is present (ADR-022)"
+  },
+  "real": {
+    "implementation": "real",
+    "processes": 12,
+    "requested_per_process": 4,
+    "pool_size": 24,
+    "total_requested": 48,
+    "handed_out": 24,
+    "unique_fingerprints": 24,
+    "duplicates": 0,
+    "rows_left_in_leased_state": 24,
+    "audit_log_violations": 0
+  },
+  "naive": {
+    "implementation": "naive",
+    "processes": 6,
+    "requested_per_process": 6,
+    "pool_size": 12,
+    "total_requested": 36,
+    "handed_out": 36,
+    "unique_fingerprints": 6,
+    "duplicates": 30,
+    "rows_left_in_leased_state": 6,
+    "audit_log_violations": 6
+  },
+  "verdict": "H3 HOLDS for SqliteStore.lease",
+  "control_is_effective": true
+}
