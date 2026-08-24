@@ -22,9 +22,23 @@ oracle rather than by reading the regex:
   3. Bracketed junk: `http://[#12]` parsed to host '#12'; CPython refuses.
   4. Non-IPv6 brackets: `http://[9a]` and `[b.c:9-01]` parsed; CPython refuses.
 
-Defects 2-4 were all the same shape -- MORE PERMISSIVE THAN THE ORACLE -- which
+  5. ZONE ID NEVER VALIDATED (ADR-032). The IPv6 branch validated
+     `host.split("%", 1)[0]`, documented as necessary because `ipaddress`
+     supposedly rejects RFC 6874 scopes. It does not, and has not since Python
+     3.9. So the zone was stripped from VALIDATION but kept in the returned
+     host: `http://[::%aa_%]` yielded host '::%aa_%' where CPython refuses.
+  6. FRAGMENT SWALLOWED INTO THE HOST (ADR-032). `\[[^\]]*\]` accepted
+     `http://[::a%8e#?b8]` as one literal; CPython strips the fragment first,
+     leaving an unterminated `[::a%8e`, and refuses.
+
+Defects 2-6 were all the same shape -- MORE PERMISSIVE THAN THE ORACLE -- which
 for a security check is the dangerous direction. A hand-written test suite would
 have had to imagine each of those strings; the fuzz found them in seconds.
+
+WHY 5 AND 6 SURVIVED THE FIRST FUZZ: its alphabet drew '[' and '%' but the
+bracketed-authority shape `http://[...]` is vanishingly rare in uniform random
+strings, so the IPv6 branch was almost never entered. The fuzz below now
+includes a bracket-focused generator that constructs that shape directly.
 """
 from __future__ import annotations
 
@@ -130,6 +144,99 @@ def test_fuzz_never_diverges_from_cpython() -> None:
         if not ok:
             bad.append((u, why))
     assert not bad, f"{len(bad)} divergence(s), first 5: {bad[:5]}"
+
+
+# Alphabet for the bracket-focused generator: the characters that actually
+# occur in (and around) IPv6 literals, including the zone-id '%' and the
+# delimiters CPython strips before parsing the authority.
+BRACKET_ALPHA = "0189abcfe:.%[]-_/?#"
+
+
+def test_fuzz_bracketed_authorities_never_diverge_from_cpython() -> None:
+    """
+    ADR-032. The general fuzz above draws '[' from its alphabet but essentially
+    never produces the `http://[...]` SHAPE, so the IPv6 branch went unexercised
+    and shipped two more-permissive-than-oracle defects (zone id never validated;
+    fragment swallowed into the host). Coverage of a LINE is not coverage of a
+    SHAPE: this generator constructs the shape directly.
+
+    Measured at the fix: 0 inputs accepted that CPython refuses, versus 34
+    before it.
+
+    SCOPED TO THE DANGEROUS DIRECTION, on purpose. `_agrees` also flags the
+    reverse -- we refuse, oracle parses -- and this generator finds 2 such
+    inputs (`http://[::]:[/]`, `http://[::1]:]`). Both PREDATE ADR-032: the
+    bracket-balance check counts brackets over the whole authority including the
+    port tail, so a stray ']' after a valid literal is refused. CPython is
+    lenient there. Being STRICTER than the oracle on junk is the safe direction
+    and the module docstring's stated policy ("reports MALFORMED rather than
+    guessing"), so it is asserted as a known, bounded difference rather than
+    silently tolerated by a weaker comparison.
+    """
+    rnd = random.Random(20260824)
+    permissive: list[tuple[str, str]] = []
+    stricter: list[str] = []
+    for _ in range(50_000):
+        u = "http://[" + "".join(
+            rnd.choice(BRACKET_ALPHA) for _ in range(rnd.randint(0, 12))
+        ) + "]"
+        ok, why = _agrees(u)
+        if ok:
+            continue
+        if why.startswith("we refused"):
+            stricter.append(u)
+        else:
+            permissive.append((u, why))
+
+    assert not permissive, (
+        f"{len(permissive)} case(s) where we accept what CPython refuses -- the "
+        f"dangerous direction. First 5: {permissive[:5]}"
+    )
+    # Pin the count so a NEW strictness divergence cannot hide inside a vague
+    # "stricter is fine" allowance.
+    assert len(set(stricter)) == 2, (
+        f"expected exactly the 2 known stray-bracket-in-tail cases, got "
+        f"{len(set(stricter))}: {sorted(set(stricter))[:8]}"
+    )
+
+
+@pytest.mark.parametrize("raw", [
+    "http://[::%aa_%]",       # zone id is not a valid scope
+    "http://[::%]",           # empty zone id
+    "http://[fe80::1%]",      # trailing '%' with no zone
+    "http://[::a%8ef#?b8]",   # fragment swallowed into the literal
+    "http://[1::%#f]",
+])
+def test_a_bracketed_literal_is_validated_whole_zone_id_included(
+        raw: str) -> None:
+    """
+    ADR-032. Two defects with one root: part of the bracketed host was never
+    validated, yet was still RETURNED as the host.
+
+    The old code ran ipaddress on `host.split("%", 1)[0]`, justified in a comment
+    by the claim that ipaddress rejects RFC 6874 zone ids. It does not (3.9+:
+    IPv6Address('fe80::1%eth0').scope_id == 'eth0'). So the zone was dropped from
+    validation and kept in the value -- an unparsed string handed to policy as a
+    host, exactly the direction ADR-030 exists to prevent.
+    """
+    p = split_url(raw)
+    assert not p.ok, (
+        f"{raw!r}: host {p.host!r} was returned unvalidated; CPython refuses "
+        f"this URL, so accepting it is more permissive than the oracle"
+    )
+    assert p.error == UrlError.MALFORMED
+
+
+def test_a_scoped_ipv6_literal_is_still_accepted() -> None:
+    """
+    ADR-027 lesson, applied to ADR-032: assert the WORK, not just the ceiling.
+    Validating the whole literal must not have made scoped literals unusable --
+    otherwise the "fix" is just a stricter refusal that happens to pass.
+    """
+    p = split_url("http://[fe80::1%eth0]:8080/x")
+    assert p.ok, f"a scoped literal must still parse, got {p.error}"
+    assert (p.host, p.port) == ("fe80::1%eth0", 8080)
+    assert p.host == urlsplit("http://[fe80::1%eth0]:8080/x").hostname
 
 
 # ── the specific defects, pinned as regression tests ─────────────────────────
