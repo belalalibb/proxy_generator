@@ -350,7 +350,12 @@ def main() -> int:
     survivors = [r for r in results if r["survived"]]
     artifact = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "modules": [str(STORE_REL), str(SERVICE_REL)],
+        # Derived, for the same reason `originals` is (ADR-039). Hand-listed,
+        # this field read [store_sqlite, recheck] while the 15 mutations it
+        # summarised actually spanned FIVE modules -- an artifact that
+        # under-reports its own coverage is the ADR-018 defect in miniature:
+        # a number a reader would trust, disagreeing with the run beside it.
+        "modules": sorted({str(m.module) for m in MUTATIONS}),
         "suites": [str(UNIT_REL), str(ITEST_REL)],
         "baseline": base,
         "mutations": results,
