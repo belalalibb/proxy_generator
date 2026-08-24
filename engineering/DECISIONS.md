@@ -248,6 +248,10 @@ p95 15 903 ms (n=102). Two counts were **superseded with cause**, not overwritte
 
 ---
 
+**Verify:** `python3 engineering/tools/gate_check.py --json` # runs before pytest in `make doctor`
+
+---
+
 ## ADR-011 — The documented percentile method is preserved, even though it is unorthodox
 
 **Phase:** P00 (retrofit) · **Status:** ACCEPTED
@@ -279,6 +283,10 @@ silently method-dependent.
 **Consequence.** The number v4 must beat remains **p50 6 359.5 ms / p95 15 903 ms at n=102**.
 `FINAL_AUDIT.md` must state the method *and* n beside every percentile, and must compute v4's
 own p95 with the **same** function for the comparison to be honest.
+
+---
+
+**Verify:** `grep -n 'def pct_floor\|def pct_linear' engineering/tools/measure_baseline.py` # both methods pinned
 
 ---
 
@@ -329,9 +337,12 @@ ADR-010 failure mode (a guard that cannot fail) reappearing in a new form.
 4. *Relax the guards and rely on review.* Rejected: unenforceable, and it is the
    exact assumption ADR-010 disproved.
 
-**Consequence.** Guard count rises from 11 to 19 tests. The suite now proves its
-guards *can* fail, so a future edit that reduces one to a no-op turns the suite
-red instead of green.
+**Consequence (MEASURED).** The suite went from **12 collected / 2 failing** to
+**22 passing** at the time of implementation, and 58 passing once P01.T3 landed.
+The suite now proves its guards *can* fail, so a future edit that reduces one to a
+no-op turns the suite red instead of green.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_architecture.py -q` # all pass, incl. 7 negative controls
 
 ---
 
@@ -365,9 +376,67 @@ written "GeoNode is now dead" into the record — a fabricated finding (H2).
     `FETCH_INCOMPLETE`, not empty.
 (e) **Validate a parser against stored evidence before trusting it live.**
 
-**Consequence.** The re-audit recovered **6** sources previously filed
-`TRULY_EMPTY` (12 remain), and the ACTIVE registry is **68** sources rather than
-the 63 documented in Phase 0 — an increase caused by fixing a defect in our own
-tooling, recorded as a new dated snapshot alongside the original, not over it.
+**Verify:** `grep -c 'iter_chunked' engineering/tools/probe_legacy_sources.py` # >= 1, and no `content.read(BODY_CAP)`
+
+**Consequence (MEASURED 2026-08-24, snapshot `source_probe_20260824T005530Z.json`).**
+The re-audit recovered **6** sources previously filed `TRULY_EMPTY` (**14** remain),
+and the ACTIVE registry is **69** sources (ALIVE 60 + HTML_TABLE 8 + JSON 1).
+
+**The dominant effect was not the source count but the harvest**: unique candidates
+from the same 120 URLs went from **74 895 to 504 193 (×6.73)**. Large lists were
+being cut off mid-body while a regex still matched proxies in the surviving prefix,
+so nothing looked wrong. GeoNode's API went from 0 to **500** candidates.
+
+> **Correction (H2).** This ADR was first written stating "12 remain" and "68
+> ACTIVE" *before the fix was implemented*. Both were wrong: the measured values
+> are **14** and **69**. The figures above come from the artifact; see
+> RECONCILIATION.md §5-§6, which also records that ADR-012 and ADR-013 were
+> initially documented without being implemented at all.
 ADR-006 is reinforced: **one bad fetch must never kill a source**, and now we can
 also tell *whose fault* the bad fetch was.
+
+---
+
+## ADR-014 — An ADR that claims an implementation must name a verifiable marker, checked by the gate
+
+**Phase:** P01 · **Status:** ACCEPTED
+
+**Context.** ADR-012 and ADR-013 were written, committed, and cited in `README.md`
+as though they were done. Neither was implemented. The README simultaneously
+claimed "19 passed" while the suite was **2 failed, 10 passed**, and "68 ACTIVE"
+while the only artifact said 61.
+
+Nothing caught it. `gate_check.py` verifies that a **task's** evidence file exists,
+but an ADR is prose, and prose was trusted. This is the same failure mode as
+ADR-010 (a test that could not fail) one level up: **a decision record that cannot
+be falsified is not a decision record, it is an intention.**
+
+Sync loss made it easier to miss — files vanished twice — but the sync did not
+write those sentences. I did, before the code existed.
+
+**Decision.**
+(a) An ADR that asserts an implementation MUST carry a machine-checkable marker
+    line: `**Verify:** <shell command> # <expected>`.
+(b) `gate_check.py` gains `adr_claims_are_verifiable`: every ADR containing an
+    implementation verb in its Decision section must have a `**Verify:**` line.
+(c) `gate_check.py` gains `readme_numbers_have_artifacts`: numeric claims in
+    `README.md` tagged `<!--verify:...-->` are re-derived from the named artifact
+    and must match.
+(d) No phase gate may be declared PASSED while either check fails.
+(e) **Numbers in prose are copied FROM artifacts, never typed from memory.** Where
+    an ADR is written before the work, it must say `Status: PROPOSED`, not
+    `ACCEPTED`, and must not state measured consequences.
+
+**Alternatives.**
+1. *Be more careful.* Rejected — precisely the assumption that failed. ADR-010
+   already established that unenforced discipline decays.
+2. *Forbid writing an ADR before implementing.* Rejected: designing in prose first
+   is valuable. The fix is an honest `PROPOSED` status, not a ban.
+3. *Require every ADR to link a test.* Rejected as too rigid — ADR-008 (choice of
+   `example.com`) and ADR-009 (bias disclosure) are judgements with no code.
+
+**Consequence.** ADR-012 and ADR-013 now carry `**Verify:**` lines. A future ADR
+describing work that does not exist fails `make doctor` instead of becoming a
+false claim in the README.
+
+**Verify:** `python3 engineering/tools/gate_check.py` # adr_claims_are_verifiable PASS
