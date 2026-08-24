@@ -10,5 +10,6 @@
   "atlas/tests/unit/test_engine_MUTANT.py::test_known_endpoints_are_skipped_not_reprobed": true,
   "atlas/tests/unit/test_engine_MUTANT.py::test_private_range_candidates_are_dropped_with_a_named_reason": true,
   "atlas/tests/unit/test_engine_MUTANT.py::test_quality_rate_is_admitted_over_probed_not_raw_volume": true,
-  "atlas/tests/unit/test_target_policy.py::test_the_default_policy_denies_the_config_hosts": true
+  "atlas/tests/unit/test_target_policy.py::test_the_default_policy_denies_the_config_hosts": true,
+  "atlas/tests/unit/test_handout.py::TestPolicyBounds::test_target_ttl_must_be_positive": true
 }
