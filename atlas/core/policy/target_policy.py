@@ -46,9 +46,8 @@ from __future__ import annotations
 
 import ipaddress
 from dataclasses import dataclass, field
-from urllib.parse import urlsplit
-
 from atlas.core.domain.source import Target
+from atlas.core.parsing.url import UrlError, split_url
 from atlas.core.policy.normalize import is_globally_routable
 
 
@@ -66,6 +65,7 @@ class TargetRefusal(str):
     METADATA_ENDPOINT = "METADATA_ENDPOINT"       # SSRF: cloud metadata
     DENIED_HOST = "DENIED_HOST"                   # deny_hosts, incl. subdomains
     BAD_PORT = "BAD_PORT"
+    MALFORMED_URL = "MALFORMED_URL"               # ADR-030: unparseable authority
 
 
 # Cloud metadata hostnames. The IP form (169.254.169.254) is already covered by
@@ -84,29 +84,38 @@ _ALLOWED_SCHEMES = frozenset({"http", "https"})
 @dataclass(frozen=True, slots=True)
 class TargetPolicy:
     """
-    The allow-policy, as data. Mirrors `config.yaml targets.allow_policy` so the
-    file stops being decorative.
+    The allow-policy, as data. The VALUES live in `config.yaml
+    targets.allow_policy` and are loaded by `atlas.adapters.config`; this class
+    is only the shape they take once loaded.
 
-    `deny_hosts` defaults to the three hosts config.yaml names. They are defaults
-    rather than hardcoded constants -- ADR-002's lesson is that policy DATA must
-    be overridable -- but the default is not empty, because a policy object that
-    denies nothing unless configured would let the legacy target back in through
-    an omission.
+    `deny_hosts` HAS NO DEFAULT, and that is the whole point (ADR-031).
+
+    The first version of this class hardcoded
+    `frozenset({"instagram.com", "facebook.com", "tiktok.com"})` as the default,
+    reasoning that an empty default would let the legacy target back in through
+    an omission. That reasoning was right about the risk and wrong about the
+    fix, and `test_no_default_target_url_constant` failed the build for it: the
+    ban on embedding those hosts in executable code (H5 / ADR-007 / ADR-012)
+    exists precisely so a ToS-hostile hostname cannot be reintroduced by a
+    default. Writing the deny-list into `core/` ALSO made `config.yaml`
+    decorative in a second way -- editing the file could add hosts but never
+    remove the compiled-in three -- which is the very defect ADR-029 set out to
+    fix, one layer down.
+
+    Making the field REQUIRED resolves both: the data comes from the config file
+    (so the file is authoritative), and a caller cannot obtain a policy that
+    denies nothing by forgetting an argument, because there is no argument-free
+    way to construct one. Empty is still expressible -- `frozenset()` typed out
+    deliberately -- but it can no longer happen by omission.
     """
 
+    deny_hosts: frozenset[str]
     deny_private_ranges: bool = True
-    deny_hosts: frozenset[str] = frozenset({
-        "instagram.com", "facebook.com", "tiktok.com",
-    })
     deny_metadata_hosts: bool = True
 
     def __post_init__(self) -> None:
-        if not self.deny_private_ranges:
-            # Allowed, but it must be a deliberate act. Silently permitting SSRF
-            # because a config field defaulted the wrong way is how P5 gets
-            # violated without anyone editing security-relevant code.
-            pass
-        bad = [h for h in self.deny_hosts if not h or h.startswith(".") or "/" in h]
+        bad = [h for h in self.deny_hosts
+               if not h or h.startswith(".") or "/" in h or ":" in h]
         if bad:
             raise ValueError(
                 f"deny_hosts entries must be bare hostnames, got {bad!r}"
@@ -135,40 +144,42 @@ def host_matches_deny(host: str, deny: str) -> bool:
     return h == d or h.endswith("." + d)
 
 
-def check_target(target: Target | None, policy: TargetPolicy | None = None,
-                 ) -> TargetRefusal | None:
+def check_target(target: Target | None, policy: TargetPolicy) -> TargetRefusal | None:
     """
     Return the refusal reason, or None if the target is allowed.
 
+    `policy` is REQUIRED (ADR-031): a default would have to name the denied
+    hosts in code, which is exactly what H5/ADR-007 forbids, and an empty
+    default would be a security control that only works if someone remembers to
+    switch it on. Callers get the real thing from
+    `atlas.adapters.config.load_target_policy()`.
+
     ORDER IS PART OF THE CONTRACT, as in admission.py and normalize.py: the most
-    fundamental failure is reported first, so a caller who passes
-    `gopher://instagram.com` is told BAD_SCHEME (the thing they must fix) rather
-    than DENIED_HOST.
+    fundamental failure is reported first, so a caller who passes a
+    `gopher://` URL for a denied host is told BAD_SCHEME (the thing they must
+    fix) rather than DENIED_HOST.
     """
     if target is None:
         # ADR-007. There is no default target, so "absent" is a refusal and not
         # an invitation to substitute one.
         return TargetRefusal.NO_TARGET
 
-    policy = policy or TargetPolicy()
+    # Pure splitter (ADR-030). NOT urllib: core/ may not import it, and the
+    # guard that says so caught this module doing it. Parity with
+    # urllib.parse.urlsplit is proven in atlas/tests/unit/test_url_parity.py.
+    parts = split_url(target.url)
 
-    parts = urlsplit(target.url)
-    scheme = (parts.scheme or "").lower()
-    if scheme not in _ALLOWED_SCHEMES:
+    if parts.error == UrlError.BAD_PORT:
+        return TargetRefusal.BAD_PORT
+    if parts.error is not None or parts.scheme is None:
+        return TargetRefusal.MALFORMED_URL
+
+    if parts.scheme not in _ALLOWED_SCHEMES:
         return TargetRefusal.BAD_SCHEME
 
-    host = (parts.hostname or "").lower().rstrip(".")
+    host = (parts.host or "").lower().rstrip(".")
     if not host:
         return TargetRefusal.NO_HOST
-
-    try:
-        port = parts.port
-    except ValueError:
-        # urlsplit raises for a non-numeric or out-of-range port only when the
-        # attribute is READ, which is why this is wrapped rather than trusted.
-        return TargetRefusal.BAD_PORT
-    if port is not None and not (1 <= port <= 65535):
-        return TargetRefusal.BAD_PORT
 
     if policy.deny_metadata_hosts and host in _METADATA_HOSTS:
         return TargetRefusal.METADATA_ENDPOINT
@@ -191,8 +202,7 @@ def check_target(target: Target | None, policy: TargetPolicy | None = None,
     return None
 
 
-def require_target(target: Target | None,
-                   policy: TargetPolicy | None = None) -> Target:
+def require_target(target: Target | None, policy: TargetPolicy) -> Target:
     """
     Return the target, or raise `TargetNotAllowed` naming the reason.
 
