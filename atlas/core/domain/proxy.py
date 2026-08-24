@@ -91,6 +91,17 @@ class Endpoint:
             # regex accepted things like '1.2.3.4.5:80' as valid.
             if not re.fullmatch(r"[A-Za-z0-9]([A-Za-z0-9\-.]*[A-Za-z0-9])?", host):
                 raise InvalidProxy(f"not an IP or hostname: {host!r}") from exc
+            labels = host.split(".")
+            if any(not lab for lab in labels):
+                raise InvalidProxy(f"empty label in host: {host!r}") from exc
+            # A REAL hostname's rightmost label is never all digits. Without this,
+            # the character-class above happily accepts a malformed dotted quad
+            # such as '1.2.3.4.5' -- exactly the legacy defect this branch claims
+            # to reject, and one that P01.T3 caught by actually asserting it.
+            if len(labels) > 1 and labels[-1].isdigit():
+                raise InvalidProxy(
+                    f"malformed numeric address (not a valid IP or hostname): {host!r}"
+                ) from exc
         return cls(host=host, port=port)
 
     @property
