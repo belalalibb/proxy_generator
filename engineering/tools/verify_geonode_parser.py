@@ -46,7 +46,10 @@ OUT_DIR = ROOT / "engineering" / "raw"
 # The documented P00.T5 figure. Pinned deliberately: if a parser change alters
 # this, the change must be justified rather than silently accepted.
 EXPECTED_UNIQUE = 500
-EXPECTED_BYTES = 230019
+# ADR-015: two units, named honestly. The historical "230 019 B" in earlier
+# docs was in fact the CHARACTER count of the decoded body.
+EXPECTED_CHARS = 230019   # len(decoded str)
+EXPECTED_OCTETS = 230067  # len(raw bytes) on disk
 
 
 def load_probe_module():
@@ -71,7 +74,8 @@ def main() -> int:
         print(f"FAIL: probe tool missing: {PROBE_TOOL}")
         return 1
 
-    body = EVIDENCE.read_text(encoding="utf-8", errors="replace")
+    raw = EVIDENCE.read_bytes()
+    body = raw.decode("utf-8", errors="replace")
     mod = load_probe_module()
 
     by_parser = {
@@ -82,15 +86,18 @@ def main() -> int:
 
     # classify with honest metadata: this is a COMPLETE read of stored bytes
     verdict, detail = mod.classify(200, body, None, {
-        "body_bytes": len(body),
-        "content_length": len(body),
+        "body_bytes": len(raw),
+        "content_length": len(raw),
+        "content_encoding": None,
+        "length_comparable": True,
         "content_type": "application/json",
         "short_read": False,
         "body_truncated_at_cap": False,
     })
 
     checks = {
-        "evidence_bytes_match": len(body) == EXPECTED_BYTES,
+        "evidence_chars_match": len(body) == EXPECTED_CHARS,
+        "evidence_octets_match": len(raw) == EXPECTED_OCTETS,
         "json_parser_yields_expected": by_parser["json_path"] == EXPECTED_UNIQUE,
         "regex_would_have_missed_it": by_parser["regex_adjacent"] == 0,
         "verdict_is_alive_json": verdict == "ALIVE_JSON",
@@ -103,8 +110,10 @@ def main() -> int:
         "rebuilt_after_sync_loss": True,
         "network_used": False,
         "evidence": str(EVIDENCE.relative_to(ROOT)),
-        "evidence_bytes": len(body),
-        "expected_bytes": EXPECTED_BYTES,
+        "evidence_chars": len(body),
+        "evidence_octets": len(raw),
+        "expected_chars": EXPECTED_CHARS,
+        "expected_octets": EXPECTED_OCTETS,
         "expected_unique": EXPECTED_UNIQUE,
         "by_parser": by_parser,
         "verdict": verdict,
@@ -130,7 +139,8 @@ def main() -> int:
     print("P00.T5 — GeoNode parser verification against STORED evidence (offline)")
     print("=" * 74)
     print(f"  evidence            : {EVIDENCE.relative_to(ROOT)}")
-    print(f"  bytes               : {len(body)} (expected {EXPECTED_BYTES})")
+    print(f"  octets (on disk)    : {len(raw)} (expected {EXPECTED_OCTETS})")
+    print(f"  chars  (decoded)    : {len(body)} (expected {EXPECTED_CHARS})")
     for name, n in by_parser.items():
         print(f"  {name:<20}: {n}")
     print(f"  verdict             : {verdict}")
