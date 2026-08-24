@@ -174,6 +174,20 @@ class AiohttpProbe:
                                        allow_redirects=False) as resp:
                     body = await resp.read()
                     elapsed = (time.perf_counter() - started) * 1000
+                    if resp.status == 407:
+                        # A 407 must be named BEFORE the generic status branch.
+                        # aiohttp only RAISES ClientHttpProxyError for the CONNECT
+                        # tunnel; a plain forward proxy returns 407 as an ordinary
+                        # response, so without this the most common case collapsed
+                        # into BAD_STATUS and the cause was destroyed (B-02).
+                        # "exists, speaks HTTP, wants credentials" is a different
+                        # and actionable finding from "returned the wrong page".
+                        return ProbeResult(
+                            ok=False, reason=ReasonCode.PROXY_AUTH_REQUIRED,
+                            status_code=407, elapsed_ms=elapsed,
+                            body_bytes=len(body),
+                            detail="407 from proxy (credentials required)",
+                        ), None
                     if resp.status != target.expect_status:
                         return ProbeResult(
                             ok=False, reason=ReasonCode.BAD_STATUS,
@@ -217,24 +231,38 @@ class AiohttpProbe:
             ladder.remove(proxy.protocol)
             ladder.insert(0, proxy.protocol)
 
-        last: ProbeResult | None = None
+        # Two separate records, because they are two different kinds of fact:
+        #   last_tested   -- something we actually MEASURED failing
+        #   untested      -- a rung we could not try at all (no SOCKS transport)
+        #
+        # Keeping one `last` variable let the untestable placeholder overwrite a
+        # real measurement, since SOCKS sits at the END of the ladder. A refused
+        # connection was then reported as "socks4 not testable" -- the true,
+        # measured cause destroyed by a note about something never attempted.
+        # That is BUG_LEDGER B-02 (losing the cause at the point of discovery)
+        # reappearing inside the code written to avoid it.
+        last_tested: ProbeResult | None = None
+        untested: ProbeResult | None = None
         for protocol in ladder:
             if _AIOHTTP_SCHEME[protocol] in ("socks4", "socks5"):
                 # aiohttp has no native SOCKS support; claiming to have tested it
-                # would be a fabricated negative. Report honestly instead.
-                last = ProbeResult(
-                    ok=False, reason=ReasonCode.PROTO_MISMATCH,
-                    detail=f"{protocol.value} not testable: aiohttp lacks SOCKS "
-                           "(install aiohttp-socks to enable)",
-                )
+                # would be a fabricated negative (H2). Report honestly instead.
+                if untested is None:
+                    untested = ProbeResult(
+                        ok=False, reason=ReasonCode.PROTO_MISMATCH,
+                        detail=f"{protocol.value} not testable: aiohttp lacks "
+                               "SOCKS (install aiohttp-socks to enable)",
+                    )
                 continue
             result, _ = await self._request(proxy, target, protocol,
                                             target.timeout_ms)
             if result.ok:
                 return result
-            last = result
-        return last or ProbeResult(ok=False, reason=ReasonCode.PROTO_MISMATCH,
-                                   detail="no protocol succeeded")
+            last_tested = result
+        # A measured failure always outranks an untested rung.
+        return last_tested or untested or ProbeResult(
+            ok=False, reason=ReasonCode.PROTO_MISMATCH,
+            detail="no protocol succeeded")
 
     # ── S4: LATENCY, k SAMPLES ────────────────────────────────────────────────
     async def sample_latency(self, proxy: Proxy, target: Target,
