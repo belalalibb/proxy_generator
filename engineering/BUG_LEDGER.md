@@ -279,7 +279,18 @@ state, not from mutable shared ints.
 "working" list is stale (`BASELINE.json`, seed 1337, reproducible).
 
 **v4 resolution:** `reverify_interval_seconds`, `max_age_seconds`, `evict_after_failures`,
-`freshness` term in the score, and `target_ttl` (90 s) for per-target validity.
+a `freshness` term in the score, and a per-row staleness flag on the hand-out.
+
+**Correction (P09, ADR-035).** This entry originally promised `target_ttl` (90 s) "for
+per-target validity". That part was **withdrawn, not implemented**: the schema holds ONE
+`last_checked` per proxy, recorded against whatever target discovery probed, so no interval
+however tight can support the sentence "validated against YOUR target 90 s ago". Re-probing
+every 90 s would have made it *worse* -- refreshing `last_checked` against the discovery
+target would CLEAR the staleness flag, converting an honest "revalidate this yourself" into
+a per-target guarantee still unbacked by any stored fact. The flag is therefore keyed to
+`scheduler.recheck_ready_after_s` (900 s), the one interval this system drives, and named
+`past_recheck_horizon` for what it actually proves. Per-target validity needs a
+`(proxy, target)` table and remains unbuilt.
 
 ---
 
