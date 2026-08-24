@@ -20,7 +20,7 @@ A measured rebuild of a legacy proxy scraper.
 |---|---|
 | Phase | **P01 — ARCHITECTURE · gate PASSED** |
 | Gate 0 | ✅ PASSED (re-earned twice after sync losses — ADR-010) |
-| Tests | **87 passed** — 22 architecture/fitness + 36 domain + 29 registry <!--verify:engineering/TASK_STATE.json:tests.passed:87--> |
+| Tests | **113 passed** — 22 architecture/fitness + 36 domain + 29 registry + 26 fetch/parsing <!--verify:engineering/TASK_STATE.json:tests.passed:113--> |
 | Gate checks | **10/10 pass** (`make doctor`) |
 | Sources | **67 ACTIVE** of 120 probed (range 67–69, see below) <!--verify:engineering/TASK_STATE.json:source_registry.active:67--> |
 | Candidates | **502 189** unique from one sweep <!--verify:engineering/TASK_STATE.json:source_registry.unique_candidates:502189--> |
