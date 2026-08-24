@@ -297,6 +297,44 @@ def check_declared_test_count_matches_collection(res: Result) -> None:
             + ("" if ok else " -- update TASK_STATE and README together"))
 
 
+def check_no_cross_stream_splice(res: Result) -> None:
+    """
+    ADR-020. The legacy run left TWO records: proxy_details.json (n=102) and
+    proxy_scraper.log (n=118). They share p95/max/min but differ on p50, mean and
+    both over_* percentages.
+
+    Six files quoted the n=118 pair (95.8% / 56.8%) in the same sentence as the
+    n=102 p50/p95, producing composite claims that no single distribution
+    supports. Every number was individually real and traceable to an artifact --
+    which is exactly why ADR-014(c) and ADR-018 both passed it. An anchored claim
+    can still be a SPLICED one.
+
+    This check requires any prose citing 95.8 or 56.8 to also name its stream, so
+    the n=118 figures can never again sit unqualified beside n=102 ones.
+    """
+    stream_b_only = ("95.8", "56.8")
+    qualifiers = ("n=118", "n = 118", "log stream", "ADR-020", "STREAM B",
+                  "proxy_scraper.log", "n118")
+    targets = ["README.md", "config.yaml",
+               "engineering/BUG_LEDGER.md", "engineering/RESUME_PROMPT.md",
+               "atlas/core/policy/admission.py", "atlas/core/domain/verdict.py"]
+    offenders: list[str] = []
+    for rel in targets:
+        f = ROOT / rel
+        if not f.exists():
+            continue
+        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            if any(v in line for v in stream_b_only):
+                # the qualifier may be on the line or in the surrounding block;
+                # require it within the line itself to keep the rule mechanical
+                if not any(q in line for q in qualifiers):
+                    offenders.append(f"{rel}:{i}")
+    res.add("no_cross_stream_splice", not offenders,
+            "n=118 figures cited without naming the stream: " + ", ".join(offenders)
+            if offenders else
+            "every 95.8/56.8 citation names its n=118 stream")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
@@ -311,6 +349,7 @@ def main() -> int:
     check_adr_claims_are_verifiable(res)
     check_readme_claims(res)
     check_declared_test_count_matches_collection(res)
+    check_no_cross_stream_splice(res)
 
     if args.json:
         print(json.dumps(
