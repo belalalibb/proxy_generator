@@ -78,3 +78,131 @@ Two defects in the process itself, both now fixed by `engineering/tools/gate_che
    would pass vacuously (no modules under `atlas/core/` to scan).
 
 See **ADR-010** in `DECISIONS.md`.
+
+---
+
+## 5. 2026-08-24 — Two ADRs were written but never implemented (self-caught)
+
+On resume, `make doctor` and `pytest -q` disagreed with the repository's own
+documents. The cause was not lost files this time: **I wrote ADR-012 and ADR-013,
+and updated `README.md`, without landing the code they describe.** A decision
+record that describes a fix which does not exist is indistinguishable from a
+fabricated claim, so it is logged here rather than quietly corrected.
+
+| document claim | on-disk reality | verdict |
+|---|---|---|
+| ADR-012: guards scoped via AST, 19 tests, negative controls | `pytest -q` = **2 failed, 10 passed**; guards still line-regex | **NOT IMPLEMENTED** |
+| README: "Tests `19 passed`" | 12 collected, 2 failing | **FALSE claim, retracted** |
+| ADR-013: `iter_chunked()` body reads | `probe_legacy_sources.py:179` still `resp.content.read(BODY_CAP)` | **NOT IMPLEMENTED** |
+| ADR-013: "recovered 6, 12 remain TRULY_EMPTY" | snapshot `…002432Z` shows `TRULY_EMPTY: 20`, recovered 5 | **UNSUPPORTED, retracted** |
+| README: "68 ACTIVE of 123" | `ALIVE 56 + ALIVE_HTML_TABLE 5` = **61** | **FALSE, corrected to 61** |
+| TASK_STATE: P01.T1–T5 `TODO` | `atlas/` skeleton, ports, domain all on disk | **stale, under-claiming** |
+| TASK_STATE: P00.T4/T5 `DONE` with `reprobe_empty.py`, `verify_geonode_parser.py` | both absent (second sync loss) | **evidence missing → downgraded** |
+
+**Root cause.** `gate_check.py` verified that *task evidence* exists, but nothing
+verified that an *ADR's stated implementation* exists. Prose was trusted.
+
+**Resolution.** The numbers above are corrected from artifacts, never adjusted to
+match prose. ADR-012 and ADR-013 are now actually implemented, and
+**ADR-014** adds a mechanical check so this class of drift fails the build.
+
+### The GeoNode JSON API — third misclassification, now measured honestly
+
+ADR-013 asserted the truncated-read bug explained the GeoNode API's empty result.
+The artifact does not support that: the snapshot recorded **60 271 bytes** with
+`http_status 200` and 0 candidates, and `Content-Length` was never captured, so
+**no stored evidence proves whether that body was truncated.** The claim was
+withdrawn and re-measured after the fetch fix; see §6.
+
+---
+
+## 6. 2026-08-24 — ADR-013 implemented; the truncated-read defect was real but *bigger* than described
+
+The fix ADR-013 specified was applied to `probe_legacy_sources.py`
+(`iter_chunked()` to EOF, `Content-Length` capture, `FETCH_INCOMPLETE`), then the
+parser was validated against stored evidence **before** any live read (ADR-013(e)):
+
+| check | result |
+|---|---|
+| `engineering/raw/geonode_body.txt` | 230 019 bytes |
+| `parse_json_walk` on stored bytes | **500 unique proxies** — matches the documented P00.T5 figure exactly |
+| `regex_adjacent` / `html_table` on same bytes | 0 / 0 — confirms *why* a regex-only audit called it empty |
+
+A parser proven correct on stored bytes means a live zero must be the fetch. It was.
+
+### Snapshot comparison (same tool, same 120 URLs, fetch fixed)
+
+| | `…002432Z` (buffered read) | `…005530Z` (read to EOF) | delta |
+|---|---|---|---|
+| ALIVE | 56 | 60 | +4 |
+| ALIVE_JSON | 0 | **1** | +1 |
+| ALIVE_HTML_TABLE | 5 | 8 | +3 |
+| **ACTIVE total** | **61** | **69** | **+8** |
+| TRULY_EMPTY | 20 | **14** | −6 |
+| THROTTLED_OR_SHORT | 4 | 2 | −2 |
+| DEAD | 35 | 35 | 0 |
+| **unique candidates** | **74 895** | **504 193** | **×6.73** |
+
+**The headline number is the candidate count, not the source count.** Reading
+bodies to EOF changed the harvest from 74 895 to **504 193** unique candidates from
+the same 120 URLs. Every large list was being silently cut off mid-body; a
+regex-based parser still found *some* proxies in the surviving prefix, so the
+sources looked alive and nothing signalled the loss. That is the most consequential
+defect found so far in *our own* code, and it existed for exactly one commit.
+
+### Corrections to ADR-013's own text (H2)
+
+| ADR-013 as written | measured | status |
+|---|---|---|
+| "recovered **6** sources previously `TRULY_EMPTY`" | **6** (20 → 14) | ✅ correct |
+| "**12** remain `TRULY_EMPTY`" | **14** | ❌ corrected |
+| "ACTIVE registry is **68**" | **69** | ❌ corrected |
+| GeoNode API empty *because of* truncation | confirmed: 0 → **500** candidates | ✅ correct |
+
+`FETCH_INCOMPLETE` fired **0 times** in this run — as expected, since the reads now
+complete. It remains as the guard that makes the failure *nameable* if it recurs.
+The 2026-08-23 `SOURCE_INVENTORY.json` and both prior snapshots are retained
+unchanged; nothing was overwritten to agree with the new figures.
+
+---
+
+## 7. 2026-08-24 — `short_read` was itself unsound (caught before it was cited)
+
+The `short_read` flag added in §6 compared `len(body)` to `Content-Length`. That is
+wrong whenever the response is compressed: **aiohttp transparently decompresses**,
+so `Content-Length` is the *compressed* size and the two are not comparable.
+
+Measured proof, `TheSpeedX/SOCKS-List/master/http.txt`:
+
+| field | value |
+|---|---|
+| `Content-Length` (compressed) | 20 360 |
+| decoded body | **54 284** |
+| naive comparison | body > declared → nonsense |
+
+**83 of 120** URLs in the sweep are compressed, so the flag was meaningless for
+69 % of the corpus. It reported 0 false positives only because the comparison
+happened to be `body_bytes < content_length`, which compression makes false.
+
+**Fix.** `short_read` is now evaluated only for `identity`-encoded responses, and
+each record carries `content_encoding` + `length_comparable` so a reader can see
+*why* a check was skipped rather than assuming it passed.
+
+This was caught before any number derived from it was published — the intended
+ordering, unlike §5.
+
+### Point-in-time variance disclosed (H2)
+
+Re-running after the fix, ~5 minutes later, gave slightly different figures:
+
+| | `…005530Z` | `…010038Z` | cause |
+|---|---|---|---|
+| ACTIVE | 69 | **67** | transient upstream: +2 DEAD (`502`, `432`, `507`, extra `429`) |
+| unique candidates | 504 193 | **502 189** | fewer sources answered |
+| TRULY_EMPTY | 14 | 14 | stable |
+| DEAD | 35 | 37 | transient |
+
+Neither number is "the" answer: **a live source count is a range, not a constant.**
+Recorded as **ACTIVE 67–69 on 2026-08-24**, with the latest snapshot pinned in
+`TASK_STATE.source_registry` and both retained. The ×6.7 candidate improvement from
+the fetch fix dwarfs this ±2 variance, which is why that conclusion stands.
