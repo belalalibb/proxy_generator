@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-08-24T21:42:39.179237+00:00",
+ "generated_at": "2026-08-24T22:38:44.744055+00:00",
  "modules": [
   "atlas/adapters/store_sqlite.py",
   "atlas/engine/recheck.py"
@@ -10,7 +10,7 @@
  ],
  "baseline": {
   "unit": {
-   "passed": 31,
+   "passed": 68,
    "failed": 0
   },
   "integration": {
@@ -36,7 +36,7 @@
    "applied": true,
    "survived": false,
    "killed_by": {
-    "unit": 2,
+    "unit": 3,
     "integration": 1
    },
    "rationale": "Make the probe write-back unconditional: the measured clobber. A consumer that leased the row mid-probe keeps using it while the row reads READY, and double_delivery_violations() stays silent because no second LEASE was ever appended."
@@ -95,10 +95,98 @@
     "integration": 0
    },
    "rationale": "Count a refused write-back as applied, so the report claims to have refreshed rows it did not touch. A false success is worse than a failure: it removes the reason to look."
+  },
+  {
+   "mutation": "abandonment_is_never_counted",
+   "module": "atlas/adapters/store_sqlite.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 4,
+    "integration": 0
+   },
+   "rationale": "Reclaim the row but record nothing -- the measured pre-ADR-039 state (recheck_bounds.json: 12 claim->reclaim cycles, every counter still 0, ever_retired false). No threshold can bound a loop whose iterations leave no trace."
+  },
+  {
+   "mutation": "abandon_retirement_uses_equality",
+   "module": "atlas/adapters/store_sqlite.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 1,
+    "integration": 0
+   },
+   "rationale": "THE HOLE THIS TOOL FOUND. `==` instead of `>=` makes every row that overshot the threshold permanently unretirable, which a lowered config value produces immediately. Survived the entire suite until test_a_row_PAST_the_threshold_still_retires existed."
+  },
+  {
+   "mutation": "abandon_retirement_ignores_row_state",
+   "module": "atlas/adapters/store_sqlite.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 3,
+    "integration": 0
+   },
+   "rationale": "Retire regardless of state: steals LEASED rows from consumers (H3 from a new direction) and RETIRED rows (inflating the count), and kills in-flight probes so complete_probe silently no-ops."
+  },
+  {
+   "mutation": "success_does_not_clear_abandon_counter",
+   "module": "atlas/core/domain/proxy.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 1,
+    "integration": 0
+   },
+   "rationale": "Make the counter cumulative rather than consecutive, so a healthy long-lived proxy retires for unrelated crashes spread over weeks -- a restart policy masquerading as a proxy-quality decision."
+  },
+  {
+   "mutation": "reported_failure_does_not_clear_abandon_counter",
+   "module": "atlas/core/domain/proxy.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 1,
+    "integration": 0
+   },
+   "rationale": "A probe that REPORTED a failure is not abandoning its claim. Conflating the two files a completed measurement under the wrong ladder and retires rows on evidence that belongs elsewhere."
+  },
+  {
+   "mutation": "decide_loses_the_abandon_branch",
+   "module": "atlas/core/policy/lifecycle.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 3,
+    "integration": 0
+   },
+   "rationale": "Remove the policy branch that bounds the loop. decide() returns RECHECK forever and the scheduler spends a full claim per cycle re-learning a fact already recorded in the row."
+  },
+  {
+   "mutation": "claim_bound_ignores_semaphore_queueing",
+   "module": "atlas/core/ports/probe.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 6,
+    "integration": 0
+   },
+   "rationale": "Price only one wave, reintroducing the ~5x undersizing measured in recheck_bounds.json (59 000 per probe vs 590 000 required at batch 100 / concurrency 10). The claim expires mid-probe and a second worker starts the same k=5 -- the double probe returning through the timeout."
+  },
+  {
+   "mutation": "claim_bound_truncates_partial_waves",
+   "module": "atlas/core/ports/probe.py",
+   "applied": true,
+   "survived": false,
+   "killed_by": {
+    "unit": 1,
+    "integration": 0
+   },
+   "rationale": "Floor instead of ceil: a batch of 11 at concurrency 10 is priced as one wave, so the eleventh row's claim is short. The off-by-one that makes a bound almost right."
   }
  ],
  "survivors": 0,
- "killed": 7,
+ "killed": 15,
  "working_tree_unchanged": true,
  "method": "The package is copied to a temp tree and the COPY is patched; the real modules are never written. Both suites run for every mutant, because which suite catches a concurrency defect is the point: read_then_write_claim is expected to survive the unit suite and die under real process contention."
 }
