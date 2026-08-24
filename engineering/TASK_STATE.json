@@ -1,855 +1,855 @@
 {
-  "version": "4.0.0",
-  "updated_at": "2026-08-24T13:05:00Z",
-  "current_phase": "P07_SCORING_ENGINE",
-  "phase_gate_status": {
-    "P00": "PASSED",
-    "P01": "PASSED",
-    "P02": "PASSED",
-    "P03": "PASSED",
-    "P04": "PASSED",
-    "P05": "PASSED",
-    "P06": "PASSED",
-    "P07": "PASSED",
-    "P08": "TODO",
-    "P09": "TODO",
-    "P10": "TODO",
-    "P11": "TODO",
-    "P12": "TODO",
-    "P13": "TODO",
-    "P14": "TODO"
+ "version": "4.0.0",
+ "updated_at": "2026-08-24T13:05:00Z",
+ "current_phase": "P07_SCORING_ENGINE",
+ "phase_gate_status": {
+  "P00": "PASSED",
+  "P01": "PASSED",
+  "P02": "PASSED",
+  "P03": "PASSED",
+  "P04": "PASSED",
+  "P05": "PASSED",
+  "P06": "PASSED",
+  "P07": "PASSED",
+  "P08": "TODO",
+  "P09": "TODO",
+  "P10": "TODO",
+  "P11": "TODO",
+  "P12": "TODO",
+  "P13": "TODO",
+  "P14": "TODO"
+ },
+ "tasks": [
+  {
+   "id": "P00.T1",
+   "title": "Read every legacy file, assign verdict (ADOPT/ADAPT/REWRITE/RETIRE)",
+   "status": "DONE",
+   "evidence": [
+    "engineering/ANALYSIS.md"
+   ],
+   "attempts": 1,
+   "notes": "9 files, 2454 LOC of Python. Table in ANALYSIS.md section 1."
   },
-  "tasks": [
-    {
-      "id": "P00.T1",
-      "title": "Read every legacy file, assign verdict (ADOPT/ADAPT/REWRITE/RETIRE)",
-      "status": "DONE",
-      "evidence": [
-        "engineering/ANALYSIS.md"
-      ],
-      "attempts": 1,
-      "notes": "9 files, 2454 LOC of Python. Table in ANALYSIS.md section 1."
-    },
-    {
-      "id": "P00.T2",
-      "title": "Extract every hardcoded source URL from legacy code (AST)",
-      "status": "DONE",
-      "evidence": [
-        "engineering/raw/legacy_urls.json",
-        "engineering/tools/extract_legacy_sources.py"
-      ],
-      "attempts": 1,
-      "notes": "123 unique URLs across 6 files; 257 total URL literals."
-    },
-    {
-      "id": "P00.T3",
-      "title": "Actually fetch all 123 legacy URLs and record real state",
-      "status": "DONE",
-      "evidence": [
-        "engineering/SOURCE_INVENTORY.json",
-        "engineering/tools/probe_legacy_sources.py"
-      ],
-      "attempts": 1,
-      "notes": "ALIVE 56, DEAD 35, EMPTY 25, ERROR 1, NOT_A_SOURCE 6. 93581 unique candidates in a 2.1s sweep."
-    },
-    {
-      "id": "P00.T4",
-      "title": "Re-probe EMPTY sources with structured parsers (regex under-detects JSON/HTML)",
-      "status": "DONE",
-      "evidence": [
-        "engineering/raw/source_probe_20260824T010038Z.json",
-        "engineering/tools/probe_legacy_sources.py"
-      ],
-      "attempts": 2,
-      "notes": "Evidence path CORRECTED 2026-08-24: reprobe_empty.py was lost to a sync and its structured parsers were absorbed into probe_legacy_sources.py (json_path + html_table are now part of the single probe pass). Latest snapshot recovers 8 sources by structured parsing."
-    },
-    {
-      "id": "P00.T5",
-      "title": "Correct the GeoNode misclassification with direct evidence",
-      "status": "DONE",
-      "evidence": [
-        "engineering/raw/geonode_body.txt",
-        "engineering/tools/verify_geonode_parser.py",
-        "engineering/raw/geonode_parser_verify.json"
-      ],
-      "attempts": 2,
-      "notes": "Tool REBUILT 2026-08-24 (offline, deterministic). Verifies the live parser against 230019 stored bytes -> exactly 500 unique proxies, regex_adjacent 0. Same source has now been misclassified 3x from 3 causes (regex adjacency, throttled body, truncated read/ADR-013)."
-    },
-    {
-      "id": "P00.T6",
-      "title": "Measure the legacy behavioural baseline (historical + re-run now)",
-      "status": "DONE",
-      "evidence": [
-        "engineering/BASELINE.json",
-        "engineering/tools/measure_baseline.py"
-      ],
-      "attempts": 1,
-      "notes": "Historical: 15000 collected -> 102 working (0.68%) in 1418.98s, accepted p50 6359.5ms p95 15903ms, 95.1% over 1500ms (n=102 stream; the n=118 log stream reads 95.8% -- ADR-020). Measured now: 9/300 live (3.0%), p95 1464ms, 68.5s."
-    },
-    {
-      "id": "P00.T7",
-      "title": "Mechanically scan legacy code for defect classes",
-      "status": "DONE",
-      "evidence": [
-        "engineering/raw/bug_scan.json",
-        "engineering/tools/verify_bug_lines.py",
-        "engineering/BUG_LEDGER.md"
-      ],
-      "attempts": 1,
-      "notes": "23 silent handlers, 9 bare except, 33 broad except, 257 hardcoded URLs, 9 verify=False, 10 captcha refs, 8 truncating writes. 16 defect classes documented with file:line."
-    },
-    {
-      "id": "P00.T8",
-      "title": "Data archaeology: which sources actually yielded, which are dead",
-      "status": "DONE",
-      "evidence": [
-        "engineering/ANALYSIS.md"
-      ],
-      "attempts": 1,
-      "notes": "Section 5. raw.githubusercontent.com 649404 (but unattributable across ~50 repos), proxyspace.pro 244623, api.openproxylist.xyz 154290. Key finding: volume != value."
-    },
-    {
-      "id": "P00.T9",
-      "title": "Migration ledger, 100% of legacy features, zero unknown rows",
-      "status": "DONE",
-      "evidence": [
-        "engineering/MIGRATION_LEDGER.md"
-      ],
-      "attempts": 1,
-      "notes": "80 features mapped. ADOPTED 30, GENERALISED 19, REPLACED 14, RETIRED_HARMFUL 14, RETIRED_PROHIBITED 3. Zero unknown."
-    },
-    {
-      "id": "P00.T10",
-      "title": "Write SECURITY.md recording the H5/section-20 commitment",
-      "status": "DONE",
-      "evidence": [
-        "engineering/SECURITY.md"
-      ],
-      "attempts": 1,
-      "notes": "Records the refusal to port the 2captcha code and the Instagram default target."
-    },
-    {
-      "id": "P00.T11",
-      "title": "Create resumability system before writing any atlas/ code",
-      "status": "DONE",
-      "evidence": [
-        "engineering/TASK_STATE.json",
-        "engineering/PROGRESS.md",
-        "engineering/RESUME_PROMPT.md",
-        "engineering/DECISIONS.md"
-      ],
-      "attempts": 1,
-      "notes": "Ordered by section 21 step 3: state files exist before code."
-    },
-    {
-      "id": "P01.T1",
-      "title": "Create atlas/ skeleton with core/ adapters/ engine/ api/ obs/ cli/ data/ tests/",
-      "status": "DONE",
-      "evidence": [
-        "atlas/core/domain/proxy.py",
-        "atlas/core/ports/clock.py"
-      ],
-      "attempts": 1,
-      "notes": "Skeleton exists: core/{domain,policy,ports}, adapters/, engine/, api/, obs/, cli/, tests/."
-    },
-    {
-      "id": "P01.T2",
-      "title": "tests/unit/test_architecture.py that FAILS if core/ imports I/O",
-      "status": "DONE",
-      "evidence": [
-        "atlas/tests/unit/test_architecture.py"
-      ],
-      "attempts": 1,
-      "notes": "AST-based. 7 core modules scanned. Includes vacuity guard + 7 negative controls (ADR-012)."
-    },
-    {
-      "id": "P01.T3",
-      "title": "Domain objects: Proxy, Source, Target, Verdict, Score (pure, no I/O)",
-      "status": "DONE",
-      "evidence": [
-        "atlas/core/domain/proxy.py",
-        "atlas/core/domain/source.py",
-        "atlas/core/domain/verdict.py",
-        "atlas/tests/unit/test_domain.py"
-      ],
-      "attempts": 1,
-      "notes": "Behaviour tests added 2026-08-24. Caught a REAL defect: Endpoint.parse accepted the malformed quad '1.2.3.4.5:80' despite a comment claiming it was rejected (all-numeric TLD now refused)."
-    },
-    {
-      "id": "P01.T4",
-      "title": "Ports: SourcePort, ProbePort, StorePort, ClockPort (Protocols)",
-      "status": "DONE",
-      "evidence": [
-        "atlas/core/ports/clock.py",
-        "atlas/core/ports/probe.py",
-        "atlas/core/ports/source.py",
-        "atlas/core/ports/store.py"
-      ],
-      "attempts": 1,
-      "notes": "4 Protocol ports. cooldown_delay is pure, so ADR-006 backoff is verified without sleeping."
-    },
-    {
-      "id": "P01.T5",
-      "title": "config.yaml, requirements.txt, Makefile, .env.example, README.md",
-      "status": "DONE",
-      "evidence": [
-        "config.yaml",
-        "requirements.txt",
-        "Makefile",
-        "README.md"
-      ],
-      "attempts": 1,
-      "notes": "README corrected 2026-08-24: it claimed '19 passed' and '68 ACTIVE' before either was true (ADR-014)."
-    },
-    {
-      "id": "P02.T1",
-      "title": "Generate atlas/data/sources/sources.json from the pinned snapshot (ADR-002)",
-      "status": "DONE",
-      "evidence": [
-        "engineering/tools/build_source_registry.py",
-        "atlas/data/sources/sources.json",
-        "engineering/raw/source_probe_20260824T010038Z.json"
-      ]
-    },
-    {
-      "id": "P02.T2",
-      "title": "Registry loader that ENFORCES its contract (DISABLED rows must name a reason)",
-      "status": "DONE",
-      "evidence": [
-        "atlas/adapters/registry.py",
-        "atlas/tests/unit/test_registry.py::test_every_disabled_row_names_a_reason"
-      ]
-    },
-    {
-      "id": "P02.T3",
-      "title": "ADR-002 guard: zero hardcoded source URLs in any atlas/*.py, with negative controls",
-      "status": "DONE",
-      "evidence": [
-        "atlas/tests/unit/test_registry.py::test_no_hardcoded_source_urls_in_python",
-        "atlas/tests/unit/test_registry.py::test_adr002_guard_has_teeth"
-      ]
-    },
-    {
-      "id": "P02.T4",
-      "title": "Protocol labels: ambiguity reported, never guessed (ADR-005)",
-      "status": "DONE",
-      "evidence": [
-        "atlas/tests/unit/test_registry.py::test_socks_list_http_txt_is_ambiguous_not_guessed",
-        "atlas/tests/unit/test_registry.py::test_ssl_filter_does_not_override_declared_proxytype"
-      ]
-    },
-    {
-      "id": "P03.T1",
-      "phase": "P03",
-      "title": "pure parsing module in core (json_path/regex_adjacent/html_table)",
-      "status": "DONE",
-      "evidence": [
-        "atlas/core/parsing/candidates.py",
-        "atlas/tests/unit/test_fetch.py::test_full_body_yields_the_pinned_500"
-      ],
-      "files_changed": [
-        "atlas/core/parsing/candidates.py",
-        "atlas/tests/unit/test_fetch.py"
-      ]
-    },
-    {
-      "id": "P03.T2",
-      "phase": "P03",
-      "title": "ADR-017: align ParserKind to measured+implemented vocabulary; derive VALID_PARSERS",
-      "status": "DONE",
-      "evidence": [
-        "atlas/core/domain/source.py",
-        "atlas/tests/unit/test_fetch.py::test_every_parser_kind_has_an_implementation",
-        "atlas/tests/unit/test_domain.py::test_parser_kinds_are_exactly_the_measured_formats"
-      ],
-      "files_changed": [
-        "atlas/core/domain/source.py",
-        "atlas/tests/unit/test_fetch.py",
-        "atlas/tests/unit/test_domain.py"
-      ]
-    },
-    {
-      "id": "P03.T3",
-      "phase": "P03",
-      "title": "row_to_source seam: registry rows -> domain Sources, refusing unrepresentable parsers",
-      "status": "DONE",
-      "evidence": [
-        "atlas/adapters/registry.py",
-        "atlas/tests/unit/test_fetch.py::test_row_to_source_rejects_an_unrepresentable_parser",
-        "atlas/tests/unit/test_fetch.py::test_a_row_with_no_parser_is_not_representable_as_a_source"
-      ],
-      "files_changed": [
-        "atlas/adapters/registry.py",
-        "atlas/tests/unit/test_fetch.py",
-        "atlas/tests/unit/test_fetch.py"
-      ]
-    },
-    {
-      "id": "P03.T4",
-      "phase": "P03",
-      "title": "HttpSourceAdapter: read-to-EOF + completeness proof (ADR-013)",
-      "status": "DONE",
-      "evidence": [
-        "atlas/adapters/http_source.py",
-        "atlas/tests/unit/test_fetch.py::test_read_to_eof_recovers_the_whole_body",
-        "atlas/tests/unit/test_fetch.py::test_adapter_reports_fetch_incomplete_not_empty"
-      ],
-      "files_changed": [
-        "atlas/adapters/http_source.py",
-        "atlas/tests/unit/test_fetch.py",
-        "atlas/tests/unit/test_fetch.py"
-      ]
-    },
-    {
-      "id": "P03.T5",
-      "phase": "P03",
-      "title": "separate FETCH_INCOMPLETE / SOURCE_THROTTLED / PARSE_EMPTY",
-      "status": "DONE",
-      "evidence": [
-        "atlas/tests/unit/test_fetch.py::test_throttled_short_body_is_not_an_empty_source",
-        "atlas/tests/unit/test_fetch.py::test_the_three_failures_are_distinct_reason_codes"
-      ],
-      "files_changed": [
-        "atlas/tests/unit/test_fetch.py",
-        "atlas/tests/unit/test_fetch.py"
-      ]
-    },
-    {
-      "id": "P04.T1",
-      "phase": "P04",
-      "title": "pure percentile module with ADR-011 method parity against the baseline tool",
-      "status": "DONE",
-      "evidence": [
-        "atlas/core/policy/percentile.py",
-        "atlas/tests/unit/test_policy.py::test_percentile_methods_match_the_baseline_tool"
-      ],
-      "files_changed": [
-        "atlas/core/policy/percentile.py"
-      ]
-    },
-    {
-      "id": "P04.T2",
-      "phase": "P04",
-      "title": "admission gate: p95 of k samples, NOT_MEASURED refuses on zero evidence (H7/ADR-003)",
-      "status": "DONE",
-      "evidence": [
-        "atlas/core/policy/admission.py",
-        "atlas/tests/unit/test_policy.py::test_unmeasured_is_rejected_not_admitted",
-        "atlas/tests/unit/test_policy.py::test_gate_rejects_the_overwhelming_majority_of_legacy_admitted"
-      ],
-      "files_changed": [
-        "atlas/core/policy/admission.py"
-      ]
-    },
-    {
-      "id": "P04.T3",
-      "phase": "P04",
-      "title": "replay the 102 legacy-admitted proxies through the v4 gate (real data, k=1 caveat stated)",
-      "status": "DONE",
-      "evidence": [
-        "engineering/tools/replay_admission.py",
-        "engineering/raw/admission_replay_20260824T020209Z.json"
-      ],
-      "files_changed": [
-        "engineering/tools/replay_admission.py"
-      ]
-    },
-    {
-      "id": "P04.T4",
-      "phase": "P04",
-      "title": "ADR-019: normalizer preserves the scheme Endpoint.parse captured and dropped",
-      "status": "DONE",
-      "evidence": [
-        "atlas/core/policy/normalize.py",
-        "atlas/tests/unit/test_policy.py::test_normalizer_preserves_the_scheme_as_a_protocol_label",
-        "atlas/tests/unit/test_policy.py::test_endpoint_parse_discards_the_scheme_it_captures"
-      ],
-      "files_changed": [
-        "atlas/core/policy/normalize.py"
-      ]
-    },
-    {
-      "id": "P04.T5",
-      "phase": "P04",
-      "title": "ADR-020: cross-stream splice found and fenced (95.8/56.8 are n=118, not n=102)",
-      "status": "DONE",
-      "evidence": [
-        "engineering/tools/verify_baseline_streams.py",
-        "engineering/raw/baseline_streams.json",
-        "engineering/tools/gate_check.py::check_no_cross_stream_splice"
-      ],
-      "files_changed": [
-        "engineering/tools/verify_baseline_streams.py",
-        "engineering/tools/gate_check.py",
-        "README.md",
-        "config.yaml",
-        "engineering/BUG_LEDGER.md",
-        "engineering/RESUME_PROMPT.md",
-        "atlas/core/domain/verdict.py"
-      ]
-    },
-    {
-      "id": "P05.T1",
-      "phase": "P05",
-      "title": "SqliteStore (WAL) implementing StorePort; lease() as ONE BEGIN IMMEDIATE compare-and-set",
-      "status": "DONE",
-      "evidence": [
-        "atlas/adapters/store_sqlite.py",
-        "atlas/tests/unit/test_store.py::test_lease_is_a_single_compare_and_set_statement",
-        "atlas/tests/unit/test_store.py::test_wal_is_actually_enabled",
-        "atlas/tests/unit/test_store.py::test_store_satisfies_the_port"
-      ],
-      "attempts": 1,
-      "notes": "33 unit tests. lease() takes the write lock at BEGIN, not on first write; the claiming UPDATE re-checks state='READY' in its own WHERE."
-    },
-    {
-      "id": "P05.T2",
-      "phase": "P05",
-      "title": "AST guards: write lock, CAS shape, fsync-before-replace (structure, not output)",
-      "status": "DONE",
-      "evidence": [
-        "atlas/tests/unit/test_store.py::test_every_mutating_method_takes_the_write_lock_immediately",
-        "atlas/tests/unit/test_store.py::test_export_fsyncs_before_it_publishes",
-        "atlas/tests/unit/test_store.py::test_the_structural_guards_read_code_not_comments"
-      ],
-      "attempts": 2,
-      "notes": "ADR-022. The fsync guard FAILED first run by matching the docstring that explains fsync/os.replace; helper now strips docstrings via AST, and a meta-test fails if prose-matching returns."
-    },
-    {
-      "id": "P05.T3",
-      "phase": "P05",
-      "title": "H3 under real process concurrency + committed negative control that must fail",
-      "status": "DONE",
-      "evidence": [
-        "atlas/tests/integration/test_store_lease.py::test_concurrent_leases_never_overlap",
-        "atlas/tests/integration/test_store_lease.py::test_the_h3_test_would_catch_a_read_then_write_store",
-        "atlas/tests/integration/naive_store.py",
-        "engineering/tools/gate_check.py::check_h3_negative_control_present"
-      ],
-      "attempts": 1,
-      "notes": "multiprocessing/spawn, separate sqlite connections (threads would let the GIL hide the race). Matched head-to-head: real 0 duplicates vs naive 30, identical config."
-    },
-    {
-      "id": "P05.T4",
-      "phase": "P05",
-      "title": "H8: SIGKILL after acknowledged write loses nothing; export never observed truncated",
-      "status": "DONE",
-      "evidence": [
-        "atlas/tests/integration/test_store_lease.py::test_sigkill_after_acknowledged_write_loses_nothing",
-        "atlas/tests/integration/test_store_lease.py::test_export_is_never_observed_truncated",
-        "atlas/tests/integration/test_store_lease.py::test_export_writes_tmp_in_the_same_directory"
-      ],
-      "attempts": 1,
-      "notes": "Child ends with os.kill(SIGKILL) and the test asserts returncode == -9, so no finally/atexit/__exit__ can run -- otherwise the test would measure my shutdown code, not durability."
-    },
-    {
-      "id": "P05.T5",
-      "phase": "P05",
-      "title": "Independent audit: append-only lease_log + double_delivery_violations()",
-      "status": "DONE",
-      "evidence": [
-        "atlas/adapters/store_sqlite.py",
-        "atlas/tests/integration/test_store_lease.py::test_expired_lease_is_reclaimed_not_leaked",
-        "atlas/tests/integration/test_store_lease.py::test_a_reclaimed_then_released_lease_is_not_a_double_delivery"
-      ],
-      "attempts": 1,
-      "notes": "Reconstructs LEASE/RELEASE/EXPIRE per fingerprint from the log rather than trusting lease()'s return value: a test that only inspects the return value is asking the accused to testify."
-    },
-    {
-      "id": "P05.T6",
-      "phase": "P05",
-      "title": "ADR-022 head-to-head un-spliced; broken Make targets found and gated",
-      "status": "DONE",
-      "evidence": [
-        "engineering/tools/measure_lease_concurrency.py",
-        "engineering/raw/lease_concurrency.json",
-        "engineering/tools/check_test_scope.py",
-        "engineering/tools/gate_check.py::check_makefile_tools_exist"
-      ],
-      "attempts": 1,
-      "notes": "ADR-022's table mixed two configs (real from pool 24/12 procs, naive from pool 12/6 procs) -- the ADR-020 splice, recurring. Added a matched arm. Also: `make sources-audit` referenced reprobe_empty.py, deleted by a sync, so the target could not run; now gated by makefile_tools_exist (teeth proven by injection)."
-    },
-    {
-      "id": "P06.T1",
-      "phase": "P06",
-      "title": "AiohttpProbe implementing ProbePort: TCP triage, protocol ladder, k sampling, integrity",
-      "status": "DONE",
-      "evidence": [
-        "atlas/adapters/probe_aiohttp.py",
-        "atlas/tests/unit/test_probe.py::test_probe_satisfies_the_port",
-        "atlas/tests/unit/test_probe.py::test_k_samples_really_means_k_requests",
-        "atlas/tests/unit/test_probe.py::test_samples_are_sequential_so_p95_is_not_self_inflicted_load"
-      ],
-      "attempts": 1,
-      "notes": "28 probe tests against a real in-process FakeProxy, not mocks. Samples are sequential so p95 is not self-inflicted load; failed samples are returned so success_ratio keeps its denominator."
-    },
-    {
-      "id": "P06.T2",
-      "phase": "P06",
-      "title": "ADR-023: TLS guard rewritten to AST (third recurrence of prose-matching guards)",
-      "status": "DONE",
-      "evidence": [
-        "atlas/tests/unit/test_architecture.py",
-        "atlas/tests/unit/test_probe.py::test_tls_verification_is_on_by_default"
-      ],
-      "attempts": 2,
-      "notes": "The regex guard failed on two lines of its own documentation while missing ssl=self._verify_tls. Now AST-based, teeth proven in both directions AND by real injection into the live adapter."
-    },
-    {
-      "id": "P06.T3",
-      "phase": "P06",
-      "title": "V4-01/ADR-025: a measured cause must outrank an untested rung",
-      "status": "DONE",
-      "evidence": [
-        "atlas/adapters/probe_aiohttp.py",
-        "atlas/tests/unit/test_probe.py::test_a_measured_failure_outranks_an_untestable_socks_rung",
-        "atlas/tests/unit/test_probe.py::test_a_refused_endpoint_is_not_reported_as_untestable_socks",
-        "engineering/raw/superseded/calib_smoke_PREFIX_V4-01.json"
-      ],
-      "attempts": 1,
-      "notes": "SOCKS is last in the ladder, so the untestable placeholder overwrote every real HTTP measurement: 24/24 TCP-OK endpoints reported \"socks4 not testable\", 0 reached the gate. B-02 recurring inside its own fix. After the fix the same sweep surfaced TCP_REFUSED 44 / BAD_STATUS 31 / PROXY_AUTH_REQUIRED 19 and 14 gate-reachers."
-    },
-    {
-      "id": "P06.T4",
-      "phase": "P06",
-      "title": "V4-02/ADR-024: floor-rank p95 returned the MINIMUM at k=2 (false admit)",
-      "status": "DONE",
-      "evidence": [
-        "atlas/core/policy/percentile.py",
-        "atlas/tests/unit/test_policy.py::test_a_proxy_measured_over_budget_at_k2_is_not_admitted",
-        "atlas/tests/unit/test_policy.py::test_the_tail_estimator_never_falls_below_the_median",
-        "atlas/tests/unit/test_policy.py::test_pct_tail_preserves_legacy_parity_for_every_k_above_two",
-        "engineering/raw/superseded/admission_live_PREFIX_V4-02.json"
-      ],
-      "attempts": 1,
-      "notes": "p95=4100.7 printed below p50=5880.0 in a live artifact -- impossible for a real percentile. int((n-1)*0.95)==0 at n=2. NOT cosmetic: samples (1400,1600) vs a 1500ms ceiling were admitted OK/USABLE, jitter 0.09 so no other rule caught it. pct_floor frozen for ADR-011 parity; new pct_tail used by the gate. Teeth: removing the k=2 branch fails exactly 3 tests."
-    },
-    {
-      "id": "P06.T5",
-      "phase": "P06",
-      "title": "Live calibration: retire the H7 k=1 caveat with real k=5 sampling",
-      "status": "DONE",
-      "evidence": [
-        "engineering/tools/calibrate_admission.py",
-        "engineering/raw/admission_live_adr024.json"
-      ],
-      "attempts": 3,
-      "notes": "300 candidates from 14 of 67 enabled registry sources (ADR-002), k=5, TLS verification ON. 86 tcp_ok -> 12 reached gate -> 6 with 2+ samples -> 3 ADMITTED. The k>1 rules fired on live data for the first time: UNRELIABLE 2, TOO_SLOW_P95 2, NOT_MEASURED 5. Two earlier attempts produced the artifacts that exposed V4-01 and V4-02."
-    },
-    {
-      "id": "P06.T6",
-      "phase": "P06",
-      "title": "Gate check reading artifacts: p95 < p50 is arithmetically impossible",
-      "status": "DONE",
-      "evidence": [
-        "engineering/tools/gate_check.py::check_no_percentile_ordering_violation",
-        "engineering/raw/superseded/README.md"
-      ],
-      "attempts": 1,
-      "notes": "Both P06 defects were found by reading an artifact, not by a failing test, so the new check reads artifacts too. Teeth proven by injection (PASS 10 records -> FAIL on inject -> PASS after removal). Pre-fix artifacts are preserved as evidence in raw/superseded/, separated STRUCTURALLY by a directory the glob does not cross rather than by an exclusion list (ADR-023)."
-    },
-    {
-      "id": "P07.T1",
-      "phase": "P07",
-      "title": "Scoring: four separate terms, absence of evidence scores zero (B-16)",
-      "status": "DONE",
-      "evidence": [
-        "atlas/core/policy/scoring.py::ScoringPolicy",
-        "atlas/core/policy/scoring.py::score_proxy",
-        "atlas/tests/unit/test_scoring.py"
-      ],
-      "attempts": 1,
-      "notes": "latency/reliability/freshness/anonymity kept separate because collapsing any pair loses the distinction that makes the pool rankable -- the legacy pool stored ONE number and could not rank at all. Freshness is the B-16 term: 3.0% live (9/300) measured on proxy.txt. Takes `now` as an argument, so core/ never reads a clock and every decay rule is verifiable without waiting."
-    },
-    {
-      "id": "P07.T2",
-      "phase": "P07",
-      "title": "Engine cycle: registry -> fetch -> normalize -> probe -> gate -> store",
-      "status": "DONE",
-      "evidence": [
-        "atlas/engine/cycle.py::DiscoveryEngine",
-        "atlas/engine/cycle.py::apply_source_result",
-        "atlas/tests/unit/test_engine.py"
-      ],
-      "attempts": 1,
-      "notes": "ADR-006 cooldown as a PURE function (base*2^n capped 1h, disable only after 12 consecutive), so the backoff schedule is verifiable without waiting an hour. CycleReport.__post_init__ asserts every candidate lands in exactly one bucket -- B-02 made structurally impossible rather than tested for."
-    },
-    {
-      "id": "P07.T3",
-      "phase": "P07",
-      "title": "ADR-026: label verification fed back onto the source row",
-      "status": "DONE",
-      "evidence": [
-        "engineering/DECISIONS.md::ADR-026",
-        "atlas/engine/cycle.py::classify_label"
-      ],
-      "attempts": 2,
-      "notes": "FOUND DURING RESUME AUDIT: cycle.py cited ADR-026 five times and DECISIONS.md stopped at ADR-025 -- the engine's central decision existed only as a docstring pointing at nothing. The gate could not see it because check_adr_claims_are_verifiable only walks ADR->code. ADR written; four branches (UNPROVEN/VERIFIED/REFUTED/UNKNOWN_LABEL) each have a test. Verify: -k 'label or refuted' = 4 selected (a plain -k 'label' silently selects only 3, since the REFUTED test is named after the SOCKS-list-called-http.txt symptom)."
-    },
-    {
-      "id": "P07.T4",
-      "phase": "P07",
-      "title": "ADR-027: one-sided bound strengthened; starvation now fails",
-      "status": "DONE",
-      "evidence": [
-        "engineering/DECISIONS.md::ADR-027",
-        "atlas/tests/unit/test_engine.py::test_max_probes_bounds_total_work"
-      ],
-      "attempts": 1,
-      "notes": "`assert probed <= 3` passed for a cycle that probed NOTHING. Proven by mutation: clamp deleted -> FAIL (teeth against over-probing), run_cycle starved -> PASS (blind). Now asserts probed == 3 AND len(probe.sampled) == 3, a second independent witness so a merely self-consistent report cannot pass. Re-verified: starvation mutant FAILs, restore PASSes."
-    },
-    {
-      "id": "P07.T5",
-      "phase": "P07",
-      "title": "Gate check: every ADR cited by code must exist (reverse edge)",
-      "status": "DONE",
-      "evidence": [
-        "engineering/tools/gate_check.py::check_cited_adrs_exist"
-      ],
-      "attempts": 1,
-      "notes": "ADR-014 was earned when an ADR described code that did not exist; P07 found code citing an ADR that did not exist -- the same dangling reference with its arrows reversed. Scans atlas/ only (prose legitimately discusses ADR numbers). Teeth proven by injection: PASS -> FAIL naming cycle.py:33 cites ADR-099 -> PASS after removal."
-    },
-    {
-      "id": "P08.T0",
-      "phase": "P08",
-      "title": "Close the ADR-031 gap: config loader failure branches were implemented but untested",
-      "status": "DONE",
-      "evidence": [
-        "atlas/tests/unit/test_config.py",
-        "atlas/tests/unit/test_config.py::test_a_string_deny_list_is_refused_not_iterated",
-        "engineering/DECISIONS.md::ADR-031"
-      ],
-      "files_changed": [
-        "atlas/tests/unit/test_config.py",
-        "engineering/DECISIONS.md"
-      ],
-      "attempts": 1,
-      "notes": "ADR-031 was cited by adapters/config.py but never written -- caught by gate_check::cited_adrs_exist, the reverse-edge check added in P07.T5, firing on its own author. Writing the ADR surfaced that all 8 ConfigError branches were untested: the 'failures are loud' property was implemented but unverified (ADR-014 class). 12 tests added incl. a vacuity guard. Teeth proven by injection: tolerating a string deny_hosts (which would iterate into a deny-list of single CHARACTERS -- denying nothing while looking populated) fails test_a_string_deny_list_is_refused_not_iterated."
-    },
-    {
-      "id": "P08.T0b",
-      "phase": "P08",
-      "title": "ADR-032: recover a sync-captured mutation, then fix two real IPv6 defects it exposed",
-      "status": "DONE",
-      "evidence": [
-        "atlas/core/parsing/url.py",
-        "atlas/tests/unit/test_url_parity.py::test_fuzz_bracketed_authorities_never_diverge_from_cpython",
-        "atlas/tests/unit/test_url_parity.py::test_a_bracketed_literal_is_validated_whole_zone_id_included",
-        "atlas/tests/unit/test_url_parity.py::test_a_scoped_ipv6_literal_is_still_accepted",
-        "engineering/DECISIONS.md::ADR-032"
-      ],
-      "files_changed": [
-        "atlas/core/parsing/url.py",
-        "atlas/tests/unit/test_url_parity.py",
-        "engineering/DECISIONS.md"
-      ],
-      "attempts": 1,
-      "notes": "RECOVERY FIRST: a mutation-testing run was interrupted mid-experiment and an auto-sync COMMITTED the mutant (url.py with the IPv6 validation replaced by 'pass'), while /tmp lost the backup. No clean copy existed in git history. The block was reconstructed and verified verbatim against CPython on 13 curated cases before any new work. THEN, extending the fuzz to the bracketed shape it had never generated exposed two REAL more-permissive-than-oracle defects: (1) the zone id was split off before validation on the documented but FALSE premise that ipaddress rejects RFC 6874 scopes (it has accepted them since 3.9), so '::%aa_%' was returned as a host CPython refuses; (2) the loose bracket class swallowed a fragment, accepting 'http://[::a%8e#?b8]'. Measured over 400k bracket-focused inputs: accepts-what-CPython-refuses 34 -> 0. The 8 remaining divergences are the SAFE direction and predate this work; now pinned by exact count. Teeth proven by injection in both directions (4 tests / 3 tests)."
-    }
-  ],
-  "files_changed": [
-    "Makefile",
-    "README.md",
-    "atlas/adapters/http_source.py",
-    "atlas/adapters/probe_aiohttp.py",
-    "atlas/adapters/registry.py",
-    "atlas/adapters/store_sqlite.py",
-    "atlas/core/domain/proxy.py",
-    "atlas/core/domain/verdict.py",
-    "atlas/core/parsing/candidates.py",
-    "atlas/core/policy/__init__.py",
-    "atlas/core/policy/admission.py",
-    "atlas/core/policy/normalize.py",
-    "atlas/core/policy/percentile.py",
-    "atlas/data/sources/sources.json",
-    "atlas/tests/integration/__init__.py",
-    "atlas/tests/integration/naive_store.py",
-    "atlas/tests/integration/test_store_lease.py",
-    "atlas/tests/unit/test_architecture.py",
-    "atlas/tests/unit/test_domain.py",
-    "atlas/tests/unit/test_fetch.py",
-    "atlas/tests/unit/test_policy.py",
-    "atlas/tests/unit/test_probe.py",
-    "atlas/tests/unit/test_registry.py",
-    "atlas/tests/unit/test_store.py",
-    "config.yaml",
-    "engineering/ANALYSIS.md",
-    "engineering/BASELINE.json",
-    "engineering/BUG_LEDGER.md",
-    "engineering/DECISIONS.md",
-    "engineering/MIGRATION_LEDGER.md",
-    "engineering/PROGRESS.md",
-    "engineering/RECONCILIATION.md",
-    "engineering/RESUME_PROMPT.md",
-    "engineering/SECURITY.md",
-    "engineering/SOURCE_INVENTORY.json",
-    "engineering/TASK_STATE.json",
-    "engineering/raw/admission_live_adr024.json",
-    "engineering/raw/baseline_streams.json",
-    "engineering/raw/bug_scan.json",
-    "engineering/raw/geonode_body.txt",
-    "engineering/raw/geonode_parser_verify.json",
-    "engineering/raw/lease_concurrency.json",
+  {
+   "id": "P00.T2",
+   "title": "Extract every hardcoded source URL from legacy code (AST)",
+   "status": "DONE",
+   "evidence": [
     "engineering/raw/legacy_urls.json",
+    "engineering/tools/extract_legacy_sources.py"
+   ],
+   "attempts": 1,
+   "notes": "123 unique URLs across 6 files; 257 total URL literals."
+  },
+  {
+   "id": "P00.T3",
+   "title": "Actually fetch all 123 legacy URLs and record real state",
+   "status": "DONE",
+   "evidence": [
+    "engineering/SOURCE_INVENTORY.json",
+    "engineering/tools/probe_legacy_sources.py"
+   ],
+   "attempts": 1,
+   "notes": "ALIVE 56, DEAD 35, EMPTY 25, ERROR 1, NOT_A_SOURCE 6. 93581 unique candidates in a 2.1s sweep."
+  },
+  {
+   "id": "P00.T4",
+   "title": "Re-probe EMPTY sources with structured parsers (regex under-detects JSON/HTML)",
+   "status": "DONE",
+   "evidence": [
     "engineering/raw/source_probe_20260824T010038Z.json",
-    "engineering/raw/superseded/README.md",
-    "engineering/raw/superseded/admission_live_PREFIX_V4-02.json",
-    "engineering/raw/superseded/calib_smoke_PREFIX_V4-01.json",
-    "engineering/tools/build_source_registry.py",
-    "engineering/tools/calibrate_admission.py",
-    "engineering/tools/check_test_scope.py",
-    "engineering/tools/extract_legacy_sources.py",
-    "engineering/tools/gate_check.py",
-    "engineering/tools/measure_baseline.py",
-    "engineering/tools/measure_lease_concurrency.py",
-    "engineering/tools/probe_legacy_sources.py",
-    "engineering/tools/replay_admission.py",
-    "engineering/tools/verify_baseline_streams.py",
-    "engineering/tools/verify_bug_lines.py",
+    "engineering/tools/probe_legacy_sources.py"
+   ],
+   "attempts": 2,
+   "notes": "Evidence path CORRECTED 2026-08-24: reprobe_empty.py was lost to a sync and its structured parsers were absorbed into probe_legacy_sources.py (json_path + html_table are now part of the single probe pass). Latest snapshot recovers 8 sources by structured parsing."
+  },
+  {
+   "id": "P00.T5",
+   "title": "Correct the GeoNode misclassification with direct evidence",
+   "status": "DONE",
+   "evidence": [
+    "engineering/raw/geonode_body.txt",
     "engineering/tools/verify_geonode_parser.py",
-    "engineering/tools/verify_units.py"
-  ],
-  "tests": {
-    "total": 421,
-    "passed": 421,
-    "failed": 0,
-    "breakdown": "412 unit + 9 integration. P08 pre-work added 12 over P07 (config loader failure branches, ADR-031 gap) plus 7 (ADR-032 IPv6/bracket parity), and recovered 2 lost to a sync-captured mutation.",
-    "note": "An intermittent single warning appears in roughly 1 run in 4, from integration teardown (SIGKILL child / multiprocessing). Not reproduced on demand; recorded rather than silently dropped."
+    "engineering/raw/geonode_parser_verify.json"
+   ],
+   "attempts": 2,
+   "notes": "Tool REBUILT 2026-08-24 (offline, deterministic). Verifies the live parser against 230019 stored bytes -> exactly 500 unique proxies, regex_adjacent 0. Same source has now been misclassified 3x from 3 causes (regex adjacency, throttled body, truncated read/ADR-013)."
   },
-  "open_failures": [],
-  "blockers": [],
-  "next_action": "P08 -- HAND-OUT API. Prerequisites now genuinely clear: the ADR-031 gap is closed (P08.T0) and the ADR-032 splitter defects are fixed (P08.T0b), so target validation rests on a splitter measured against CPython and a config loader whose failure modes are tested rather than merely documented. SCOPE, unchanged from the P07 hand-off and re-verified this session: do NOT re-implement lease/release/expire_leases -- SqliteStore.lease() is already a single BEGIN IMMEDIATE compare-and-set (P05.T1), H3 is proven under real process concurrency with a committed negative control (P05.T3), and an independent append-only lease_log audit exists (P05.T5). Remaining work is ONLY the layer above: (a) lease via the existing StorePort, (b) validate the CALLER-SUPPLIED target at lease time (ADR-007: no default target ever; 90s target_ttl from B-16), (c) rank candidates with P07 scoring, (d) release or expire on failure. CARRY FORWARD: max_requests_per_host_per_min is P09 scope, deliberately unimplemented in the pure policy (ADR-029) -- do not fake it in a pure function. SCHEMA DEBT, still open: 20 of 49 task records predate the 'phase' key, so tooling must read the id prefix, not t['phase']. PROCESS NOTE, earned this session: auto-sync can COMMIT a file mid-experiment and /tmp does not survive between turns. Never leave a deliberately broken file on disk between steps -- mutate in memory (exec a patched source string) and keep the on-disk copy clean.",
-  "invariants_verified": {
-    "H1_evidence_for_every_claim": true,
-    "H2_no_fabricated_numbers": true,
-    "H3_no_double_delivery": true,
-    "H4_migration_ledger_complete": true,
-    "H5_responsible_use": true,
-    "H6_phase_gates": true,
-    "H7_live_not_good": true,
-    "H8_crash_resume": true
+  {
+   "id": "P00.T6",
+   "title": "Measure the legacy behavioural baseline (historical + re-run now)",
+   "status": "DONE",
+   "evidence": [
+    "engineering/BASELINE.json",
+    "engineering/tools/measure_baseline.py"
+   ],
+   "attempts": 1,
+   "notes": "Historical: 15000 collected -> 102 working (0.68%) in 1418.98s, accepted p50 6359.5ms p95 15903ms, 95.1% over 1500ms (n=102 stream; the n=118 log stream reads 95.8% -- ADR-020). Measured now: 9/300 live (3.0%), p95 1464ms, 68.5s."
   },
-  "invariant_notes": {
-    "H3_no_double_delivery": "EARNED 2026-08-24 (P05). Established by four independent mechanisms, because no single one suffices: (1) real process concurrency via multiprocessing/spawn, one parametrisation oversubscribed (48 requested from a pool of 24) -> 24 unique, 0 duplicates; (2) a COMMITTED negative control, NaiveStore's read-then-write lease, which the same assertion catches at 30 duplicates on an IDENTICAL config (pool 12, 6 procs x 6) where the real store gives 0 -- without this the green result would be indistinguishable from a test that never created contention; (3) an independent append-only lease_log audit, double_delivery_violations(), which examines what happened instead of asking lease() to report on itself; (4) AST guards on structure, since the correct and broken implementations are behaviourally identical single-threaded. Artifact: engineering/raw/lease_concurrency.json.",
-    "H7_live_not_good": "UPGRADED 2026-08-24 (P06): the k=1 caveat is RETIRED. The gate has now been applied to live proxies with real k=5 sampling (engineering/raw/admission_live_adr024.json): 300 probed, 86 tcp_ok, 12 reached the gate, 6 with 2+ samples, 3 ADMITTED. The rules the k=1 replay could not reach fired on real data: UNRELIABLE 2, TOO_SLOW_P95 2, NOT_MEASURED 5. Getting there required fixing two v4 defects the green suite hid: V4-01/ADR-025 (a measured cause overwritten by an untestable-SOCKS note, so 0 proxies reached the gate) and V4-02/ADR-024 (floor-rank p95 returned the MINIMUM at k=2, admitting a proxy measured over budget -- H7's own failure mode reintroduced through the estimator). TOO_JITTERY has still never fired live (0 of 6); it is proven by unit test only, and that is stated rather than papered over.",
-    "H8_crash_resume": "EARNED 2026-08-24 (P05). SQLite WAL + synchronous=FULL. A child process writes, prints an ACK, then os.kill(os.getpid(), SIGKILL); the parent asserts returncode == -9 (signal 9 is uncatchable, so no finally/atexit/context manager ran) and then reopens the db and finds every acknowledged row. Exports are .tmp + fsync + os.replace in the SAME directory, with the fsync-before-replace ORDER asserted by AST -- a reader never observes a truncated file.",
-    "H1_evidence_for_every_claim": "Re-earned 2026-08-24. Two ADRs were documented without implementation and the README cited unmeasured numbers; caught, recorded in RECONCILIATION.md 5-6, and now enforced by gate_check.adr_claims_are_verifiable (ADR-014)."
+  {
+   "id": "P00.T7",
+   "title": "Mechanically scan legacy code for defect classes",
+   "status": "DONE",
+   "evidence": [
+    "engineering/raw/bug_scan.json",
+    "engineering/tools/verify_bug_lines.py",
+    "engineering/BUG_LEDGER.md"
+   ],
+   "attempts": 1,
+   "notes": "23 silent handlers, 9 bare except, 33 broad except, 257 hardcoded URLs, 9 verify=False, 10 captcha refs, 8 truncating writes. 16 defect classes documented with file:line."
   },
-  "baseline_to_beat": {
-    "source": "engineering/BASELINE.json",
-    "legacy_live_rate_pct": 3.0,
-    "legacy_measured_p95_ms": 1464,
-    "legacy_historical_admitted_p50_ms": 6359.5,
-    "legacy_historical_admitted_p95_ms": 15903,
-    "legacy_historical_success_rate_pct": 0.68,
-    "legacy_pct_over_1500ms_n102": 95.1,
-    "legacy_pct_over_5000ms_n102": 58.8,
-    "legacy_pct_over_1500ms_n118_log": 95.8,
-    "stream_note": "ADR-020: 95.8/56.8 belong to the n=118 proxy_scraper.log stream; the n=102 proxy_details.json stream is 95.1/58.8. Six files quoted the n=118 pair beside the n=102 p50/p95.",
-    "v4_gate_replay": {
-      "legacy_admitted_n": 102,
-      "v4_would_admit": 5,
-      "v4_would_reject": 97,
-      "v4_reject_pct": 95.1,
-      "survivor_p50_ms": 1199.0,
-      "survivor_p95_ms": 1329.0,
-      "method": "k=1 (all the legacy file carries); tests the p95 threshold only",
-      "artifact": "engineering/raw/admission_replay_20260824T020209Z.json"
-    },
-    "v4_live_calibration": {
-      "artifact": "engineering/raw/admission_live_adr024.json",
-      "probed": 300,
-      "tcp_ok": 86,
-      "reached_gate": 12,
-      "with_2plus_samples": 6,
-      "admitted": 3,
-      "k": 5,
-      "tls_verification": "ON",
-      "rejection_reasons": {
-        "TCP_TIMEOUT": 194,
-        "TCP_REFUSED": 43,
-        "BAD_STATUS": 28,
-        "PROXY_AUTH_REQUIRED": 23,
-        "NOT_MEASURED": 5,
-        "UNRELIABLE": 2,
-        "TOO_SLOW_P95": 2
-      },
-      "admitted_p95_ms": [
-        846.5,
-        863.7,
-        940.2
-      ],
-      "method": "k=5 live sampling from 14 of 67 enabled registry sources",
-      "caveats": [
-        "ADR-009 survivorship: candidates that exist TODAY, not the 2025 population.",
-        "A single sweep is point-in-time; source availability varies minute to minute.",
-        "TOO_JITTERY did not fire (0 of 6 multi-sample proxies): unit-tested only.",
-        "SOCKS candidates remain untestable (aiohttp lacks SOCKS) and are reported as such, never as failures."
-      ]
-    }
+  {
+   "id": "P00.T8",
+   "title": "Data archaeology: which sources actually yielded, which are dead",
+   "status": "DONE",
+   "evidence": [
+    "engineering/ANALYSIS.md"
+   ],
+   "attempts": 1,
+   "notes": "Section 5. raw.githubusercontent.com 649404 (but unattributable across ~50 repos), proxyspace.pro 244623, api.openproxylist.xyz 154290. Key finding: volume != value."
   },
-  "source_registry": {
-    "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
-    "urls_probed": 120,
-    "active": 67,
-    "alive_regex": 59,
-    "alive_html_table": 7,
-    "alive_json": 1,
-    "dead": 37,
-    "truly_empty": 14,
-    "throttled_or_short": 2,
-    "unique_candidates": 502189,
-    "point_in_time_variance": "Two sweeps 5 minutes apart gave ACTIVE 69 then 67 (candidates 504193 then 502189). The delta is upstream availability (transient 502/429/432/507), NOT a code change. Live source counts are a RANGE, not a constant: ACTIVE 67-69 on 2026-08-24. Both snapshots kept.",
-    "note": "ADR-013 fetch fix (iter_chunked to EOF) raised candidates from 74895 to ~502-504k on the same 120 URLs. short_read is only evaluated for identity-encoded responses: aiohttp auto-decompresses, so Content-Length is the COMPRESSED size for 83 of 120 URLs and is not comparable to the decoded body length."
+  {
+   "id": "P00.T9",
+   "title": "Migration ledger, 100% of legacy features, zero unknown rows",
+   "status": "DONE",
+   "evidence": [
+    "engineering/MIGRATION_LEDGER.md"
+   ],
+   "attempts": 1,
+   "notes": "80 features mapped. ADOPTED 30, GENERALISED 19, REPLACED 14, RETIRED_HARMFUL 14, RETIRED_PROHIBITED 3. Zero unknown."
   },
-  "superseded_files": {
-    "note": "Lost to platform syncs and NOT rebuilt as separate tools. Their function was absorbed, so recreating them would be duplicate code pretending to be evidence.",
-    "engineering/tools/reprobe_empty.py": "structured parsers merged into probe_legacy_sources.py (json_path + html_table run in the single pass)",
-    "engineering/raw/reprobe_empty.json": "superseded by source_probe_<UTC>.json snapshots, which carry the same per-URL parser detail",
-    "engineering/tools/inspect_inventory.py": "ad-hoc viewer; `make state` covers it",
-    "engineering/tools/show_baseline.py": "ad-hoc viewer; measure_baseline.py --json covers it",
-    "engineering/tools/check_geonode.py": "replaced by verify_geonode_parser.py (offline, deterministic, asserted)"
+  {
+   "id": "P00.T10",
+   "title": "Write SECURITY.md recording the H5/section-20 commitment",
+   "status": "DONE",
+   "evidence": [
+    "engineering/SECURITY.md"
+   ],
+   "attempts": 1,
+   "notes": "Records the refusal to port the 2captcha code and the Instagram default target."
   },
-  "registry": {
-    "path": "atlas/data/sources/sources.json",
-    "total": 120,
-    "enabled": 67,
-    "disabled": 53,
-    "by_parser": {
-      "regex_adjacent": 59,
-      "html_table": 7,
-      "json_path": 1
-    },
-    "by_protocol_hint": {
-      "unknown": 38,
-      "https": 32,
-      "http": 48,
-      "ambiguous": 1,
-      "socks5": 1
-    },
-    "deterministic": "byte-identical on rebuild (verified via diff)",
-    "labels_verified": 0,
-    "note": "ENABLED==67 asserted equal to snapshot ACTIVE by test, so the registry cannot silently invent or lose sources. No label_is_verified is true: zero proxies probed yet."
+  {
+   "id": "P00.T11",
+   "title": "Create resumability system before writing any atlas/ code",
+   "status": "DONE",
+   "evidence": [
+    "engineering/TASK_STATE.json",
+    "engineering/PROGRESS.md",
+    "engineering/RESUME_PROMPT.md",
+    "engineering/DECISIONS.md"
+   ],
+   "attempts": 1,
+   "notes": "Ordered by section 21 step 3: state files exist before code."
   },
-  "gate_checks": {
-    "total": 16,
-    "passing": 16,
-    "note": "CORRECTED 2026-08-24 on resume: this field said 15/15 while PROGRESS.md P06 said 16/16. Reality (`python3 engineering/tools/gate_check.py`) prints 16 named PASS lines from 13 `def check_` functions -- several functions emit more than one named check, so counting `def`s undercounts. The 16th is no_percentile_ordering_violation (P06.T6). `make gate` also runs check_test_scope.py, which proves the default pytest run really reaches atlas/tests/integration (235 unit + 9 integration = 244)."
+  {
+   "id": "P01.T1",
+   "title": "Create atlas/ skeleton with core/ adapters/ engine/ api/ obs/ cli/ data/ tests/",
+   "status": "DONE",
+   "evidence": [
+    "atlas/core/domain/proxy.py",
+    "atlas/core/ports/clock.py"
+   ],
+   "attempts": 1,
+   "notes": "Skeleton exists: core/{domain,policy,ports}, adapters/, engine/, api/, obs/, cli/, tests/."
   },
-  "h3_measurement": {
-    "artifact": "engineering/raw/lease_concurrency.json",
-    "head_to_head": {
-      "config": "pool 12, 6 processes x 6 requested, identical for both arms",
-      "real_duplicates": 0,
-      "naive_duplicates": 30
-    },
-    "oversubscribed": {
-      "config": "pool 24, 12 processes x 4 = 48 requested",
-      "handed_out": 24,
-      "unique": 24,
-      "duplicates": 0,
-      "audit_log_violations": 0
-    },
-    "why_two_arms": "0 duplicates alone is not evidence -- an idle machine yields 0 from broken code too. The naive arm gives the 0 its meaning (ADR-022)."
+  {
+   "id": "P01.T2",
+   "title": "tests/unit/test_architecture.py that FAILS if core/ imports I/O",
+   "status": "DONE",
+   "evidence": [
+    "atlas/tests/unit/test_architecture.py"
+   ],
+   "attempts": 1,
+   "notes": "AST-based. 7 core modules scanned. Includes vacuity guard + 7 negative controls (ADR-012)."
+  },
+  {
+   "id": "P01.T3",
+   "title": "Domain objects: Proxy, Source, Target, Verdict, Score (pure, no I/O)",
+   "status": "DONE",
+   "evidence": [
+    "atlas/core/domain/proxy.py",
+    "atlas/core/domain/source.py",
+    "atlas/core/domain/verdict.py",
+    "atlas/tests/unit/test_domain.py"
+   ],
+   "attempts": 1,
+   "notes": "Behaviour tests added 2026-08-24. Caught a REAL defect: Endpoint.parse accepted the malformed quad '1.2.3.4.5:80' despite a comment claiming it was rejected (all-numeric TLD now refused)."
+  },
+  {
+   "id": "P01.T4",
+   "title": "Ports: SourcePort, ProbePort, StorePort, ClockPort (Protocols)",
+   "status": "DONE",
+   "evidence": [
+    "atlas/core/ports/clock.py",
+    "atlas/core/ports/probe.py",
+    "atlas/core/ports/source.py",
+    "atlas/core/ports/store.py"
+   ],
+   "attempts": 1,
+   "notes": "4 Protocol ports. cooldown_delay is pure, so ADR-006 backoff is verified without sleeping."
+  },
+  {
+   "id": "P01.T5",
+   "title": "config.yaml, requirements.txt, Makefile, .env.example, README.md",
+   "status": "DONE",
+   "evidence": [
+    "config.yaml",
+    "requirements.txt",
+    "Makefile",
+    "README.md"
+   ],
+   "attempts": 1,
+   "notes": "README corrected 2026-08-24: it claimed '19 passed' and '68 ACTIVE' before either was true (ADR-014)."
+  },
+  {
+   "id": "P02.T1",
+   "title": "Generate atlas/data/sources/sources.json from the pinned snapshot (ADR-002)",
+   "status": "DONE",
+   "evidence": [
+    "engineering/tools/build_source_registry.py",
+    "atlas/data/sources/sources.json",
+    "engineering/raw/source_probe_20260824T010038Z.json"
+   ]
+  },
+  {
+   "id": "P02.T2",
+   "title": "Registry loader that ENFORCES its contract (DISABLED rows must name a reason)",
+   "status": "DONE",
+   "evidence": [
+    "atlas/adapters/registry.py",
+    "atlas/tests/unit/test_registry.py::test_every_disabled_row_names_a_reason"
+   ]
+  },
+  {
+   "id": "P02.T3",
+   "title": "ADR-002 guard: zero hardcoded source URLs in any atlas/*.py, with negative controls",
+   "status": "DONE",
+   "evidence": [
+    "atlas/tests/unit/test_registry.py::test_no_hardcoded_source_urls_in_python",
+    "atlas/tests/unit/test_registry.py::test_adr002_guard_has_teeth"
+   ]
+  },
+  {
+   "id": "P02.T4",
+   "title": "Protocol labels: ambiguity reported, never guessed (ADR-005)",
+   "status": "DONE",
+   "evidence": [
+    "atlas/tests/unit/test_registry.py::test_socks_list_http_txt_is_ambiguous_not_guessed",
+    "atlas/tests/unit/test_registry.py::test_ssl_filter_does_not_override_declared_proxytype"
+   ]
+  },
+  {
+   "id": "P03.T1",
+   "phase": "P03",
+   "title": "pure parsing module in core (json_path/regex_adjacent/html_table)",
+   "status": "DONE",
+   "evidence": [
+    "atlas/core/parsing/candidates.py",
+    "atlas/tests/unit/test_fetch.py::test_full_body_yields_the_pinned_500"
+   ],
+   "files_changed": [
+    "atlas/core/parsing/candidates.py",
+    "atlas/tests/unit/test_fetch.py"
+   ]
+  },
+  {
+   "id": "P03.T2",
+   "phase": "P03",
+   "title": "ADR-017: align ParserKind to measured+implemented vocabulary; derive VALID_PARSERS",
+   "status": "DONE",
+   "evidence": [
+    "atlas/core/domain/source.py",
+    "atlas/tests/unit/test_fetch.py::test_every_parser_kind_has_an_implementation",
+    "atlas/tests/unit/test_domain.py::test_parser_kinds_are_exactly_the_measured_formats"
+   ],
+   "files_changed": [
+    "atlas/core/domain/source.py",
+    "atlas/tests/unit/test_fetch.py",
+    "atlas/tests/unit/test_domain.py"
+   ]
+  },
+  {
+   "id": "P03.T3",
+   "phase": "P03",
+   "title": "row_to_source seam: registry rows -> domain Sources, refusing unrepresentable parsers",
+   "status": "DONE",
+   "evidence": [
+    "atlas/adapters/registry.py",
+    "atlas/tests/unit/test_fetch.py::test_row_to_source_rejects_an_unrepresentable_parser",
+    "atlas/tests/unit/test_fetch.py::test_a_row_with_no_parser_is_not_representable_as_a_source"
+   ],
+   "files_changed": [
+    "atlas/adapters/registry.py",
+    "atlas/tests/unit/test_fetch.py",
+    "atlas/tests/unit/test_fetch.py"
+   ]
+  },
+  {
+   "id": "P03.T4",
+   "phase": "P03",
+   "title": "HttpSourceAdapter: read-to-EOF + completeness proof (ADR-013)",
+   "status": "DONE",
+   "evidence": [
+    "atlas/adapters/http_source.py",
+    "atlas/tests/unit/test_fetch.py::test_read_to_eof_recovers_the_whole_body",
+    "atlas/tests/unit/test_fetch.py::test_adapter_reports_fetch_incomplete_not_empty"
+   ],
+   "files_changed": [
+    "atlas/adapters/http_source.py",
+    "atlas/tests/unit/test_fetch.py",
+    "atlas/tests/unit/test_fetch.py"
+   ]
+  },
+  {
+   "id": "P03.T5",
+   "phase": "P03",
+   "title": "separate FETCH_INCOMPLETE / SOURCE_THROTTLED / PARSE_EMPTY",
+   "status": "DONE",
+   "evidence": [
+    "atlas/tests/unit/test_fetch.py::test_throttled_short_body_is_not_an_empty_source",
+    "atlas/tests/unit/test_fetch.py::test_the_three_failures_are_distinct_reason_codes"
+   ],
+   "files_changed": [
+    "atlas/tests/unit/test_fetch.py",
+    "atlas/tests/unit/test_fetch.py"
+   ]
+  },
+  {
+   "id": "P04.T1",
+   "phase": "P04",
+   "title": "pure percentile module with ADR-011 method parity against the baseline tool",
+   "status": "DONE",
+   "evidence": [
+    "atlas/core/policy/percentile.py",
+    "atlas/tests/unit/test_policy.py::test_percentile_methods_match_the_baseline_tool"
+   ],
+   "files_changed": [
+    "atlas/core/policy/percentile.py"
+   ]
+  },
+  {
+   "id": "P04.T2",
+   "phase": "P04",
+   "title": "admission gate: p95 of k samples, NOT_MEASURED refuses on zero evidence (H7/ADR-003)",
+   "status": "DONE",
+   "evidence": [
+    "atlas/core/policy/admission.py",
+    "atlas/tests/unit/test_policy.py::test_unmeasured_is_rejected_not_admitted",
+    "atlas/tests/unit/test_policy.py::test_gate_rejects_the_overwhelming_majority_of_legacy_admitted"
+   ],
+   "files_changed": [
+    "atlas/core/policy/admission.py"
+   ]
+  },
+  {
+   "id": "P04.T3",
+   "phase": "P04",
+   "title": "replay the 102 legacy-admitted proxies through the v4 gate (real data, k=1 caveat stated)",
+   "status": "DONE",
+   "evidence": [
+    "engineering/tools/replay_admission.py",
+    "engineering/raw/admission_replay_20260824T020209Z.json"
+   ],
+   "files_changed": [
+    "engineering/tools/replay_admission.py"
+   ]
+  },
+  {
+   "id": "P04.T4",
+   "phase": "P04",
+   "title": "ADR-019: normalizer preserves the scheme Endpoint.parse captured and dropped",
+   "status": "DONE",
+   "evidence": [
+    "atlas/core/policy/normalize.py",
+    "atlas/tests/unit/test_policy.py::test_normalizer_preserves_the_scheme_as_a_protocol_label",
+    "atlas/tests/unit/test_policy.py::test_endpoint_parse_discards_the_scheme_it_captures"
+   ],
+   "files_changed": [
+    "atlas/core/policy/normalize.py"
+   ]
+  },
+  {
+   "id": "P04.T5",
+   "phase": "P04",
+   "title": "ADR-020: cross-stream splice found and fenced (95.8/56.8 are n=118, not n=102)",
+   "status": "DONE",
+   "evidence": [
+    "engineering/tools/verify_baseline_streams.py",
+    "engineering/raw/baseline_streams.json",
+    "engineering/tools/gate_check.py::check_no_cross_stream_splice"
+   ],
+   "files_changed": [
+    "engineering/tools/verify_baseline_streams.py",
+    "engineering/tools/gate_check.py",
+    "README.md",
+    "config.yaml",
+    "engineering/BUG_LEDGER.md",
+    "engineering/RESUME_PROMPT.md",
+    "atlas/core/domain/verdict.py"
+   ]
+  },
+  {
+   "id": "P05.T1",
+   "phase": "P05",
+   "title": "SqliteStore (WAL) implementing StorePort; lease() as ONE BEGIN IMMEDIATE compare-and-set",
+   "status": "DONE",
+   "evidence": [
+    "atlas/adapters/store_sqlite.py",
+    "atlas/tests/unit/test_store.py::test_lease_is_a_single_compare_and_set_statement",
+    "atlas/tests/unit/test_store.py::test_wal_is_actually_enabled",
+    "atlas/tests/unit/test_store.py::test_store_satisfies_the_port"
+   ],
+   "attempts": 1,
+   "notes": "33 unit tests. lease() takes the write lock at BEGIN, not on first write; the claiming UPDATE re-checks state='READY' in its own WHERE."
+  },
+  {
+   "id": "P05.T2",
+   "phase": "P05",
+   "title": "AST guards: write lock, CAS shape, fsync-before-replace (structure, not output)",
+   "status": "DONE",
+   "evidence": [
+    "atlas/tests/unit/test_store.py::test_every_mutating_method_takes_the_write_lock_immediately",
+    "atlas/tests/unit/test_store.py::test_export_fsyncs_before_it_publishes",
+    "atlas/tests/unit/test_store.py::test_the_structural_guards_read_code_not_comments"
+   ],
+   "attempts": 2,
+   "notes": "ADR-022. The fsync guard FAILED first run by matching the docstring that explains fsync/os.replace; helper now strips docstrings via AST, and a meta-test fails if prose-matching returns."
+  },
+  {
+   "id": "P05.T3",
+   "phase": "P05",
+   "title": "H3 under real process concurrency + committed negative control that must fail",
+   "status": "DONE",
+   "evidence": [
+    "atlas/tests/integration/test_store_lease.py::test_concurrent_leases_never_overlap",
+    "atlas/tests/integration/test_store_lease.py::test_the_h3_test_would_catch_a_read_then_write_store",
+    "atlas/tests/integration/naive_store.py",
+    "engineering/tools/gate_check.py::check_h3_negative_control_present"
+   ],
+   "attempts": 1,
+   "notes": "multiprocessing/spawn, separate sqlite connections (threads would let the GIL hide the race). Matched head-to-head: real 0 duplicates vs naive 30, identical config."
+  },
+  {
+   "id": "P05.T4",
+   "phase": "P05",
+   "title": "H8: SIGKILL after acknowledged write loses nothing; export never observed truncated",
+   "status": "DONE",
+   "evidence": [
+    "atlas/tests/integration/test_store_lease.py::test_sigkill_after_acknowledged_write_loses_nothing",
+    "atlas/tests/integration/test_store_lease.py::test_export_is_never_observed_truncated",
+    "atlas/tests/integration/test_store_lease.py::test_export_writes_tmp_in_the_same_directory"
+   ],
+   "attempts": 1,
+   "notes": "Child ends with os.kill(SIGKILL) and the test asserts returncode == -9, so no finally/atexit/__exit__ can run -- otherwise the test would measure my shutdown code, not durability."
+  },
+  {
+   "id": "P05.T5",
+   "phase": "P05",
+   "title": "Independent audit: append-only lease_log + double_delivery_violations()",
+   "status": "DONE",
+   "evidence": [
+    "atlas/adapters/store_sqlite.py",
+    "atlas/tests/integration/test_store_lease.py::test_expired_lease_is_reclaimed_not_leaked",
+    "atlas/tests/integration/test_store_lease.py::test_a_reclaimed_then_released_lease_is_not_a_double_delivery"
+   ],
+   "attempts": 1,
+   "notes": "Reconstructs LEASE/RELEASE/EXPIRE per fingerprint from the log rather than trusting lease()'s return value: a test that only inspects the return value is asking the accused to testify."
+  },
+  {
+   "id": "P05.T6",
+   "phase": "P05",
+   "title": "ADR-022 head-to-head un-spliced; broken Make targets found and gated",
+   "status": "DONE",
+   "evidence": [
+    "engineering/tools/measure_lease_concurrency.py",
+    "engineering/raw/lease_concurrency.json",
+    "engineering/tools/check_test_scope.py",
+    "engineering/tools/gate_check.py::check_makefile_tools_exist"
+   ],
+   "attempts": 1,
+   "notes": "ADR-022's table mixed two configs (real from pool 24/12 procs, naive from pool 12/6 procs) -- the ADR-020 splice, recurring. Added a matched arm. Also: `make sources-audit` referenced reprobe_empty.py, deleted by a sync, so the target could not run; now gated by makefile_tools_exist (teeth proven by injection)."
+  },
+  {
+   "id": "P06.T1",
+   "phase": "P06",
+   "title": "AiohttpProbe implementing ProbePort: TCP triage, protocol ladder, k sampling, integrity",
+   "status": "DONE",
+   "evidence": [
+    "atlas/adapters/probe_aiohttp.py",
+    "atlas/tests/unit/test_probe.py::test_probe_satisfies_the_port",
+    "atlas/tests/unit/test_probe.py::test_k_samples_really_means_k_requests",
+    "atlas/tests/unit/test_probe.py::test_samples_are_sequential_so_p95_is_not_self_inflicted_load"
+   ],
+   "attempts": 1,
+   "notes": "28 probe tests against a real in-process FakeProxy, not mocks. Samples are sequential so p95 is not self-inflicted load; failed samples are returned so success_ratio keeps its denominator."
+  },
+  {
+   "id": "P06.T2",
+   "phase": "P06",
+   "title": "ADR-023: TLS guard rewritten to AST (third recurrence of prose-matching guards)",
+   "status": "DONE",
+   "evidence": [
+    "atlas/tests/unit/test_architecture.py",
+    "atlas/tests/unit/test_probe.py::test_tls_verification_is_on_by_default"
+   ],
+   "attempts": 2,
+   "notes": "The regex guard failed on two lines of its own documentation while missing ssl=self._verify_tls. Now AST-based, teeth proven in both directions AND by real injection into the live adapter."
+  },
+  {
+   "id": "P06.T3",
+   "phase": "P06",
+   "title": "V4-01/ADR-025: a measured cause must outrank an untested rung",
+   "status": "DONE",
+   "evidence": [
+    "atlas/adapters/probe_aiohttp.py",
+    "atlas/tests/unit/test_probe.py::test_a_measured_failure_outranks_an_untestable_socks_rung",
+    "atlas/tests/unit/test_probe.py::test_a_refused_endpoint_is_not_reported_as_untestable_socks",
+    "engineering/raw/superseded/calib_smoke_PREFIX_V4-01.json"
+   ],
+   "attempts": 1,
+   "notes": "SOCKS is last in the ladder, so the untestable placeholder overwrote every real HTTP measurement: 24/24 TCP-OK endpoints reported \"socks4 not testable\", 0 reached the gate. B-02 recurring inside its own fix. After the fix the same sweep surfaced TCP_REFUSED 44 / BAD_STATUS 31 / PROXY_AUTH_REQUIRED 19 and 14 gate-reachers."
+  },
+  {
+   "id": "P06.T4",
+   "phase": "P06",
+   "title": "V4-02/ADR-024: floor-rank p95 returned the MINIMUM at k=2 (false admit)",
+   "status": "DONE",
+   "evidence": [
+    "atlas/core/policy/percentile.py",
+    "atlas/tests/unit/test_policy.py::test_a_proxy_measured_over_budget_at_k2_is_not_admitted",
+    "atlas/tests/unit/test_policy.py::test_the_tail_estimator_never_falls_below_the_median",
+    "atlas/tests/unit/test_policy.py::test_pct_tail_preserves_legacy_parity_for_every_k_above_two",
+    "engineering/raw/superseded/admission_live_PREFIX_V4-02.json"
+   ],
+   "attempts": 1,
+   "notes": "p95=4100.7 printed below p50=5880.0 in a live artifact -- impossible for a real percentile. int((n-1)*0.95)==0 at n=2. NOT cosmetic: samples (1400,1600) vs a 1500ms ceiling were admitted OK/USABLE, jitter 0.09 so no other rule caught it. pct_floor frozen for ADR-011 parity; new pct_tail used by the gate. Teeth: removing the k=2 branch fails exactly 3 tests."
+  },
+  {
+   "id": "P06.T5",
+   "phase": "P06",
+   "title": "Live calibration: retire the H7 k=1 caveat with real k=5 sampling",
+   "status": "DONE",
+   "evidence": [
+    "engineering/tools/calibrate_admission.py",
+    "engineering/raw/admission_live_adr024.json"
+   ],
+   "attempts": 3,
+   "notes": "300 candidates from 14 of 67 enabled registry sources (ADR-002), k=5, TLS verification ON. 86 tcp_ok -> 12 reached gate -> 6 with 2+ samples -> 3 ADMITTED. The k>1 rules fired on live data for the first time: UNRELIABLE 2, TOO_SLOW_P95 2, NOT_MEASURED 5. Two earlier attempts produced the artifacts that exposed V4-01 and V4-02."
+  },
+  {
+   "id": "P06.T6",
+   "phase": "P06",
+   "title": "Gate check reading artifacts: p95 < p50 is arithmetically impossible",
+   "status": "DONE",
+   "evidence": [
+    "engineering/tools/gate_check.py::check_no_percentile_ordering_violation",
+    "engineering/raw/superseded/README.md"
+   ],
+   "attempts": 1,
+   "notes": "Both P06 defects were found by reading an artifact, not by a failing test, so the new check reads artifacts too. Teeth proven by injection (PASS 10 records -> FAIL on inject -> PASS after removal). Pre-fix artifacts are preserved as evidence in raw/superseded/, separated STRUCTURALLY by a directory the glob does not cross rather than by an exclusion list (ADR-023)."
+  },
+  {
+   "id": "P07.T1",
+   "phase": "P07",
+   "title": "Scoring: four separate terms, absence of evidence scores zero (B-16)",
+   "status": "DONE",
+   "evidence": [
+    "atlas/core/policy/scoring.py::ScoringPolicy",
+    "atlas/core/policy/scoring.py::score_proxy",
+    "atlas/tests/unit/test_scoring.py"
+   ],
+   "attempts": 1,
+   "notes": "latency/reliability/freshness/anonymity kept separate because collapsing any pair loses the distinction that makes the pool rankable -- the legacy pool stored ONE number and could not rank at all. Freshness is the B-16 term: 3.0% live (9/300) measured on proxy.txt. Takes `now` as an argument, so core/ never reads a clock and every decay rule is verifiable without waiting."
+  },
+  {
+   "id": "P07.T2",
+   "phase": "P07",
+   "title": "Engine cycle: registry -> fetch -> normalize -> probe -> gate -> store",
+   "status": "DONE",
+   "evidence": [
+    "atlas/engine/cycle.py::DiscoveryEngine",
+    "atlas/engine/cycle.py::apply_source_result",
+    "atlas/tests/unit/test_engine.py"
+   ],
+   "attempts": 1,
+   "notes": "ADR-006 cooldown as a PURE function (base*2^n capped 1h, disable only after 12 consecutive), so the backoff schedule is verifiable without waiting an hour. CycleReport.__post_init__ asserts every candidate lands in exactly one bucket -- B-02 made structurally impossible rather than tested for."
+  },
+  {
+   "id": "P07.T3",
+   "phase": "P07",
+   "title": "ADR-026: label verification fed back onto the source row",
+   "status": "DONE",
+   "evidence": [
+    "engineering/DECISIONS.md::ADR-026",
+    "atlas/engine/cycle.py::classify_label"
+   ],
+   "attempts": 2,
+   "notes": "FOUND DURING RESUME AUDIT: cycle.py cited ADR-026 five times and DECISIONS.md stopped at ADR-025 -- the engine's central decision existed only as a docstring pointing at nothing. The gate could not see it because check_adr_claims_are_verifiable only walks ADR->code. ADR written; four branches (UNPROVEN/VERIFIED/REFUTED/UNKNOWN_LABEL) each have a test. Verify: -k 'label or refuted' = 4 selected (a plain -k 'label' silently selects only 3, since the REFUTED test is named after the SOCKS-list-called-http.txt symptom)."
+  },
+  {
+   "id": "P07.T4",
+   "phase": "P07",
+   "title": "ADR-027: one-sided bound strengthened; starvation now fails",
+   "status": "DONE",
+   "evidence": [
+    "engineering/DECISIONS.md::ADR-027",
+    "atlas/tests/unit/test_engine.py::test_max_probes_bounds_total_work"
+   ],
+   "attempts": 1,
+   "notes": "`assert probed <= 3` passed for a cycle that probed NOTHING. Proven by mutation: clamp deleted -> FAIL (teeth against over-probing), run_cycle starved -> PASS (blind). Now asserts probed == 3 AND len(probe.sampled) == 3, a second independent witness so a merely self-consistent report cannot pass. Re-verified: starvation mutant FAILs, restore PASSes."
+  },
+  {
+   "id": "P07.T5",
+   "phase": "P07",
+   "title": "Gate check: every ADR cited by code must exist (reverse edge)",
+   "status": "DONE",
+   "evidence": [
+    "engineering/tools/gate_check.py::check_cited_adrs_exist"
+   ],
+   "attempts": 1,
+   "notes": "ADR-014 was earned when an ADR described code that did not exist; P07 found code citing an ADR that did not exist -- the same dangling reference with its arrows reversed. Scans atlas/ only (prose legitimately discusses ADR numbers). Teeth proven by injection: PASS -> FAIL naming cycle.py:33 cites ADR-099 -> PASS after removal."
+  },
+  {
+   "id": "P08.T0",
+   "phase": "P08",
+   "title": "Close the ADR-031 gap: config loader failure branches were implemented but untested",
+   "status": "DONE",
+   "evidence": [
+    "atlas/tests/unit/test_config.py",
+    "atlas/tests/unit/test_config.py::test_a_string_deny_list_is_refused_not_iterated",
+    "engineering/DECISIONS.md::ADR-031"
+   ],
+   "files_changed": [
+    "atlas/tests/unit/test_config.py",
+    "engineering/DECISIONS.md"
+   ],
+   "attempts": 1,
+   "notes": "ADR-031 was cited by adapters/config.py but never written -- caught by gate_check::cited_adrs_exist, the reverse-edge check added in P07.T5, firing on its own author. Writing the ADR surfaced that all 8 ConfigError branches were untested: the 'failures are loud' property was implemented but unverified (ADR-014 class). 12 tests added incl. a vacuity guard. Teeth proven by injection: tolerating a string deny_hosts (which would iterate into a deny-list of single CHARACTERS -- denying nothing while looking populated) fails test_a_string_deny_list_is_refused_not_iterated."
+  },
+  {
+   "id": "P08.T0b",
+   "phase": "P08",
+   "title": "ADR-032: recover a sync-captured mutation, then fix two real IPv6 defects it exposed",
+   "status": "DONE",
+   "evidence": [
+    "atlas/core/parsing/url.py",
+    "atlas/tests/unit/test_url_parity.py::test_fuzz_bracketed_authorities_never_diverge_from_cpython",
+    "atlas/tests/unit/test_url_parity.py::test_a_bracketed_literal_is_validated_whole_zone_id_included",
+    "atlas/tests/unit/test_url_parity.py::test_a_scoped_ipv6_literal_is_still_accepted",
+    "engineering/DECISIONS.md::ADR-032"
+   ],
+   "files_changed": [
+    "atlas/core/parsing/url.py",
+    "atlas/tests/unit/test_url_parity.py",
+    "engineering/DECISIONS.md"
+   ],
+   "attempts": 1,
+   "notes": "RECOVERY FIRST: a mutation-testing run was interrupted mid-experiment and an auto-sync COMMITTED the mutant (url.py with the IPv6 validation replaced by 'pass'), while /tmp lost the backup. No clean copy existed in git history. The block was reconstructed and verified verbatim against CPython on 13 curated cases before any new work. THEN, extending the fuzz to the bracketed shape it had never generated exposed two REAL more-permissive-than-oracle defects: (1) the zone id was split off before validation on the documented but FALSE premise that ipaddress rejects RFC 6874 scopes (it has accepted them since 3.9), so '::%aa_%' was returned as a host CPython refuses; (2) the loose bracket class swallowed a fragment, accepting 'http://[::a%8e#?b8]'. Measured over 400k bracket-focused inputs: accepts-what-CPython-refuses 34 -> 0. The 8 remaining divergences are the SAFE direction and predate this work; now pinned by exact count. Teeth proven by injection in both directions (4 tests / 3 tests)."
   }
+ ],
+ "files_changed": [
+  "Makefile",
+  "README.md",
+  "atlas/adapters/http_source.py",
+  "atlas/adapters/probe_aiohttp.py",
+  "atlas/adapters/registry.py",
+  "atlas/adapters/store_sqlite.py",
+  "atlas/core/domain/proxy.py",
+  "atlas/core/domain/verdict.py",
+  "atlas/core/parsing/candidates.py",
+  "atlas/core/policy/__init__.py",
+  "atlas/core/policy/admission.py",
+  "atlas/core/policy/normalize.py",
+  "atlas/core/policy/percentile.py",
+  "atlas/data/sources/sources.json",
+  "atlas/tests/integration/__init__.py",
+  "atlas/tests/integration/naive_store.py",
+  "atlas/tests/integration/test_store_lease.py",
+  "atlas/tests/unit/test_architecture.py",
+  "atlas/tests/unit/test_domain.py",
+  "atlas/tests/unit/test_fetch.py",
+  "atlas/tests/unit/test_policy.py",
+  "atlas/tests/unit/test_probe.py",
+  "atlas/tests/unit/test_registry.py",
+  "atlas/tests/unit/test_store.py",
+  "config.yaml",
+  "engineering/ANALYSIS.md",
+  "engineering/BASELINE.json",
+  "engineering/BUG_LEDGER.md",
+  "engineering/DECISIONS.md",
+  "engineering/MIGRATION_LEDGER.md",
+  "engineering/PROGRESS.md",
+  "engineering/RECONCILIATION.md",
+  "engineering/RESUME_PROMPT.md",
+  "engineering/SECURITY.md",
+  "engineering/SOURCE_INVENTORY.json",
+  "engineering/TASK_STATE.json",
+  "engineering/raw/admission_live_adr024.json",
+  "engineering/raw/baseline_streams.json",
+  "engineering/raw/bug_scan.json",
+  "engineering/raw/geonode_body.txt",
+  "engineering/raw/geonode_parser_verify.json",
+  "engineering/raw/lease_concurrency.json",
+  "engineering/raw/legacy_urls.json",
+  "engineering/raw/source_probe_20260824T010038Z.json",
+  "engineering/raw/superseded/README.md",
+  "engineering/raw/superseded/admission_live_PREFIX_V4-02.json",
+  "engineering/raw/superseded/calib_smoke_PREFIX_V4-01.json",
+  "engineering/tools/build_source_registry.py",
+  "engineering/tools/calibrate_admission.py",
+  "engineering/tools/check_test_scope.py",
+  "engineering/tools/extract_legacy_sources.py",
+  "engineering/tools/gate_check.py",
+  "engineering/tools/measure_baseline.py",
+  "engineering/tools/measure_lease_concurrency.py",
+  "engineering/tools/probe_legacy_sources.py",
+  "engineering/tools/replay_admission.py",
+  "engineering/tools/verify_baseline_streams.py",
+  "engineering/tools/verify_bug_lines.py",
+  "engineering/tools/verify_geonode_parser.py",
+  "engineering/tools/verify_units.py"
+ ],
+ "tests": {
+  "total": 467,
+  "passed": 467,
+  "failed": 0,
+  "breakdown": "450 unit + 17 integration. P08 proper added 38 unit (test_handout.py) and 8 integration (test_handout_store.py) over the 421 at the P08 pre-work hand-off.",
+  "note": "An intermittent single warning appears in roughly 1 run in 4, from integration teardown (SIGKILL child / multiprocessing). Not reproduced on demand; recorded rather than silently dropped."
+ },
+ "open_failures": [],
+ "blockers": [],
+ "next_action": "P08 -- HAND-OUT API. Prerequisites now genuinely clear: the ADR-031 gap is closed (P08.T0) and the ADR-032 splitter defects are fixed (P08.T0b), so target validation rests on a splitter measured against CPython and a config loader whose failure modes are tested rather than merely documented. SCOPE, unchanged from the P07 hand-off and re-verified this session: do NOT re-implement lease/release/expire_leases -- SqliteStore.lease() is already a single BEGIN IMMEDIATE compare-and-set (P05.T1), H3 is proven under real process concurrency with a committed negative control (P05.T3), and an independent append-only lease_log audit exists (P05.T5). Remaining work is ONLY the layer above: (a) lease via the existing StorePort, (b) validate the CALLER-SUPPLIED target at lease time (ADR-007: no default target ever; 90s target_ttl from B-16), (c) rank candidates with P07 scoring, (d) release or expire on failure. CARRY FORWARD: max_requests_per_host_per_min is P09 scope, deliberately unimplemented in the pure policy (ADR-029) -- do not fake it in a pure function. SCHEMA DEBT, still open: 20 of 49 task records predate the 'phase' key, so tooling must read the id prefix, not t['phase']. PROCESS NOTE, earned this session: auto-sync can COMMIT a file mid-experiment and /tmp does not survive between turns. Never leave a deliberately broken file on disk between steps -- mutate in memory (exec a patched source string) and keep the on-disk copy clean.",
+ "invariants_verified": {
+  "H1_evidence_for_every_claim": true,
+  "H2_no_fabricated_numbers": true,
+  "H3_no_double_delivery": true,
+  "H4_migration_ledger_complete": true,
+  "H5_responsible_use": true,
+  "H6_phase_gates": true,
+  "H7_live_not_good": true,
+  "H8_crash_resume": true
+ },
+ "invariant_notes": {
+  "H3_no_double_delivery": "EARNED 2026-08-24 (P05). Established by four independent mechanisms, because no single one suffices: (1) real process concurrency via multiprocessing/spawn, one parametrisation oversubscribed (48 requested from a pool of 24) -> 24 unique, 0 duplicates; (2) a COMMITTED negative control, NaiveStore's read-then-write lease, which the same assertion catches at 30 duplicates on an IDENTICAL config (pool 12, 6 procs x 6) where the real store gives 0 -- without this the green result would be indistinguishable from a test that never created contention; (3) an independent append-only lease_log audit, double_delivery_violations(), which examines what happened instead of asking lease() to report on itself; (4) AST guards on structure, since the correct and broken implementations are behaviourally identical single-threaded. Artifact: engineering/raw/lease_concurrency.json.",
+  "H7_live_not_good": "UPGRADED 2026-08-24 (P06): the k=1 caveat is RETIRED. The gate has now been applied to live proxies with real k=5 sampling (engineering/raw/admission_live_adr024.json): 300 probed, 86 tcp_ok, 12 reached the gate, 6 with 2+ samples, 3 ADMITTED. The rules the k=1 replay could not reach fired on real data: UNRELIABLE 2, TOO_SLOW_P95 2, NOT_MEASURED 5. Getting there required fixing two v4 defects the green suite hid: V4-01/ADR-025 (a measured cause overwritten by an untestable-SOCKS note, so 0 proxies reached the gate) and V4-02/ADR-024 (floor-rank p95 returned the MINIMUM at k=2, admitting a proxy measured over budget -- H7's own failure mode reintroduced through the estimator). TOO_JITTERY has still never fired live (0 of 6); it is proven by unit test only, and that is stated rather than papered over.",
+  "H8_crash_resume": "EARNED 2026-08-24 (P05). SQLite WAL + synchronous=FULL. A child process writes, prints an ACK, then os.kill(os.getpid(), SIGKILL); the parent asserts returncode == -9 (signal 9 is uncatchable, so no finally/atexit/context manager ran) and then reopens the db and finds every acknowledged row. Exports are .tmp + fsync + os.replace in the SAME directory, with the fsync-before-replace ORDER asserted by AST -- a reader never observes a truncated file.",
+  "H1_evidence_for_every_claim": "Re-earned 2026-08-24. Two ADRs were documented without implementation and the README cited unmeasured numbers; caught, recorded in RECONCILIATION.md 5-6, and now enforced by gate_check.adr_claims_are_verifiable (ADR-014)."
+ },
+ "baseline_to_beat": {
+  "source": "engineering/BASELINE.json",
+  "legacy_live_rate_pct": 3.0,
+  "legacy_measured_p95_ms": 1464,
+  "legacy_historical_admitted_p50_ms": 6359.5,
+  "legacy_historical_admitted_p95_ms": 15903,
+  "legacy_historical_success_rate_pct": 0.68,
+  "legacy_pct_over_1500ms_n102": 95.1,
+  "legacy_pct_over_5000ms_n102": 58.8,
+  "legacy_pct_over_1500ms_n118_log": 95.8,
+  "stream_note": "ADR-020: 95.8/56.8 belong to the n=118 proxy_scraper.log stream; the n=102 proxy_details.json stream is 95.1/58.8. Six files quoted the n=118 pair beside the n=102 p50/p95.",
+  "v4_gate_replay": {
+   "legacy_admitted_n": 102,
+   "v4_would_admit": 5,
+   "v4_would_reject": 97,
+   "v4_reject_pct": 95.1,
+   "survivor_p50_ms": 1199.0,
+   "survivor_p95_ms": 1329.0,
+   "method": "k=1 (all the legacy file carries); tests the p95 threshold only",
+   "artifact": "engineering/raw/admission_replay_20260824T020209Z.json"
+  },
+  "v4_live_calibration": {
+   "artifact": "engineering/raw/admission_live_adr024.json",
+   "probed": 300,
+   "tcp_ok": 86,
+   "reached_gate": 12,
+   "with_2plus_samples": 6,
+   "admitted": 3,
+   "k": 5,
+   "tls_verification": "ON",
+   "rejection_reasons": {
+    "TCP_TIMEOUT": 194,
+    "TCP_REFUSED": 43,
+    "BAD_STATUS": 28,
+    "PROXY_AUTH_REQUIRED": 23,
+    "NOT_MEASURED": 5,
+    "UNRELIABLE": 2,
+    "TOO_SLOW_P95": 2
+   },
+   "admitted_p95_ms": [
+    846.5,
+    863.7,
+    940.2
+   ],
+   "method": "k=5 live sampling from 14 of 67 enabled registry sources",
+   "caveats": [
+    "ADR-009 survivorship: candidates that exist TODAY, not the 2025 population.",
+    "A single sweep is point-in-time; source availability varies minute to minute.",
+    "TOO_JITTERY did not fire (0 of 6 multi-sample proxies): unit-tested only.",
+    "SOCKS candidates remain untestable (aiohttp lacks SOCKS) and are reported as such, never as failures."
+   ]
+  }
+ },
+ "source_registry": {
+  "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+  "urls_probed": 120,
+  "active": 67,
+  "alive_regex": 59,
+  "alive_html_table": 7,
+  "alive_json": 1,
+  "dead": 37,
+  "truly_empty": 14,
+  "throttled_or_short": 2,
+  "unique_candidates": 502189,
+  "point_in_time_variance": "Two sweeps 5 minutes apart gave ACTIVE 69 then 67 (candidates 504193 then 502189). The delta is upstream availability (transient 502/429/432/507), NOT a code change. Live source counts are a RANGE, not a constant: ACTIVE 67-69 on 2026-08-24. Both snapshots kept.",
+  "note": "ADR-013 fetch fix (iter_chunked to EOF) raised candidates from 74895 to ~502-504k on the same 120 URLs. short_read is only evaluated for identity-encoded responses: aiohttp auto-decompresses, so Content-Length is the COMPRESSED size for 83 of 120 URLs and is not comparable to the decoded body length."
+ },
+ "superseded_files": {
+  "note": "Lost to platform syncs and NOT rebuilt as separate tools. Their function was absorbed, so recreating them would be duplicate code pretending to be evidence.",
+  "engineering/tools/reprobe_empty.py": "structured parsers merged into probe_legacy_sources.py (json_path + html_table run in the single pass)",
+  "engineering/raw/reprobe_empty.json": "superseded by source_probe_<UTC>.json snapshots, which carry the same per-URL parser detail",
+  "engineering/tools/inspect_inventory.py": "ad-hoc viewer; `make state` covers it",
+  "engineering/tools/show_baseline.py": "ad-hoc viewer; measure_baseline.py --json covers it",
+  "engineering/tools/check_geonode.py": "replaced by verify_geonode_parser.py (offline, deterministic, asserted)"
+ },
+ "registry": {
+  "path": "atlas/data/sources/sources.json",
+  "total": 120,
+  "enabled": 67,
+  "disabled": 53,
+  "by_parser": {
+   "regex_adjacent": 59,
+   "html_table": 7,
+   "json_path": 1
+  },
+  "by_protocol_hint": {
+   "unknown": 38,
+   "https": 32,
+   "http": 48,
+   "ambiguous": 1,
+   "socks5": 1
+  },
+  "deterministic": "byte-identical on rebuild (verified via diff)",
+  "labels_verified": 0,
+  "note": "ENABLED==67 asserted equal to snapshot ACTIVE by test, so the registry cannot silently invent or lose sources. No label_is_verified is true: zero proxies probed yet."
+ },
+ "gate_checks": {
+  "total": 17,
+  "passing": 17,
+  "note": "CORRECTED 2026-08-24 (second resume): this field said 16/16. Reality (`python3 engineering/tools/gate_check.py | grep -c '\\[PASS\\]'`) prints 17 named PASS lines. The 17th is cited_adrs_exist, added by P07.T5 itself -- the check was written and the counter beside it was not incremented, so the ledger under-reported its own coverage. Previous note claimed 16 from 13 `def check_` functions; the def-count is still not the check-count (several functions emit more than one named check), which is why the printed PASS lines are the authority, not the source shape."
+ },
+ "h3_measurement": {
+  "artifact": "engineering/raw/lease_concurrency.json",
+  "head_to_head": {
+   "config": "pool 12, 6 processes x 6 requested, identical for both arms",
+   "real_duplicates": 0,
+   "naive_duplicates": 30
+  },
+  "oversubscribed": {
+   "config": "pool 24, 12 processes x 4 = 48 requested",
+   "handed_out": 24,
+   "unique": 24,
+   "duplicates": 0,
+   "audit_log_violations": 0
+  },
+  "why_two_arms": "0 duplicates alone is not evidence -- an idle machine yields 0 from broken code too. The naive arm gives the 0 its meaning (ADR-022)."
+ }
 }
