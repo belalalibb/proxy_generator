@@ -122,6 +122,31 @@ class TargetPolicy:
             )
 
 
+def canonical_host(host: str | None) -> str:
+    """
+    THE definition of host identity for every layer that needs one.
+
+    Two spellings of one host must never become two decisions. `split_url`
+    already case-folds (proven by `test_canonical_host_folds_case_via_split_url`),
+    but it does NOT strip the root's trailing dot: `split_url("https://a.com.")`
+    yields `a.com.`, which `==` says is a different string from `a.com`.
+
+    This existed as an inline `.lower().rstrip(".")` in `check_target` and again
+    in `host_matches_deny`. Extracted, because ADR-034's per-host rate limiter
+    needs the SAME notion of identity: if the limiter had its own, `a.com` and
+    `A.com.` would be one host to the deny-list and two buckets to the limiter,
+    silently doubling the configured rate for anyone who types the root dot.
+    Duplicated normalisation that currently agrees is not a shared rule; it is
+    two rules that have not diverged yet.
+
+    `.lower()` is retained here even though `split_url` already folds case,
+    because this function's contract is to canonicalise ANY host string --
+    including ones that never went through `split_url` (a `deny_hosts` entry
+    straight from `config.yaml`, for instance).
+    """
+    return (host or "").lower().rstrip(".")
+
+
 def host_matches_deny(host: str, deny: str) -> bool:
     """
     Does `host` fall under the denied domain `deny`, including subdomains?
@@ -139,8 +164,8 @@ def host_matches_deny(host: str, deny: str) -> bool:
     that over-refuses is not "safely conservative": it silently makes legitimate
     targets un-testable, and the operator gets DENIED_HOST with no idea why.
     """
-    h = host.lower().rstrip(".")
-    d = deny.lower().rstrip(".")
+    h = canonical_host(host)
+    d = canonical_host(deny)
     return h == d or h.endswith("." + d)
 
 
@@ -177,7 +202,7 @@ def check_target(target: Target | None, policy: TargetPolicy) -> TargetRefusal |
     if parts.scheme not in _ALLOWED_SCHEMES:
         return TargetRefusal.BAD_SCHEME
 
-    host = (parts.host or "").lower().rstrip(".")
+    host = canonical_host(parts.host)
     if not host:
         return TargetRefusal.NO_HOST
 
