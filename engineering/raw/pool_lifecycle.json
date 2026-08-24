@@ -1,0 +1,81 @@
+{
+ "before": {
+  "backoff_ladder": {
+   "adr006_cap_s": 3600.0,
+   "cap_binds_on_proxy_path": false,
+   "delays_s": {
+    "1": 30.0,
+    "2": 60.0,
+    "3": 120.0,
+    "4": 240.0,
+    "5": 480.0,
+    "6": 960.0,
+    "7": 1920.0,
+    "8": 3600.0,
+    "9": 3600.0
+   },
+   "max_reachable_delay_s": 240.0,
+   "retire_after": 5
+  },
+  "cooldown_delay_callers": [
+   "atlas/engine/cycle.py:262"
+  ],
+  "cooling_assignments_in_production": [
+   "atlas/engine/cycle.py:359",
+   "atlas/engine/cycle.py:319",
+   "atlas/engine/cycle.py:326"
+  ],
+  "failures_to_state": {
+   "1": {
+    "consecutive_failures": 1,
+    "grade": "REJECTED",
+    "leasable": 0,
+    "state": "COOLING"
+   },
+   "4": {
+    "consecutive_failures": 4,
+    "grade": "REJECTED",
+    "leasable": 0,
+    "state": "COOLING"
+   },
+   "40": {
+    "consecutive_failures": 40,
+    "grade": "REJECTED",
+    "leasable": 0,
+    "state": "COOLING"
+   },
+   "5": {
+    "consecutive_failures": 5,
+    "grade": "REJECTED",
+    "leasable": 0,
+    "state": "COOLING"
+   }
+  },
+  "retired_assignments_in_production": [],
+  "scheduler_key_readers": {
+   "discovery_interval_s": {
+    "code": [],
+    "prose_only": []
+   },
+   "max_pool_size": {
+    "code": [],
+    "prose_only": []
+   },
+   "recheck_ready_after_s": {
+    "code": [],
+    "prose_only": [
+     "atlas/core/policy/scoring.py:89",
+     "atlas/engine/handout.py:53",
+     "atlas/engine/handout.py:137"
+    ]
+   },
+   "retire_after_consecutive_failures": {
+    "code": [],
+    "prose_only": []
+   }
+  }
+ },
+ "measured_at": "2026-08-24T20:36:44.196101+00:00",
+ "note": "ADR-036 evidence. `before` is the pre-fix pool: COOLING has no exit, RETIRED is never assigned, and cooldown_delay has one caller on the SOURCE path only. Re-run with --after once the fix lands, so this file holds the pair rather than an assertion that things improved.",
+ "tool": "engineering/tools/measure_pool_lifecycle.py"
+}
