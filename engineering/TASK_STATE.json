@@ -1,14 +1,14 @@
 {
   "version": "4.0.0",
-  "updated_at": "2026-08-24T02:10:00Z",
-  "current_phase": "P04_POOL_ADMISSION",
+  "updated_at": "2026-08-24T02:37:29Z",
+  "current_phase": "P05_STORE_LEASE",
   "phase_gate_status": {
     "P00": "PASSED",
     "P01": "PASSED",
     "P02": "PASSED",
     "P03": "PASSED",
     "P04": "PASSED",
-    "P05": "TODO",
+    "P05": "PASSED",
     "P06": "TODO",
     "P07": "TODO",
     "P08": "TODO",
@@ -387,6 +387,87 @@
         "engineering/RESUME_PROMPT.md",
         "atlas/core/domain/verdict.py"
       ]
+    },
+    {
+      "id": "P05.T1",
+      "phase": "P05",
+      "title": "SqliteStore (WAL) implementing StorePort; lease() as ONE BEGIN IMMEDIATE compare-and-set",
+      "status": "DONE",
+      "evidence": [
+        "atlas/adapters/store_sqlite.py",
+        "atlas/tests/unit/test_store.py::test_lease_is_a_single_compare_and_set_statement",
+        "atlas/tests/unit/test_store.py::test_wal_is_actually_enabled",
+        "atlas/tests/unit/test_store.py::test_store_satisfies_the_port"
+      ],
+      "attempts": 1,
+      "notes": "33 unit tests. lease() takes the write lock at BEGIN, not on first write; the claiming UPDATE re-checks state='READY' in its own WHERE."
+    },
+    {
+      "id": "P05.T2",
+      "phase": "P05",
+      "title": "AST guards: write lock, CAS shape, fsync-before-replace (structure, not output)",
+      "status": "DONE",
+      "evidence": [
+        "atlas/tests/unit/test_store.py::test_every_mutating_method_takes_the_write_lock_immediately",
+        "atlas/tests/unit/test_store.py::test_export_fsyncs_before_it_publishes",
+        "atlas/tests/unit/test_store.py::test_the_structural_guards_read_code_not_comments"
+      ],
+      "attempts": 2,
+      "notes": "ADR-022. The fsync guard FAILED first run by matching the docstring that explains fsync/os.replace; helper now strips docstrings via AST, and a meta-test fails if prose-matching returns."
+    },
+    {
+      "id": "P05.T3",
+      "phase": "P05",
+      "title": "H3 under real process concurrency + committed negative control that must fail",
+      "status": "DONE",
+      "evidence": [
+        "atlas/tests/integration/test_store_lease.py::test_concurrent_leases_never_overlap",
+        "atlas/tests/integration/test_store_lease.py::test_the_h3_test_would_catch_a_read_then_write_store",
+        "atlas/tests/integration/naive_store.py",
+        "engineering/tools/gate_check.py::check_h3_negative_control_present"
+      ],
+      "attempts": 1,
+      "notes": "multiprocessing/spawn, separate sqlite connections (threads would let the GIL hide the race). Matched head-to-head: real 0 duplicates vs naive 30, identical config."
+    },
+    {
+      "id": "P05.T4",
+      "phase": "P05",
+      "title": "H8: SIGKILL after acknowledged write loses nothing; export never observed truncated",
+      "status": "DONE",
+      "evidence": [
+        "atlas/tests/integration/test_store_lease.py::test_sigkill_after_acknowledged_write_loses_nothing",
+        "atlas/tests/integration/test_store_lease.py::test_export_is_never_observed_truncated",
+        "atlas/tests/integration/test_store_lease.py::test_export_writes_tmp_in_the_same_directory"
+      ],
+      "attempts": 1,
+      "notes": "Child ends with os.kill(SIGKILL) and the test asserts returncode == -9, so no finally/atexit/__exit__ can run -- otherwise the test would measure my shutdown code, not durability."
+    },
+    {
+      "id": "P05.T5",
+      "phase": "P05",
+      "title": "Independent audit: append-only lease_log + double_delivery_violations()",
+      "status": "DONE",
+      "evidence": [
+        "atlas/adapters/store_sqlite.py",
+        "atlas/tests/integration/test_store_lease.py::test_expired_lease_is_reclaimed_not_leaked",
+        "atlas/tests/integration/test_store_lease.py::test_a_reclaimed_then_released_lease_is_not_a_double_delivery"
+      ],
+      "attempts": 1,
+      "notes": "Reconstructs LEASE/RELEASE/EXPIRE per fingerprint from the log rather than trusting lease()'s return value: a test that only inspects the return value is asking the accused to testify."
+    },
+    {
+      "id": "P05.T6",
+      "phase": "P05",
+      "title": "ADR-022 head-to-head un-spliced; broken Make targets found and gated",
+      "status": "DONE",
+      "evidence": [
+        "engineering/tools/measure_lease_concurrency.py",
+        "engineering/raw/lease_concurrency.json",
+        "engineering/tools/check_test_scope.py",
+        "engineering/tools/gate_check.py::check_makefile_tools_exist"
+      ],
+      "attempts": 1,
+      "notes": "ADR-022's table mixed two configs (real from pool 24/12 procs, naive from pool 12/6 procs) -- the ADR-020 splice, recurring. Added a matched arm. Also: `make sources-audit` referenced reprobe_empty.py, deleted by a sync, so the target could not run; now gated by makefile_tools_exist (teeth proven by injection)."
     }
   ],
   "files_changed": [
@@ -394,6 +475,7 @@
     "README.md",
     "atlas/adapters/http_source.py",
     "atlas/adapters/registry.py",
+    "atlas/adapters/store_sqlite.py",
     "atlas/core/domain/proxy.py",
     "atlas/core/domain/verdict.py",
     "atlas/core/parsing/candidates.py",
@@ -402,11 +484,15 @@
     "atlas/core/policy/normalize.py",
     "atlas/core/policy/percentile.py",
     "atlas/data/sources/sources.json",
+    "atlas/tests/integration/__init__.py",
+    "atlas/tests/integration/naive_store.py",
+    "atlas/tests/integration/test_store_lease.py",
     "atlas/tests/unit/test_architecture.py",
     "atlas/tests/unit/test_domain.py",
     "atlas/tests/unit/test_fetch.py",
     "atlas/tests/unit/test_policy.py",
     "atlas/tests/unit/test_registry.py",
+    "atlas/tests/unit/test_store.py",
     "config.yaml",
     "engineering/ANALYSIS.md",
     "engineering/BASELINE.json",
@@ -423,12 +509,15 @@
     "engineering/raw/bug_scan.json",
     "engineering/raw/geonode_body.txt",
     "engineering/raw/geonode_parser_verify.json",
+    "engineering/raw/lease_concurrency.json",
     "engineering/raw/legacy_urls.json",
     "engineering/raw/source_probe_20260824T010038Z.json",
     "engineering/tools/build_source_registry.py",
+    "engineering/tools/check_test_scope.py",
     "engineering/tools/extract_legacy_sources.py",
     "engineering/tools/gate_check.py",
     "engineering/tools/measure_baseline.py",
+    "engineering/tools/measure_lease_concurrency.py",
     "engineering/tools/probe_legacy_sources.py",
     "engineering/tools/replay_admission.py",
     "engineering/tools/verify_baseline_streams.py",
@@ -437,28 +526,28 @@
     "engineering/tools/verify_units.py"
   ],
   "tests": {
-    "total": 204,
-    "passed": 204,
+    "total": 211,
+    "passed": 211,
     "failed": 0,
-    "breakdown": "22 architecture/fitness + 36 domain + 29 registry + 26 fetch/parsing + 49 policy/admission + 33 store/grade + 9 store integration (concurrency, SIGKILL, negative control)"
+    "breakdown": "202 unit + 9 integration (real concurrency, SIGKILL, negative control). P06 added 7: the TLS guard rewritten to AST with teeth tests in both directions (ADR-023)."
   },
   "open_failures": [],
   "blockers": [],
-  "next_action": "P05 -- STORE + LEASE (H3/H8): SQLite WAL StorePort with lease() as a single BEGIN IMMEDIATE compare-and-set, atomic .tmp+os.replace exports, and SIGKILL durability. The pool can now be populated (normalizer) and judged (gate), but nothing PERSISTS it: H3 and H8 remain false. Leasing must be proven under real concurrency, not asserted.",
+  "next_action": "P06 -- PROBE + LIVE CALIBRATION (H7 k=1 caveat). The admission gate is pure and proven against the legacy system's own 102 admitted proxies, but that replay is k=1: it tests the p95 THRESHOLD only, because the legacy file records one sample per proxy. Jitter and reliability are exercised by unit tests, never by live measurement. P06 builds the real ProbePort (k=5 sampling, integrity checks for TRANSPARENT_LEAK/CONTENT_MISMATCH), runs it against the 67 ACTIVE sources, and writes the first artifact where label_is_verified can become true for any proxy. Registry currently reports labels_verified=0.",
   "invariants_verified": {
     "H1_evidence_for_every_claim": true,
     "H2_no_fabricated_numbers": true,
-    "H3_no_double_delivery": false,
+    "H3_no_double_delivery": true,
     "H4_migration_ledger_complete": true,
     "H5_responsible_use": true,
     "H6_phase_gates": true,
     "H7_live_not_good": true,
-    "H8_crash_resume": false
+    "H8_crash_resume": true
   },
   "invariant_notes": {
-    "H3_no_double_delivery": "Not yet verifiable - the pool and lease protocol do not exist until P08.",
+    "H3_no_double_delivery": "EARNED 2026-08-24 (P05). Established by four independent mechanisms, because no single one suffices: (1) real process concurrency via multiprocessing/spawn, one parametrisation oversubscribed (48 requested from a pool of 24) -> 24 unique, 0 duplicates; (2) a COMMITTED negative control, NaiveStore's read-then-write lease, which the same assertion catches at 30 duplicates on an IDENTICAL config (pool 12, 6 procs x 6) where the real store gives 0 -- without this the green result would be indistinguishable from a test that never created contention; (3) an independent append-only lease_log audit, double_delivery_violations(), which examines what happened instead of asking lease() to report on itself; (4) AST guards on structure, since the correct and broken implementations are behaviourally identical single-threaded. Artifact: engineering/raw/lease_concurrency.json.",
     "H7_live_not_good": "EARNED 2026-08-24 (P04). The gate exists, is pure, and refuses on zero evidence (NOT_MEASURED). Replayed against the legacy system's OWN 102 admitted proxies it rejects 97 (95.1%), all on TOO_SLOW_P95. CAVEAT recorded honestly: that replay is k=1 because the legacy file holds one sample per proxy, so it tests the THRESHOLD only -- k=5 sampling, jitter and reliability are exercised by unit tests, not yet by live measurement. Live calibration is P06.",
-    "H8_crash_resume": "Not yet verifiable - storage layer arrives at P07.",
+    "H8_crash_resume": "EARNED 2026-08-24 (P05). SQLite WAL + synchronous=FULL. A child process writes, prints an ACK, then os.kill(os.getpid(), SIGKILL); the parent asserts returncode == -9 (signal 9 is uncatchable, so no finally/atexit/context manager ran) and then reopens the db and finds every acknowledged row. Exports are .tmp + fsync + os.replace in the SAME directory, with the fsync-before-replace ORDER asserted by AST -- a reader never observes a truncated file.",
     "H1_evidence_for_every_claim": "Re-earned 2026-08-24. Two ADRs were documented without implementation and the README cited unmeasured numbers; caught, recorded in RECONCILIATION.md 5-6, and now enforced by gate_check.adr_claims_are_verifiable (ADR-014)."
   },
   "baseline_to_beat": {
@@ -525,5 +614,26 @@
     "deterministic": "byte-identical on rebuild (verified via diff)",
     "labels_verified": 0,
     "note": "ENABLED==67 asserted equal to snapshot ACTIVE by test, so the registry cannot silently invent or lose sources. No label_is_verified is true: zero proxies probed yet."
+  },
+  "gate_checks": {
+    "total": 15,
+    "passing": 15,
+    "note": "15th is makefile_tools_exist, added after `make sources-audit` was found to reference a tool a sync deleted. `make gate` also runs check_test_scope.py, which proves the default pytest run really reaches atlas/tests/integration (195 unit + 9 integration = 204)."
+  },
+  "h3_measurement": {
+    "artifact": "engineering/raw/lease_concurrency.json",
+    "head_to_head": {
+      "config": "pool 12, 6 processes x 6 requested, identical for both arms",
+      "real_duplicates": 0,
+      "naive_duplicates": 30
+    },
+    "oversubscribed": {
+      "config": "pool 24, 12 processes x 4 = 48 requested",
+      "handed_out": 24,
+      "unique": 24,
+      "duplicates": 0,
+      "audit_log_violations": 0
+    },
+    "why_two_arms": "0 duplicates alone is not evidence -- an idle machine yields 0 from broken code too. The naive arm gives the 0 its meaning (ADR-022)."
   }
 }
