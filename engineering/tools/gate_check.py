@@ -150,6 +150,92 @@ def check_state_consistency(res: Result) -> None:
             "; ".join(bad) if bad else "no phase claims PASSED with unfinished tasks")
 
 
+def check_adr_claims_are_verifiable(res: Result) -> None:
+    """
+    ADR-014. An ADR that claims an implementation must name a way to check it.
+
+    Why: ADR-012 and ADR-013 were written, committed and cited in README.md while
+    the code they described did not exist. Task evidence was verified; prose was
+    not. A decision record that cannot be falsified is an intention.
+    """
+    decisions = ROOT / "engineering" / "DECISIONS.md"
+    if not decisions.exists():
+        res.add("adr_claims_are_verifiable", False, "DECISIONS.md missing")
+        return
+
+    text = decisions.read_text(encoding="utf-8")
+    # split into ADR sections
+    blocks: list[tuple[str, str]] = []
+    current_id, buf = None, []
+    for line in text.splitlines():
+        if line.startswith("## ADR-"):
+            if current_id:
+                blocks.append((current_id, "\n".join(buf)))
+            current_id, buf = line.split("—")[0].replace("##", "").strip(), []
+        else:
+            buf.append(line)
+    if current_id:
+        blocks.append((current_id, "\n".join(buf)))
+
+    # An ADR asserts an implementation if its Decision names a concrete artifact.
+    impl_markers = ("gate_check.py", "iter_chunked", "negative control",
+                    "reason code", "measure_baseline.py", "test_architecture.py",
+                    "make doctor")
+    offenders: list[str] = []
+    for adr_id, body in blocks:
+        status_proposed = "Status: PROPOSED" in body or "**Status:** PROPOSED" in body
+        # only the Decision section states what WE build; Context/Alternatives
+        # legitimately name legacy files as subject matter (e.g. ADR-001 cites v1.py).
+        decision = body.split("**Decision")[1] if "**Decision" in body else ""
+        decision = decision.split("**Alternatives")[0]
+        claims_impl = any(m in decision for m in impl_markers)
+        has_verify = "**Verify:**" in body
+        if claims_impl and not has_verify and not status_proposed:
+            offenders.append(adr_id)
+
+    res.add("adr_claims_are_verifiable", not offenders,
+            f"{len(blocks)} ADR(s); missing **Verify:** -> " + ", ".join(offenders)
+            if offenders else f"{len(blocks)} ADR(s) checked")
+
+
+def check_readme_claims(res: Result) -> None:
+    """
+    ADR-014(c). Numeric README claims tagged <!--verify:file:jsonpath--> are
+    re-derived from the artifact. README once claimed '19 passed' and '68 ACTIVE'
+    when the suite was failing and the artifact said 61.
+    """
+    readme = ROOT / "README.md"
+    if not readme.exists():
+        res.add("readme_numbers_have_artifacts", False, "README.md missing")
+        return
+    import re as _re
+
+    bad: list[str] = []
+    checked = 0
+    pattern = _re.compile(r"<!--verify:([^:]+):([^:]+):([^-]+)-->")
+    for line in readme.read_text(encoding="utf-8").splitlines():
+        m = pattern.search(line)
+        if not m:
+            continue
+        checked += 1
+        rel, dotted, expected = m.group(1).strip(), m.group(2).strip(), m.group(3).strip()
+        target = ROOT / rel
+        if not target.exists():
+            bad.append(f"{rel} absent")
+            continue
+        try:
+            node = json.loads(target.read_text(encoding="utf-8"))
+            for key in dotted.split("."):
+                node = node[key] if not key.isdigit() else node[int(key)]
+            if str(node) != expected:
+                bad.append(f"{rel}:{dotted} = {node!r}, README says {expected!r}")
+        except (json.JSONDecodeError, KeyError, IndexError, TypeError) as exc:
+            bad.append(f"{rel}:{dotted} unreadable ({type(exc).__name__})")
+
+    res.add("readme_numbers_have_artifacts", not bad,
+            "; ".join(bad) if bad else f"{checked} tagged claim(s) re-derived from artifacts")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
@@ -161,6 +247,8 @@ def main() -> int:
     check_tools_are_tracked(res)
     check_tests_not_vacuous(res)
     check_state_consistency(res)
+    check_adr_claims_are_verifiable(res)
+    check_readme_claims(res)
 
     if args.json:
         print(json.dumps(
