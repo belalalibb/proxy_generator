@@ -549,6 +549,71 @@ class TestRunOnce:
 
 # ── 5. the report polices itself ─────────────────────────────────────────────
 class TestAccounting:
+    def test_a_real_lost_writeback_is_counted_by_run_once(self):
+        """
+        MUTATION-DRIVEN (P10.T1). The counter must be fed by the STORE's answer.
+
+        Every other test in this class CONSTRUCTS a report and checks
+        `__post_init__`. That is why `mutate_recheck.py` found a survivor:
+        forcing the write-back branch to be taken unconditionally
+        (`complete_probe(...) or True`) keeps `applied + lost_writeback ==
+        claimed` perfectly self-consistent -- it just moves a row from the
+        second counter to the first. A hand-built report cannot see that,
+        because the mutation is in the code that DECIDES which counter to
+        increment, not in the identity that checks them.
+
+        This is the ADR-035 lesson recurring: a test that restates the
+        arithmetic instead of driving the real path measures the test. So here a
+        probe genuinely loses its claim mid-pass and the report must say so.
+        """
+        row = mk("10.0.0.9", state=ProxyState.COOLING,
+                 consecutive_failures=1,
+                 last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            clock = FakeClock()
+
+            class StealingEngine(StubEngine):
+                """Probes, and while 'probing' the row is stolen by a consumer."""
+
+                def __init__(self, store) -> None:
+                    super().__init__(admit=True)
+                    self._store = store
+
+                async def evaluate(self, proxy: Proxy):
+                    out = await super().evaluate(proxy)
+                    # The claim lapses and someone else takes the row: exactly
+                    # the residual race ADR-038 does not claim to abolish.
+                    self._store.reclaim_stale_probes(
+                        now=NOW + timedelta(hours=1))
+                    self._store.upsert_many(
+                        (self._store.get(proxy.fingerprint)
+                         .with_state(ProxyState.READY, reason="OK")
+                         .graded(Grade.GOOD),))
+                    self._store.lease(count=1, min_grade=Grade.USABLE,
+                                      lease_ms=60_000, now=NOW)
+                    return out
+
+            svc, _ = service(store, clock, engine=StealingEngine(store))
+            report = asyncio.run(svc.run_once())
+
+            assert report.claimed == 1
+            assert report.lost_writeback == 1, (
+                "the store refused the write-back, so the report must count it "
+                "as lost -- reporting it as applied claims a refresh that "
+                "never landed"
+            )
+            assert report.applied == 0
+            assert report.promoted == 0, (
+                "a row whose write-back was refused was not promoted; counting "
+                "it would overstate the pool"
+            )
+            # And the winner keeps the row.
+            assert store.get(row.fingerprint).state is ProxyState.LEASED
+        finally:
+            store.close()
+            tmp.cleanup()
+
     def test_a_row_lost_at_the_claim_is_refused(self):
         with pytest.raises(ValueError, match="lost rows at the claim"):
             RecheckReport(selected=5, claimed=2, lost_claim=1, applied=2)
