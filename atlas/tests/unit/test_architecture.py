@@ -129,22 +129,127 @@ def test_core_modules_import_cleanly_without_side_effects() -> None:
         importlib.import_module(mod)   # raises if the module has a bad import
 
 
+# ── ADR-012: guards are callable scanners, so they can be negative-controlled ──
+# Dunders the import machinery REQUIRES to be a list/dict. `__all__` must be a
+# list of str by language convention; it cannot hold accumulated state. This is an
+# exhaustive allowlist -- nothing else is exempt.
+_MACHINERY_DUNDERS = frozenset({"__all__", "__slots__", "__match_args__"})
+
+
+def scan_module_level_mutable_state(source: str, label: str = "<src>") -> list[str]:
+    """
+    Report module-level bindings to a mutable literal (list/dict/set).
+
+    Exposed as a function so ADR-012's negative controls can feed it known-bad
+    source and prove the guard still fires.
+    """
+    offenders: list[str] = []
+    for node in ast.parse(source).body:              # module level only
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        for t in targets:
+            if not isinstance(t, ast.Name):
+                continue
+            if t.id in _MACHINERY_DUNDERS:           # ADR-012(b)
+                continue
+            if t.id.isupper():                       # UPPER_CASE = intended constant
+                continue
+            if isinstance(node.value, (ast.List, ast.Dict, ast.Set)):
+                offenders.append(f"{label}:{node.lineno} '{t.id}'")
+    return offenders
+
+
+def scan_prohibited_target_hosts(source: str, label: str = "<src>") -> list[str]:
+    """
+    Report prohibited hosts appearing in *executable* string values (ADR-012(a)).
+
+    Docstrings are ignored -- and only docstrings. SECURITY.md REQUIRES the refusal
+    to be documented at the code it governs, so a line-level regex could not tell a
+    prohibition from a violation. Every form that can actually cause traffic --
+    assignment, default argument, collection member, dict value, f-string -- still
+    fails the build.
+    """
+    banned = re.compile(r"instagram\.com|facebook\.com|tiktok\.com|twitter\.com|x\.com/", re.I)
+    tree = ast.parse(source)
+
+    # collect the id() of every docstring node so they can be excluded precisely
+    docstrings: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            body = getattr(node, "body", None)
+            if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant) \
+                    and isinstance(body[0].value.value, str):
+                docstrings.add(id(body[0].value))
+
+    offenders: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            if id(node) in docstrings:
+                continue
+            if banned.search(node.value):
+                offenders.append(f"{label}:{node.lineno} {node.value[:60]!r}")
+    return offenders
+
+
 def test_core_declares_no_module_level_mutable_state() -> None:
     """Pure policy must not accumulate state between calls."""
     offenders: list[str] = []
     for f in _py_files(CORE):
-        tree = ast.parse(f.read_text(encoding="utf-8"))
-        for node in tree.body:                       # module level only
-            if isinstance(node, (ast.Assign, ast.AnnAssign)):
-                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-                for t in targets:
-                    if not isinstance(t, ast.Name):
-                        continue
-                    if t.id.isupper():               # UPPER_CASE = intended constant
-                        continue
-                    if isinstance(node.value, (ast.List, ast.Dict, ast.Set)):
-                        offenders.append(f"{f.relative_to(ATLAS)}:{node.lineno} '{t.id}'")
+        offenders += scan_module_level_mutable_state(
+            f.read_text(encoding="utf-8"), str(f.relative_to(ATLAS))
+        )
     assert not offenders, "mutable module-level state in core/:\n  " + "\n  ".join(offenders)
+
+
+# ── negative controls: prove the relaxed guards CAN still fail (ADR-012(c)) ────
+@pytest.mark.parametrize("name,src", [
+    ("module_const", 'TEST_URL = "https://www.instagram.com"'),
+    ("lowercase_var", 'target = "https://instagram.com/explore"'),
+    ("default_arg",   'def probe(url="https://www.instagram.com"): pass'),
+    ("list_item",     'TARGETS = ["https://example.com", "https://instagram.com"]'),
+    ("dict_value",    'CFG = {"target": "https://www.facebook.com"}'),
+    ("fstring",       'u = f"https://instagram.com/{name}"'),
+    ("nested_call",   'probe(target="https://tiktok.com/foo")'),
+])
+def test_target_guard_still_fires_on_known_bad_source(name: str, src: str) -> None:
+    """
+    ADR-012 relaxed this guard to ignore docstrings. These cases prove the
+    relaxation did not turn it into a no-op: every form that can cause real
+    traffic must still be caught.
+    """
+    assert scan_prohibited_target_hosts(src, name), f"guard went blind on: {name}"
+
+
+def test_target_guard_permits_a_docstring_citation() -> None:
+    """
+    The exemption is pinned: SECURITY.md requires the refusal to be documented at
+    the code it governs, so citing the legacy default in a docstring is legal.
+    """
+    src = (
+        'class Target:\n'
+        '    """Required, never defaulted. Legacy defaulted to instagram.com (v1.py:29)."""\n'
+        '    url: str\n'
+    )
+    assert scan_prohibited_target_hosts(src) == []
+
+
+def test_mutable_state_guard_still_fires_and_exempts_only_machinery() -> None:
+    """The __all__ exemption must not become a blanket dunder loophole."""
+    assert scan_module_level_mutable_state('__all__ = ["A", "B"]') == []
+    assert scan_module_level_mutable_state('__slots__ = ["a"]') == []
+    assert scan_module_level_mutable_state('cache = {}'), "guard blind to dict state"
+    assert scan_module_level_mutable_state('seen = []'), "guard blind to list state"
+    assert scan_module_level_mutable_state('_pool = set()') == [], "set() call is not a literal"
+    assert scan_module_level_mutable_state('__custom__ = []'), "only 3 dunders are exempt"
+
+
+def test_guard_scan_set_is_not_empty() -> None:
+    """
+    Vacuity check inside the suite itself (ADR-010). A sync loss once left
+    core/ empty while these tests reported success by globbing nothing.
+    """
+    assert len(_py_files(CORE)) >= 5, "core/ has too few modules -- tests may be vacuous"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -296,12 +401,14 @@ def test_no_default_target_url_constant() -> None:
     H5 / ADR-007: there is no default target. Legacy shipped
     TEST_URL = "https://www.instagram.com" (v1.py:29, v3.py:30).
     """
-    banned = re.compile(r"instagram\.com|facebook\.com|tiktok\.com|twitter\.com|x\.com/", re.I)
     offenders: list[str] = []
     for f in _all_atlas_py():
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
-            if banned.search(line):
-                offenders.append(f"{f.relative_to(ATLAS)}:{i} {line.strip()[:70]}")
+        if f.name == "test_architecture.py":
+            continue                      # names them to ban them; negative controls above
+        offenders += scan_prohibited_target_hosts(
+            f.read_text(encoding="utf-8"), str(f.relative_to(ATLAS))
+        )
     assert not offenders, (
-        "no ToS-hostile default target may be embedded (H5, ADR-007):\n  " + "\n  ".join(offenders)
+        "no ToS-hostile default target may be embedded in EXECUTABLE code "
+        "(H5, ADR-007, ADR-012):\n  " + "\n  ".join(offenders)
     )
