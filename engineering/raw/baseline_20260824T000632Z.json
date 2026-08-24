@@ -1,0 +1,36 @@
+{
+  "task": "P00.T6",
+  "generator": "engineering/tools/measure_baseline.py",
+  "measured_at_utc": "20260824T000632Z",
+  "historical": {
+    "available": true,
+    "deterministic": true,
+    "evidence": [
+      "proxy_details.json",
+      "proxy_scraper.log"
+    ],
+    "scan_date": null,
+    "sources": null,
+    "collected": null,
+    "working": 102,
+    "duration_s": null,
+    "admitted_latency": {
+      "n": 102,
+      "min_ms": 756.0,
+      "p50_ms": 6462.0,
+      "mean_ms": 7145.1,
+      "p95_ms": 16350.0,
+      "max_ms": 19035.0
+    },
+    "log_admitted": {
+      "n": 118,
+      "over_1500ms_pct": 95.8,
+      "over_5000ms_pct": 56.8,
+      "min_ms": 756.0,
+      "p50_ms": 6222.0,
+      "mean_ms": 7032.3,
+      "p95_ms": 16350.0,
+      "max_ms": 19035.0
+    }
+  }
+}
