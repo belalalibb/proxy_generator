@@ -718,3 +718,104 @@ loop composing registry → fetch → normalize → probe → gate → store wit
 consecutive-failure cooldown. Carried forward honestly: `TOO_JITTERY` unproven
 live, and `labels_verified` is still **0** because the sweep records verdicts per
 *proxy* and never writes them back onto the *source* row.
+
+---
+
+## P07 — SCORING + ENGINE · gate **PASSED**
+
+**Goal:** the two pieces the system was still missing — a *ranking* function that
+ages (B-16) and the *loop* that composes everything built in P01–P06.
+
+### Result
+
+`make doctor` → **17/17 gate checks**, **300 tests** (291 unit + 9 integration).
+
+**Scoring** (`atlas/core/policy/scoring.py`). Four terms kept deliberately
+separate — latency (p95, the gate's own statistic), reliability (lifetime success
+rate, a *different* fact from one burst's success_ratio), freshness (the B-16
+decay term), anonymity. Collapsing any pair loses the distinction that makes a
+pool rankable; the legacy pool stored one number per proxy and therefore could
+not rank at all. `now` is an **argument**, not a clock read, so core/ stays pure
+and every decay rule is verifiable without waiting. Absence of evidence scores
+**zero**, never a flattering default — the ADR-024 lesson applied to ranking
+rather than to the threshold.
+
+**Engine** (`atlas/engine/cycle.py`). `registry → fetch → normalize → probe →
+gate → store`, with ADR-006's cooldown extracted as a **pure function**
+(`base * 2^n`, capped 1 h, disable only after 12 *consecutive* failures) so the
+backoff schedule is testable without waiting an hour. `CycleReport.__post_init__`
+asserts every candidate lands in **exactly one** bucket — B-02 (a candidate
+vanishing without a reason) made structurally impossible instead of merely
+tested for.
+
+### Two defects found during the resume audit, both behind a 300-green suite
+
+Consistent with P06: **neither was found by a failing test.** Both are defects in
+*verification* rather than in behaviour — the machinery that is supposed to catch
+defects had gaps in it.
+
+**ADR-026 — code citing an ADR that did not exist.** `cycle.py` referenced
+`ADR-026` **five times**; `DECISIONS.md` stopped at ADR-025. The engine's central
+design decision — feeding probe results back onto the *source* row so a lying
+source is recorded as lying — existed only as a docstring pointing at nothing.
+
+The gate could not see it: `check_adr_claims_are_verifiable` walks
+DECISIONS.md → code ("does this ADR name a way to check it?") and **nothing
+walked the reverse edge**. ADR-014 was earned when an ADR described code that did
+not exist; this is the same dangling reference *with its arrows reversed*. Fixed
+by writing the ADR and by adding `check_cited_adrs_exist`, teeth proven by
+injection (PASS → FAIL naming `cycle.py:33 cites ADR-099` → PASS).
+
+Writing that ADR also exposed a smaller honesty bug: its `**Verify:**` line said
+`-k "label"` yields four tests. It yields **three** — the REFUTED test is named
+after its symptom (`..._socks_list_named_http_is_refuted_...`) and contains no
+"label". Corrected to `-k "label or refuted"` (4 selected, 26 deselected). An
+unverified Verify: line is the exact thing ADR-014 exists to prevent.
+
+**ADR-027 — a one-sided bound.** `test_max_probes_bounds_total_work` asserted
+`report.probed <= 3`, which **a cycle that probes nothing also satisfies**.
+Mutation-tested rather than argued:
+
+| mutant | `probed <= 3` | strengthened |
+|---|---|---|
+| clamp deleted (probes 8) | **FAIL** ✅ | FAIL ✅ |
+| `run_cycle` starved (probes 0) | **PASS** ❌ | **FAIL** ✅ |
+
+It caught the mutant its author imagined and passed the one they did not — which
+is why it survived review: a test that fails for *some* mutant looks proven. Now
+asserts `probed == 3` **and** `len(probe.sampled) == 3`, a second independent
+witness, so a merely self-consistent report cannot pass alone.
+
+The same shape had already bitten this phase's fixtures: they used RFC 5737
+documentation IPs (`203.0.113.x`), which Python's `ipaddress` reports as
+`is_private=True`, so `normalize` correctly dropped **every** candidate — and
+**20 of 30 engine tests still passed** against a pipeline nothing flowed through.
+The fixtures were wrong, not the code. Moved to a globally-routable range (no
+network is touched; the probe is a fake).
+
+**One more guard strengthened.** Citing `ADR-026` and `ScoringPolicy` as evidence
+made `done_tasks_have_evidence` fail: it only recognised `def {symbol}(`, so a
+**class** or a **markdown heading** could not be cited at all. It failed loudly
+rather than silently — an under-powered guard, not a hole — but one that cannot
+express the evidence people actually have pushes them to cite something vaguer.
+Now parses Python with **AST** (functions, async functions, classes) and requires
+markdown symbols to be **headings**, not passing mentions. This is *stricter*
+than what it replaced: a `def` inside a comment no longer counts. Proven by
+injection — a fake symbol and a commented-out `def` are both rejected, and the
+old substring test would have accepted the latter.
+
+### PHASE GATE 7 · **PASSED**
+
+Invariants: H1 ✅ · H2 ✅ · H3 ✅ · H4 ✅ · H5 ✅ · H6 ✅ · H7 ✅ · H8 ✅.
+
+**NEXT:** P08 — LEASE + API. The atomic lease (ADR-004/ADR-022; target **0**
+double-delivery under real concurrency) and the hand-out API that validates
+against a **caller-supplied** target at lease time.
+
+**Carried forward honestly, unchanged by this phase:**
+- `TOO_JITTERY` has **still** never fired on live data — unit-tested only.
+- `labels_verified` is **still 0** in the registry artifact. `classify_label` now
+  exists and all four branches are tested, but **no live sweep has been re-run**,
+  so nothing has written verdicts back onto source rows yet. The capability is
+  built; the number on disk has not moved, and I am not reporting it as though
+  it had.
