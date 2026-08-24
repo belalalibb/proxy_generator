@@ -53,7 +53,7 @@ before the Phase-0 evidence files exist.
 |---|---|---|
 | admitted-proxy p95 latency | **15 903 ms** (historical, n=102) | ≤ 900 ms |
 | admitted-proxy p50 latency | **6 359.5 ms** | — |
-| % admitted over 1 500 ms | **95.8 %** (n=118) | ~0 % |
+| % admitted over 1 500 ms | **95.1 %** (n=102, same stream as the p95 above) | ~0 % |
 | success rate | **0.68 %** (15 000 → 102) | admission rate 3–12 % of probed |
 | live rate of stored list, re-tested | **3.0 %** (9/300, seed 1337) | 100 % of *delivered* proxies |
 | minutes to 10 working | 2.32 | TTR ≤ 120 s after consuming 5 |
