@@ -147,6 +147,110 @@ MUTATIONS = [
             "than a failure: it removes the reason to look."
         ),
     ),
+
+    # ── ADR-039 (P11): the two safety bounds P10 deferred ────────────────────
+    #
+    # Added after an ad-hoc sweep found a REAL hole: rewriting the retirement
+    # predicate to `= ?` left all 66 tests green, even though the docstring
+    # argued specifically for `>=`. The rationale was documented and unverified.
+    # These mutations are committed so that hole cannot silently reopen.
+    Mutation(
+        "abandonment_is_never_counted",
+        STORE_REL,
+        old="                       abandoned_rechecks = abandoned_rechecks + 1,",
+        new="                       abandoned_rechecks = abandoned_rechecks,",
+        rationale=(
+            "Reclaim the row but record nothing -- the measured pre-ADR-039 "
+            "state (recheck_bounds.json: 12 claim->reclaim cycles, every "
+            "counter still 0, ever_retired false). No threshold can bound a "
+            "loop whose iterations leave no trace."
+        ),
+    ),
+    Mutation(
+        "abandon_retirement_uses_equality",
+        STORE_REL,
+        old="                   AND abandoned_rechecks >= ?",
+        new="                   AND abandoned_rechecks = ?",
+        rationale=(
+            "THE HOLE THIS TOOL FOUND. `==` instead of `>=` makes every row "
+            "that overshot the threshold permanently unretirable, which a "
+            "lowered config value produces immediately. Survived the entire "
+            "suite until test_a_row_PAST_the_threshold_still_retires existed."
+        ),
+    ),
+    Mutation(
+        "abandon_retirement_ignores_row_state",
+        STORE_REL,
+        old="                 WHERE state IN ('DISCOVERED', 'COOLING', 'READY')\n"
+            "                   AND abandoned_rechecks >= ?",
+        new="                 WHERE abandoned_rechecks >= ?",
+        rationale=(
+            "Retire regardless of state: steals LEASED rows from consumers "
+            "(H3 from a new direction) and RETIRED rows (inflating the count), "
+            "and kills in-flight probes so complete_probe silently no-ops."
+        ),
+    ),
+    Mutation(
+        "success_does_not_clear_abandon_counter",
+        Path("atlas/core/domain/proxy.py"),
+        old="return replace(self, consecutive_failures=0,\n"
+            "                       abandoned_rechecks=0,",
+        new="return replace(self, consecutive_failures=0,\n"
+            "                       abandoned_rechecks=self.abandoned_rechecks,",
+        rationale=(
+            "Make the counter cumulative rather than consecutive, so a healthy "
+            "long-lived proxy retires for unrelated crashes spread over weeks "
+            "-- a restart policy masquerading as a proxy-quality decision."
+        ),
+    ),
+    Mutation(
+        "reported_failure_does_not_clear_abandon_counter",
+        Path("atlas/core/domain/proxy.py"),
+        old="return replace(self, consecutive_failures=self.consecutive_failures + 1,\n"
+            "                       abandoned_rechecks=0,",
+        new="return replace(self, consecutive_failures=self.consecutive_failures + 1,\n"
+            "                       abandoned_rechecks=self.abandoned_rechecks,",
+        rationale=(
+            "A probe that REPORTED a failure is not abandoning its claim. "
+            "Conflating the two files a completed measurement under the wrong "
+            "ladder and retires rows on evidence that belongs elsewhere."
+        ),
+    ),
+    Mutation(
+        "decide_loses_the_abandon_branch",
+        Path("atlas/core/policy/lifecycle.py"),
+        old="    if proxy.abandoned_rechecks >= policy.retire_after_abandoned_rechecks:",
+        new="    if False:",
+        rationale=(
+            "Remove the policy branch that bounds the loop. decide() returns "
+            "RECHECK forever and the scheduler spends a full claim per cycle "
+            "re-learning a fact already recorded in the row."
+        ),
+    ),
+    Mutation(
+        "claim_bound_ignores_semaphore_queueing",
+        Path("atlas/core/ports/probe.py"),
+        old="    waves = -(-batch // concurrency)          # ceil without importing math",
+        new="    waves = 1",
+        rationale=(
+            "Price only one wave, reintroducing the ~5x undersizing measured "
+            "in recheck_bounds.json (59 000 per probe vs 590 000 required at "
+            "batch 100 / concurrency 10). The claim expires mid-probe and a "
+            "second worker starts the same k=5 -- the double probe returning "
+            "through the timeout."
+        ),
+    ),
+    Mutation(
+        "claim_bound_truncates_partial_waves",
+        Path("atlas/core/ports/probe.py"),
+        old="    waves = -(-batch // concurrency)          # ceil without importing math",
+        new="    waves = batch // concurrency or 1",
+        rationale=(
+            "Floor instead of ceil: a batch of 11 at concurrency 10 is priced "
+            "as one wave, so the eleventh row's claim is short. The off-by-one "
+            "that makes a bound almost right."
+        ),
+    ),
 ]
 
 
@@ -200,9 +304,13 @@ def main() -> int:
                 print(tail)
                 return 2
 
+        # Every module any mutation targets, read ONCE from the pristine repo.
+        # Derived from MUTATIONS rather than hand-listed: a hand-listed dict is
+        # how a new mutation silently KeyErrors, and P11 added mutations in
+        # three modules this dict did not previously know about.
         originals = {
-            STORE_REL: (REPO / STORE_REL).read_text(),
-            SERVICE_REL: (REPO / SERVICE_REL).read_text(),
+            rel: (REPO / rel).read_text()
+            for rel in {m.module for m in MUTATIONS}
         }
         results = []
         for m in MUTATIONS:
