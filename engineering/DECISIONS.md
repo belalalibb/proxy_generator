@@ -2114,3 +2114,129 @@ one measured in the wild. Likewise the eviction/lease race is exercised against 
 terminal fails 3 tests, including
 `test_cooling_is_not_absorbing_the_negative_control`. Artifact:
 `engineering/raw/pool_lifecycle.json`.
+
+---
+
+## ADR-038
+### Wiring the recheck seam needed a claim: the obvious version erased live leases, and H3's audit could not see it
+
+**Status.** Accepted (2026-08-24, P10.T1).
+
+**Context.** ADR-036 built the pool lifecycle and stopped at a seam:
+`PoolScheduler.plan()` *returns* `recheck` / `recheck_ready` tuples and
+`apply_retirements()` performs only state transitions. Nothing re-probed. The
+limit was stated in the type and recorded in `next_action` rather than
+half-wired, and P10's stated job was "connect `plan().recheck` to
+`DiscoveryEngine.evaluate()`".
+
+Measured first, before writing any of it
+(`engineering/tools/measure_recheck_gap.py` → `engineering/raw/recheck_gap.json`):
+
+| measurement | before |
+|---|---|
+| readers of `.recheck` / `.recheck_ready` | 1 each — both inside `scheduler.py`'s own bucket sum |
+| production writes of `ProxyState.PROBING` | **0** (its single production site is the membership test that *reads* it) |
+| two consecutive passes select the same row | **yes** — `3fd692f1f03a4fe8` in both |
+| naive write-back vs a live lease | **`CLOBBERED`** |
+| `double_delivery_violations()` after that clobber | **`[]`** |
+| a row left `PROBING`, one week later | `IN_FLIGHT`, unleasable, no reclaim method exists |
+
+**The defect the one-line version would have shipped.** A `READY` row past
+`recheck_ready_after_s` is selected for recheck *and* is leasable right now.
+Lease it mid-probe, then let the probe finish: `upsert_many` sets **every**
+column from the in-memory `Proxy`, and for a recheck that object was loaded
+*before* the lease existed. The row returns to `state='READY'`,
+`lease_id=NULL` while the consumer is still using it. Two callers now believe
+they own one proxy.
+
+H3 was proven at the store in P05 by four independent mechanisms, and **none of
+them fire here**: `double_delivery_violations()` reconstructs LEASE/RELEASE/
+EXPIRE from the append-only log, and no second `LEASE` was ever appended. The
+violation was created by an unconditional `UPDATE`, not by a faulty claim. That
+is the finding worth recording: *an audit that watches one mechanism is blind to
+a violation produced by another*. The 0-duplicates result from P05 remains true
+and remains about leasing; it never covered a second writer to the same columns.
+
+**Why `PROBING` existing-but-unreachable was the enabling condition.**
+`decide()` classifies `LEASED`/`PROBING` as `IN_FLIGHT`, `select_schedulable`
+includes `PROBING`, `select_evictable` excludes it — three sites reading a state
+that **nothing could ever write**. A guard against an impossible state has never
+once fired, and its presence made the system look protected. This is ADR-019's
+decorative-config defect relocated into the state machine, and the seventh
+recurrence of that class.
+
+**Decision.**
+
+1. **`claim_for_probe()` — `lease()`'s compare-and-set, different target state.**
+   One `BEGIN IMMEDIATE` + `UPDATE ... WHERE fingerprint IN (...) AND state IN
+   ('DISCOVERED','COOLING','READY') RETURNING *`. The state predicate is *in the
+   statement*, not checked beforehand, because a check-then-write has exactly the
+   window this closes. `LEASED` is excluded (belongs to a consumer and to H3),
+   `RETIRED` (terminal; re-probing would resurrect it), `PROBING` (already
+   claimed — which is what makes a double pass idempotent). A row lost to a race
+   is simply not returned, so the caller sees a **shortfall** rather than a
+   silent overwrite.
+2. **`complete_probe()` — the write-back is conditional and NARROW.**
+   `WHERE fingerprint=? AND state='PROBING'`, returning `True`/`False` so a lost
+   race is *reported*, not resolved by overwriting the winner. `lease_id` and
+   `lease_expires_at` are deliberately **absent from the SET list**: a probe
+   measures latency and protocol and has no evidence about leases. The clobber
+   was only possible because the write path carried columns its writer knew
+   nothing about, so the fix is to narrow what the statement is allowed to say.
+   A `False` return is normal operation — raising would turn a benign race into
+   an incident.
+3. **`reclaim_stale_probes()` ships in the SAME change, not as a follow-up.**
+   Introducing `PROBING` without an exit would recreate ADR-036's absorbing state
+   under a new name, with a crash window H8 already taught us to expect: SIGKILL
+   is uncatchable, so no `finally` can release a claim. The deadline lives in the
+   row (`probe_expires_at`) precisely so recovery does not depend on the crashed
+   process running any code — the `expire_leases()` mechanism applied to the
+   probe path.
+4. **Reclaim goes to `COOLING`, never `READY`.** A probe that never reported is
+   not evidence of health; promoting it would hand out a proxy on the strength of
+   a measurement that never completed — H7's "live is not good", inverted into
+   "unfinished is not good". `COOLING` re-enters the normal ADR-006 ladder, so
+   the row is retried rather than trusted. A **NULL** deadline counts as expired,
+   because it means a row was left `PROBING` by a version that recorded no
+   deadline, and the safe reading of "no deadline" is "reclaim it".
+5. **Failed rows are recovered before healthy ones are refreshed.** Under a
+   budget too small for both, `recheck` (a row currently *outside* the pool)
+   precedes `recheck_ready` (a row still serving): recovering lost capacity beats
+   refreshing capacity that works.
+6. **A committed negative control, `naive_recheck.py`.** In the P05.T3 tradition:
+   a green suite proves nothing unless the same assertion is shown to *catch* the
+   broken version. It performs the probe-then-`upsert_many` path and the test
+   asserts the lease **is** destroyed and the audit log **is** empty. If a future
+   refactor makes the naive path safe, that control fails and says so.
+7. **An additive migration, `_migrate()`.** `CREATE TABLE IF NOT EXISTS` is a
+   no-op on an existing table, so a new column is silently absent from every
+   database already on disk and the first query naming it fails at runtime, far
+   from its cause. H8 is about not losing a pool to a crash; losing one to an
+   upgrade is the same outcome by a slower route.
+
+**A defect this work found in itself.** The first implementation put the two new
+indexes in `SCHEMA`, which runs *before* `_migrate()`. On a pre-ADR-038 database
+`CREATE INDEX ... (state, probe_expires_at)` therefore failed with **`no such
+column: probe_expires_at`** — an upgrade that bricked the pool it was meant to
+preserve. A fresh-file test cannot reach this, because there the table is created
+complete; `TestMigration` caught it by opening a hand-built old-schema database
+on the first run. Index DDL now lives in a separate `INDEXES` script applied
+after migration. Recorded rather than quietly patched, because the lesson is that
+*migration tests must start from the old schema, not from an empty file*.
+
+**What this does NOT claim.** The claim narrows the clobber window; it does not
+abolish every race, which is why `complete_probe` is still conditional and
+`lost_writeback` is a counted outcome rather than an impossibility. Concurrency
+here is proven against a **real SQLite store but a single process** — the
+multi-process arm is `test_recheck_store.py` (integration). `discovery_interval_s`
+remains **loaded and validated but consulted by nothing**: no loop schedules on
+it, and that is named as open (P11), not counted as done. And nothing here probes
+the network: `StubEngine` stands in for `DiscoveryEngine.evaluate`, whose real
+probe path is proven in `test_probe.py`.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_recheck.py -q` and
+`python3 -m pytest atlas/tests/integration/test_recheck_store.py -q`. Negative
+control: `atlas/tests/unit/naive_recheck.py`, asserted by
+`test_the_naive_writeback_really_does_clobber`. Artifact:
+`engineering/raw/recheck_gap.json` (before/after pair, tool
+`engineering/tools/measure_recheck_gap.py`).
