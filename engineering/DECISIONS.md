@@ -193,3 +193,89 @@ not the survivor distribution (n = 9).
 
 **Consequence.** `FINAL_AUDIT.md` must compare v4 against the *historical admitted* distribution
 and state n for every figure. A comparison against n=9 survivors would be a fabricated victory (H2).
+
+---
+
+## ADR-010 — Evidence must be *verified*, not *declared*; and a test that cannot fail is not evidence
+
+**Phase:** P00 (retrofit) · **Status:** ACCEPTED
+
+**Context.** A platform sync dropped `engineering/tools/` and 3 `engineering/raw/` files.
+The loss was **silent**, and two independent process defects let the project keep looking complete:
+
+1. **Evidence was declared, never verified.** `TASK_STATE.json` listed 6 tasks at
+   `status: DONE` whose `evidence` paths no longer existed. Nothing ever checked that a
+   declared artifact was on disk, so H1 ("evidence for every claim") was structurally
+   unenforceable — it depended on the honesty of a JSON field.
+2. **A green test suite proved nothing.** `pytest -q` reported **10 passed** while
+   `atlas/core/` did not exist. The isolation tests glob `core/**/*.py`, so they were
+   asserting over an *empty list* and passing **vacuously**. This is worse than a red
+   suite: it is a false clearance signal.
+
+Root cause of the loss itself: `engineering/tools/` was **never git-tracked**, and there was
+no `.gitignore` documenting what may and may not be ignored.
+
+**Decision.**
+(a) `engineering/tools/gate_check.py` is the authority on phase-gate readiness and **fails the
+build** if: any `DONE` task names a missing evidence path; any `files_changed` entry is absent;
+any tool on disk is untracked by git; or `atlas/core/` has no modules for the architecture
+tests to scan (the vacuity check).
+(b) `make doctor` runs `gate_check.py` **before** `pytest`, so a vacuous pass can never be
+banked as a gate.
+(c) A `.gitignore` exists that explicitly never ignores `engineering/**`.
+(d) Regenerated figures are **reconciled field-by-field** against the documented ones; a tool
+exits non-zero on unexplained drift. Where a delta is a *definition* difference the definition
+is pinned in the tool and both numbers are kept; where it is a *measurement* difference the new
+run is filed as a **new dated snapshot** and the old one retained.
+
+**Alternatives.**
+1. *Re-declare the tasks DONE and move on* — rejected: that is precisely the H1/H2 violation
+   this project exists to eliminate, and it would silently invalidate the baseline.
+2. *Recreate the tools from memory and assume the old numbers* — rejected: fabrication (H2).
+   Every figure was re-derived and reconciled instead.
+3. *Trust CI to catch it* — rejected: there is no CI, and the check must run locally in the
+   same command a developer already types.
+
+**Consequence.** Phase Gate 0 was **revoked and re-earned**, not re-asserted. `pytest` alone is
+no longer accepted as gate evidence. Cost: `make doctor` is slower and stricter, and it will
+refuse to go green until `atlas/core/` contains real modules — which is the correct behaviour.
+
+**Verification.** All deterministic figures reproduced *exactly* after the rebuild:
+`257` URL lines · `123` unique URLs (122 real + 1 malformed) · `silent_handlers 23` ·
+`bare_except 9` · `except_broad 33` · baseline **9/9 fields** incl. p50 6 359.5 ms and
+p95 15 903 ms (n=102). Two counts were **superseded with cause**, not overwritten:
+`except_pass` 10→9 and `max_workers_literal` 4→**9**.
+
+---
+
+## ADR-011 — The documented percentile method is preserved, even though it is unorthodox
+
+**Phase:** P00 (retrofit) · **Status:** ACCEPTED
+
+**Context.** Recomputing the baseline reproduced 8 of 9 fields but gave p95 **16 327.6 ms**
+against the documented **15 903 ms**. The gap is not a data difference — it is a *method*
+difference. Recovered empirically, the original tool used a **mixed** methodology:
+
+| statistic | method | details (n=102) | log (n=118) |
+|---|---|---|---|
+| p50 | linear interpolation (`(n-1)·p`) | **6 359.5** ✅ | **6 092.5** ✅ |
+| p95 | lower/floor rank `sorted[int((n-1)·0.95)]` | **15 903** ✅ | **15 903** ✅ |
+
+It reproduces **both** documented streams exactly, which is what proves it is the original
+behaviour rather than a coincidence — an interpolated p95 gives 16 327.6 / 15 970.0, close but
+wrong, and a floor p50 gives 6 257.0 / 5 963.0.
+
+**Decision.** Pin both methods in `measure_baseline.py`, and additionally report
+`p95_ms_interpolated` and `p50_ms_floor` on every distribution so no headline figure is ever
+silently method-dependent.
+
+**Alternatives.**
+1. *Switch to a single interpolated percentile and restate the baseline as 16 327.6 ms* —
+   rejected. Raising the bar v4 must clear by ~424 ms would make v4's win look *larger*;
+   quietly restating the target is exactly the H2 violation this project forbids.
+2. *Report only the floor method* — rejected: floor is pessimistic at small n and would
+   under-report v4's own p95 later. Both are emitted, so comparisons stay symmetric.
+
+**Consequence.** The number v4 must beat remains **p50 6 359.5 ms / p95 15 903 ms at n=102**.
+`FINAL_AUDIT.md` must state the method *and* n beside every percentile, and must compute v4's
+own p95 with the **same** function for the comparison to be honest.
