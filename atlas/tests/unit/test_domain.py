@@ -289,16 +289,26 @@ def test_cooldown_needs_no_clock() -> None:
 # ══════════════════════════════════════════════════════════════════════════════
 def test_source_carries_declarative_parser_and_stats() -> None:
     s = Source(id="example-http", url="https://example.com/list.txt",
-               parser=ParserKind.LINE_IPPORT)
-    assert s.parser is ParserKind.LINE_IPPORT
+               parser=ParserKind.REGEX_ADJACENT)
+    assert s.parser is ParserKind.REGEX_ADJACENT
     assert s.stats.consecutive_failures == 0
     assert s.state is SourceState.ACTIVE
 
 
-def test_parser_kinds_cover_the_measured_formats() -> None:
+def test_parser_kinds_are_exactly_the_measured_formats() -> None:
     """
     P00.T4: the adjacency regex found zero candidates in JSON APIs and HTML tables.
-    Structured parsers recovered 5 sources in the 2026-08-24 snapshot.
+    Structured parsers recovered 6 sources in the 2026-08-24 snapshot.
+
+    ADR-017 -- this asserts EQUALITY, not a subset. The old version used `<=`, so
+    it happily passed while the enum carried three speculative kinds (csv_columns,
+    regex, line_ipport) that no parser implemented and no source used, AND while
+    the enum lacked `regex_adjacent`, the value 59 of 67 ENABLED rows actually
+    carry. A subset assertion cannot detect a vocabulary that is simultaneously
+    too large and missing the one member that matters.
     """
     kinds = {k.value for k in ParserKind}
-    assert {"line_ipport", "json_path", "html_table"} <= kinds
+    assert kinds == {"regex_adjacent", "json_path", "html_table"}, (
+        "ParserKind must name exactly the parsers that exist in "
+        f"atlas.core.parsing; got {sorted(kinds)}"
+    )
