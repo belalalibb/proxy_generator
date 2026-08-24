@@ -22,9 +22,10 @@ A measured rebuild of a legacy proxy scraper.
 
 | | |
 |---|---|
-| Phase | **P10 — RECHECK WIRING · gate PASSED** · `plan().recheck` now reaches the probe path through a claim/write-back protocol (ADR-038). Next: P11 |
+| Phase | **P11 — RECHECK BOUNDS · gate PASSED** · the claim lifetime is now *derived* from the real probe plan, and recheck abandonment is counted inside the reclaiming `UPDATE` (ADR-039). Next: P12 |
 | Gate 0 | ✅ PASSED (re-earned twice after sync losses — ADR-010) |
-| Tests | **617 passed** — 591 unit + 26 integration (real concurrency, SIGKILL, negative controls) <!--verify:engineering/TASK_STATE.json:tests.passed:617--> |
+| Tests | **655 passed** — 629 unit + 26 integration (real concurrency, SIGKILL, negative controls) <!--verify:engineering/TASK_STATE.json:tests.passed:655--> |
+| Recheck mutations | **15/15 killed**, 0 survivors, across 5 modules <!--verify:engineering/raw/recheck_mutation.json:killed:15--> <!--verify:engineering/raw/recheck_mutation.json:survivors:0--> |
 | Gate checks | **19/19 pass** (`make doctor`) <!--verify:engineering/TASK_STATE.json:gate_checks:19--> |
 | Live admission (k=5) | **3 admitted** of 300 probed — 86 tcp_ok → 12 reached gate → 6 with 2+ samples <!--verify:engineering/TASK_STATE.json:baseline_to_beat.v4_live_calibration.admitted:3--> |
 | Defects v4 introduced | **2 found by reading artifacts**, both behind a green suite — [`BUG_LEDGER`](engineering/BUG_LEDGER.md) V4-01, V4-02 |
