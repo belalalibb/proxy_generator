@@ -70,8 +70,13 @@ silently deleted.
 The GeoNode JSON API measured **230 067 bytes** in the first pass, then **659 bytes of non-JSON**
 in the re-probe ~2 s later, which my own tool filed as `TRULY_EMPTY`.
 
-I did not accept either reading. A third, direct `curl` returned **230 019 bytes of valid JSON →
+I did not accept either reading. A third, direct `curl` returned **230 067 octets of valid JSON →
 500 unique proxies** (`tools/verify_geonode_parser.py` re-used the *same* parser to prove it).
+
+> **Unit correction (ADR-015, 2026-08-24):** this line originally read "230 019 bytes". That
+> figure was `len()` of the *decoded string* — a character count. The stored evidence is
+> **230 067 octets** / **230 019 characters** (45 non-ASCII). `wc -c` confirms 230 067. The
+> proxy count (500) and the verdict (`ALIVE_JSON`) are unaffected.
 
 The 659-byte body was **our own per-host throttling**. The inventory record was patched to
 `ALIVE_JSON` and a `corrections[]` entry was appended, with `engineering/raw/geonode_body.txt` as
@@ -170,3 +175,181 @@ storage until P07). These three are recorded `false` rather than optimistically 
 **NEXT:** P01.T1 create the `atlas/` skeleton, then immediately P01.T2 — the architecture isolation
 test — so the `core/` boundary is enforced by a failing test from the first commit rather than
 retrofitted later.
+
+---
+
+## 2026-08-24 — P01 · resumed, and found my own documentation running ahead of the code
+
+**AR:** عند الاستئناف، وجدت أن التوثيق يسبق التنفيذ. صححت الأرقام من الأدلة، لا العكس.
+**EN:** On resume, the documents claimed work that did not exist. Corrected the
+numbers from the artifacts — never the artifacts to match the numbers.
+
+`make doctor` and `pytest -q` contradicted the repository's own README:
+
+| claimed | actual |
+|---|---|
+| "19 passed" | **2 failed, 10 passed** |
+| "68 ACTIVE of 123" | artifact said **61** |
+| ADR-012 implemented | guards still line-regex |
+| ADR-013 implemented | `resp.content.read(BODY_CAP)` still at line 179 |
+
+A second sync loss had also removed `reprobe_empty.py` and `verify_geonode_parser.py`
+while `TASK_STATE.json` still marked P00.T4/T5 `DONE`. Recorded in
+**RECONCILIATION.md §5** rather than quietly fixed: an ADR describing a fix that
+does not exist is a fabricated claim.
+
+### ADR-012 implemented — guards that can prove they still bite
+
+Two fitness tests were failing on *legitimate* code: `__all__` (import machinery,
+must be a list) and a **docstring** in `source.py:131` documenting the refusal to
+default to a login-walled target — which `SECURITY.md` *requires*. The tempting
+fixes (delete the sentence, loosen the regex) would each have turned the test green
+by removing real protection.
+
+Instead the scanners were extracted as callables, scoped to **executable** string
+values via AST, and given **7 negative controls** (`module_const`, `default_arg`,
+`list_item`, `dict_value`, `fstring`, `nested_call`, `lowercase_var`) that feed
+known-bad source and assert the guard still fires. → 12 → **22 passing**
+
+### ADR-013 implemented — the defect was far larger than the ADR described
+
+Per ADR-013(e) the parser was validated against **stored** evidence before any live
+read: `geonode_body.txt` (230 067 octets / 230 019 chars — see ADR-015; earlier
+drafts of this file called the char count "B") → exactly **500** unique proxies,
+`regex_adjacent` → 0. A parser proven correct on stored bytes means a live zero
+implicates the *fetch*.
+
+It did. `resp.content.read(n)` returns only what is **currently buffered**. Reading
+to EOF with `iter_chunked()` changed the harvest from the same 120 URLs:
+
+| | before | after |
+|---|---|---|
+| unique candidates | 74 895 | **502 189** (**×6.7**) |
+| ACTIVE sources | 61 | **67** |
+| `TRULY_EMPTY` | 20 | **14** |
+| GeoNode API | 0 | **500** |
+
+Large lists were cut off mid-body while a regex still matched proxies in the
+surviving prefix — so every source looked alive and nothing signalled the loss.
+**The worst defect found so far is in our own tooling, not the legacy code.**
+
+Then `short_read` itself proved unsound: aiohttp auto-decompresses, so
+`Content-Length` is the *compressed* size for **83 of 120** URLs
+(`TheSpeedX/http.txt`: declared 20 360, decoded 54 284). Now applied only to
+identity-encoded responses, with `length_comparable` recorded. → **§7**
+
+### P01.T3 — domain tests found a real bug
+
+36 behaviour tests. One failed immediately: `Endpoint.parse` **accepted**
+`1.2.3.4.5:80` even though the code comment claimed that exact string was rejected.
+The hostname fallback allowed all-numeric labels. Fixed by refusing a numeric
+rightmost label. **A comment claimed the guarantee; only the test checked it.**
+
+### ADR-014 — the process fix
+
+`gate_check.py` verified task *evidence* but not ADR *prose*. It now enforces
+`adr_claims_are_verifiable` (every implementation-claiming ADR carries a
+`**Verify:**` command) and `readme_numbers_have_artifacts` (tagged README numbers
+re-derived from JSON). Both negative-controlled: injecting `active:99` makes the
+gate fail as designed.
+
+### PHASE GATE 1 · **PASSED**
+
+`make doctor` → **10/10 gate checks PASS**, **58 tests pass**
+(22 architecture/fitness + 36 domain behaviour). Every `**Verify:**` command in
+`DECISIONS.md` executes successfully.
+
+Honest invariant status: H1 ✅ (re-earned) · H2 ✅ · H4 ✅ · H5 ✅ · H6 ✅ ·
+H3 / H7 / H8 still `false` — no pool, no admission gate, no storage yet.
+
+**NEXT:** P02 — generate `atlas/data/sources/sources.json` from the **pinned**
+snapshot `source_probe_20260824T010038Z.json` (67 ACTIVE rows, each with
+url/parser/labelled_protocol/state), plus a loader test asserting zero hardcoded
+URLs in `.py` and that every DISABLED row names a reason.
+
+---
+
+## 2026-08-24 — P02 · sources become data, and three defects in my own verifiers
+
+**AR:** الغموض يُعلن، لا يُخمَّن. والأدوات التي تتحقق من العمل هي أقل ما تم اختباره.
+**EN:** Ambiguity is declared, not guessed. And the tools that *check* the work are
+the least-tested code in the repository.
+
+### ADR-015 — a field named `bytes` held characters
+
+`probe_legacy_sources.py` recorded `"bytes": len(body)` where `body` is a **decoded
+`str`**. That is a character count. Proven offline from stored evidence:
+
+| `geonode_body.txt` | value |
+|---|---|
+| octets (`wc -c`) | **230 067** |
+| characters | **230 019** |
+| non-ASCII chars | 45 |
+
+Across the 83 snapshot rows carrying both fields: `chars < octets` 28 times, equal
+55, and `chars > octets` **0 times** — zero counterexamples, so multi-byte decoding
+is *established* as the cause, not guessed.
+
+My first `grep '"bytes"'` found two sites. The new **AST-based** `verify_units.py`
+found a third that grep missed: `EXPECTED_BYTES = 230019` in
+`verify_geonode_parser.py` — **the origin of the "230 019 B" figure I had repeated
+in PROGRESS.md and README.md**. Corrected in place *with a visible footnote stating
+the old number and why it was wrong*, rather than silently rewriting history.
+GeoNode still parses to 500 / `ALIVE_JSON`: units fixed, conclusions unmoved.
+
+### P02 — the registry
+
+`atlas/data/sources/sources.json`, generated offline and **byte-identical on
+rebuild** (verified with `diff`):
+
+| | |
+|---|---|
+| rows | **120** |
+| ENABLED | **67** — asserted `==` snapshot ACTIVE by test |
+| DISABLED | **53** — every one names a reason |
+| parsers | regex_adjacent 59 · html_table 7 · json_path 1 |
+| labels verified | **0** (nothing probed yet, ADR-005) |
+
+Protocol labelling exposed two genuine ambiguities that a first-match-wins scan
+gets wrong, both now regression-tested:
+
+1. `TheSpeedX/SOCKS-List/master/http.txt` — repo says SOCKS, filename says http.
+   Reported **`ambiguous`**. Picking either would fabricate a fact.
+2. `?proxytype=http&…&ssl=yes` — `ssl` is a capability **filter**, not a protocol.
+   My own first version labelled this `https`, *contradicting the explicit
+   `proxytype=http`*. Query params now outrank free path text.
+
+The loader is strict: **14 parametrized rejection cases** plus a *positive* control,
+so the rejection suite cannot pass a loader that rejects everything.
+
+The ADR-002 "no hardcoded URLs" guard first fired on `Source.url`'s legitimate
+`startswith(("http://", "https://"))`. Suppressing it would have removed a real
+protection; instead the guard now requires a host after the scheme, with a negative
+control pinning both directions.
+
+### ADR-016 — evidence citing a test never checked the test
+
+`done_tasks_have_evidence` did `(ROOT / ev).exists()` on `path::test_name`, asking
+the filesystem for a file with `::` in its name. Latent through P00/P01 (plain paths
+only); **P02 was the first phase to cite individual test functions.** It surfaced as
+a false *failure* — but the same defect would let a task cite a test that does not
+exist. Now the symbol is verified, and injecting `::test_this_does_not_exist`
+produces `exit=1`.
+
+**Three self-inflicted verification defects in two sessions** (ADR-013 truncated
+fetch, ADR-015 wrong units, ADR-016 unresolved symbols) — every one in the machinery
+that *checks* the work, none in the work itself.
+
+### PHASE GATE 2 · **PASSED**
+
+`make doctor` → **10/10 gate checks PASS**, **87 tests pass** (22 architecture +
+36 domain + 29 registry). The gate caught a stale `58 passed` README claim during
+this phase — exactly the drift the ADR-014c tags exist for.
+
+Honest invariant status: H1 ✅ · H2 ✅ · H4 ✅ · H5 ✅ · H6 ✅ · H3/H7/H8 still
+`false` — no pool, no admission gate, no storage.
+
+**NEXT:** P03 — SourcePort fetch adapter using the ADR-013 read-to-EOF discipline
+(`iter_chunked` + `FETCH_INCOMPLETE`), the three parsers behind one interface,
+tested **offline** against stored bodies in `engineering/raw/` so no test depends
+on the live network.
