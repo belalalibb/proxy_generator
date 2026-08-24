@@ -25,6 +25,8 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Self
 
+from atlas.core.domain.verdict import Grade
+
 _HOSTPORT = re.compile(r"^\s*(?:(?P<scheme>\w+)://)?(?P<host>[^:/@\s]+):(?P<port>\d{1,5})\s*$")
 
 
@@ -165,6 +167,18 @@ class Proxy:
     last_checked: datetime | None = None
     lease_id: str | None = None
     reason_code: str | None = None      # why it is in its current state
+    grade: Grade = Grade.REJECTED
+    """
+    The admission gate's verdict, PERSISTED (ADR-021).
+
+    Defaults to REJECTED, not to a "neutral" value: an unjudged proxy must never
+    satisfy `lease(min_grade=USABLE)`. This mirrors the NOT_MEASURED inversion in
+    admission.py -- absence of evidence is refusal, not permission.
+
+    Until P05 this field did not exist, while StorePort.lease() already declared
+    a `min_grade: Grade` filter. The gate computed a Grade, and the pool could
+    not store it, so the filter was unimplementable as declared.
+    """
 
     # ── identity ──────────────────────────────────────────────────────────────
     @property
@@ -226,6 +240,16 @@ class Proxy:
 
     def released(self) -> Proxy:
         return replace(self, state=ProxyState.READY, lease_id=None)
+
+    def graded(self, grade: Grade) -> Proxy:
+        """
+        Record the admission gate's verdict (ADR-021).
+
+        Deliberately does NOT change `state`: grading is a judgement, admitting is
+        a pool transition, and collapsing them is how a REJECTED proxy would end
+        up READY. The caller states both intentions explicitly.
+        """
+        return replace(self, grade=grade)
 
     def __str__(self) -> str:
         return f"{self.protocol.value}://{self.endpoint} [{self.state.value}]"
