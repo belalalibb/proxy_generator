@@ -18,10 +18,12 @@ A measured rebuild of a legacy proxy scraper.
 
 | | |
 |---|---|
-| Phase | **P01 — ARCHITECTURE** |
-| Gate 0 | ✅ PASSED (re-earned after a sync loss — ADR-010) |
-| Tests | `19 passed` (`make test`) |
-| Sources | **68 ACTIVE** of 123 audited, every record traceable to a real fetch |
+| Phase | **P01 — ARCHITECTURE · gate PASSED** |
+| Gate 0 | ✅ PASSED (re-earned twice after sync losses — ADR-010) |
+| Tests | **58 passed** — 22 architecture/fitness + 36 domain behaviour <!--verify:engineering/TASK_STATE.json:tests.passed:58--> |
+| Gate checks | **10/10 pass** (`make doctor`) |
+| Sources | **67 ACTIVE** of 120 probed (range 67–69, see below) <!--verify:engineering/TASK_STATE.json:source_registry.active:67--> |
+| Candidates | **502 189** unique from one sweep <!--verify:engineering/TASK_STATE.json:source_registry.unique_candidates:502189--> |
 
 Live state: `make state` · Full log: [`engineering/PROGRESS.md`](engineering/PROGRESS.md)
 
@@ -48,7 +50,15 @@ which fails the build if:
 
 - any task marked `DONE` names an evidence path that is not on disk,
 - any tool on disk is untracked by git (that is how the loss happened),
-- `atlas/core/` has no modules for the fitness tests to scan (the vacuity check).
+- `atlas/core/` has no modules for the fitness tests to scan (the vacuity check),
+- an ADR claims an implementation but names no way to verify it (**ADR-014**),
+- a tagged number in this README disagrees with the artifact it cites.
+
+The last two exist because they caught me: ADR-012 and ADR-013 were once written,
+committed and cited here *before the code existed*, and this table claimed
+"19 passed" while the suite was failing. Task evidence was verified; prose was
+trusted. Now prose is checked too — see
+[`RECONCILIATION.md`](engineering/RECONCILIATION.md) §5.
 
 The test suite additionally contains **negative controls** that feed known-bad
 source to the real guards and assert they still fire. See ADR-010 / ADR-012.
@@ -100,6 +110,7 @@ microseconds.
 | 23 silent `except: pass` handlers | Every failure carries a `ReasonCode` | 35 dead URLs retried forever |
 | TLS verification disabled in 9 places | TLS always on | MITM indistinguishable (B-09) |
 | One bad fetch ⇒ source treated as dead | Cooldown on **consecutive** failures | GeoNode: 230 067 B → 659 B → 230 019 B |
+| Body read from the socket buffer, silently truncated | Read to **EOF**, `FETCH_INCOMPLETE` if not | **74 895 → 502 189** candidates (×6.7), ADR-013 |
 | Ships a 2captcha client | **Refused, not ported** | ADR-007, `SECURITY.md` |
 | Defaults to probing a login-walled site | **No default target, ever** | ADR-007 |
 
