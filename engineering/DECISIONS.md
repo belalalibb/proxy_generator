@@ -1677,7 +1677,10 @@ version; that is what found it.
 say "verified against *your* target 40 s ago", and it does not. Per-target evidence needs a
 schema change and is named as future scope. Rate limiting remains P09 (ADR-029).
 
-**The B-16 tension, reported rather than resolved.** `target_ttl` is 90 s (B-16) while
+**The B-16 tension, reported rather than resolved.** *(RESOLVED in P09 by ADR-035, which
+withdrew the 90 s per-target claim rather than choosing between the two numbers. The
+paragraph below is preserved as written, because the reasoning that framed this as a config
+conflict was itself the mistake ADR-035 corrects.)* `target_ttl` is 90 s (B-16) while
 `config.yaml scheduler.recheck_ready_after_s` is 900 s. Both cannot hold: refusing
 everything older than 90 s would serve almost nothing, and ignoring the TTL would present
 900-second-old evidence as current. The hand-out therefore grants the proxy **and** reports
@@ -1774,3 +1777,101 @@ same reason ADR-029 does no DNS.
 **Verify:** `python3 -m pytest atlas/tests/unit/test_rate_limit.py -q` (36) and
 `python3 engineering/tools/mutate_rate_limit.py` (9/9 killed →
 `engineering/raw/rate_limit_mutation.json`).
+
+---
+
+## ADR-035
+### The 90 s per-target TTL is withdrawn, not scheduled: one horizon, and it is the one this system drives
+
+**Status.** Accepted (2026-08-24, P09).
+
+**Context.** P08 shipped a hand-out that flagged every granted proxy with
+`revalidation_required`, computed as `age_s > target_ttl_s` with `target_ttl_s = 90.0`
+citing B-16. It also recorded the conflict honestly and left it open: B-16 asks for 90 s
+per-target validity, `config.yaml scheduler.recheck_ready_after_s` is 900 s, and a pool
+rechecked every 900 s cannot offer proxies validated within 90 s. The task note framed this
+as a choice between two numbers — drive recheck at 90 s, or redefine the 90 s as disclosure.
+
+**The framing was wrong, and that is the finding.** `age_s` derives from
+`proxy.last_checked`: **one timestamp per proxy**, written by whatever probe last ran against
+whatever target *discovery* used. The schema has no `(proxy, target)` row — `store_sqlite.py`
+has a single `last_checked TEXT` column and nothing target-keyed. So "validated against YOUR
+target within 90 s" is not a tight deadline this system misses; it is **a sentence the stored
+data cannot express at any interval**. Choosing between 90 and 900 was choosing between two
+readings of a number whose *unit* was wrong.
+
+This makes candidate (a) — "drive recheck at the TTL for the READY subset" — actively
+harmful rather than merely expensive. Re-probing every 90 s refreshes `last_checked`
+**against the discovery target**, which would *clear* the flag. The operator would see
+`revalidation_required: false` and read it as "verified for my target 90 s ago", when the
+only fact behind it is "reachable for someone else's target 90 s ago". That converts an
+honest disclosure into a false guarantee, and it does so *by making the system work harder*.
+The cheaper option was also the more truthful one, which is not the usual shape of this
+trade-off and is why it is recorded.
+
+**Decision.**
+
+1. **The 90 s per-target TTL is withdrawn.** Not deferred, not renamed-and-kept: the claim
+   is deleted from `handout.py`, from B-16 in `BUG_LEDGER.md`, and from the §3.3 requirements
+   table in `ANALYSIS.md`. A requirement that cannot be satisfied by any implementation is a
+   defect in the requirement.
+2. **`target_ttl_s` becomes `recheck_horizon_s`, defaulting to 900.0**, mirroring
+   `scheduler.recheck_ready_after_s` — the only freshness interval this system actually
+   drives.
+3. **`revalidation_required` becomes `past_recheck_horizon`** on both `Granted` and
+   `HandoutResult`. The old name asserted a per-target conclusion; the new one states the
+   measurement. It now means *the scheduler is behind on this row*, which an operator can
+   act on.
+4. **Per-target validity is never asserted at any age.** Unchanged from P08 and now stated
+   in the negative in the module docstring, so the absence is not mistaken for an oversight.
+
+**Why not keep 90 s as pure disclosure (candidate b, unsharpened).** Because a flag keyed to
+90 s against a 900 s pool is `True` for roughly 90 % of everything served, and a warning that
+is almost always on carries no information — it trains the operator to ignore it. That is
+B-02's lesson (unnamed states cost debugging time) applied to an *over*-named one: the flag
+was firing on the normal case. Keyed to 900 s it fires only when the scheduler is genuinely
+behind, which is a real, rare, actionable condition.
+
+**A guard this forced out, at a seam neither policy owns.** `HandoutPolicy` owns
+`recheck_horizon_s`; `ScoringPolicy` owns `max_age_s` (3600). `rank(include_stale=False)`
+**drops** rows older than `max_age_s`, so `past_recheck_horizon` is only observable in the
+band `(recheck_horizon_s, max_age_s]`. Configure the horizon at or above `max_age_s` and the
+band is **empty**: the flag can never fire, every served row reports fresh, and staleness is
+silently reported as freshness — the ADR-019 defect class reached *by configuration* rather
+than by code. Each policy validates itself happily in isolation, so the check can only live
+in `HandoutService.__init__`, where both are known. It refuses at construction.
+
+**A test that passed while proving nothing.** The first attempt to pin the never-checked arm
+restated the boolean expression inside the test and asserted on the copy. It passed — and the
+mutation run still reported `never_checked_treated_as_fresh_via_comparison` as a **SURVIVOR**,
+because a test that re-implements the code under test measures the test. The predicate was
+extracted to `_past_horizon()` so the branch is *callable*, and the test now invokes the real
+method. The mutant dies. Recorded because the failure mode is invisible without mutation
+testing: green suite, real coverage of nothing.
+
+**Drift the harness caught.** After the rename, `mutate_handout.py`'s `stale_reported_as_fresh`
+anchor no longer matched any source text. It reported `[ERROR] anchor text not found` and
+counted the mutant as a survivor rather than skipping it silently — so a stale harness
+degraded loudly instead of inflating the kill rate. That behaviour is now load-bearing and
+worth keeping.
+
+**Measured effect.**
+
+| property | evidence |
+|---|---|
+| suite green after the rename | **507 passed** (was 503; +4 net in `test_handout.py`, 38 → 42) |
+| the horizon is enforced, both sides | boundary asserted at 899.9 / 900.1 |
+| the withdrawn 90 s claim cannot return | age 300 s asserted **clean**; `hasattr(..., "revalidation_required")` asserted **False** on both types |
+| unreachable branch genuinely pinned | mutant killed via `_past_horizon`, after the tautology version left it surviving |
+| the unfireable-flag config is refused | horizon 3600 vs `max_age_s` 3600 raises; 3599 accepted **and** flag observed at age 3599.5 |
+| bypasses detectable | **9/9** injected defects killed → `engineering/raw/handout_mutation.json` |
+
+**Deliberately not done here.** No `(proxy, target)` validation table — that is the schema
+change that would make per-target freshness *sayable*, and it is real future scope rather
+than a thing this ADR pretends to have delivered. No change to `config.yaml`: the 900 s value
+was already correct, and the four unread `scheduler.*` keys are consumed by the loop in
+P09.T3, not here.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_handout.py -q` (42) and
+`python3 engineering/tools/mutate_handout.py` (9/9 killed →
+`engineering/raw/handout_mutation.json`).
