@@ -107,8 +107,15 @@ def _run(kind: str, worker, tmp: Path, *, procs: int, per_proc: int,
 def main() -> int:
     tmp = Path(tempfile.mkdtemp(prefix="atlas-h3-"))
     try:
-        real = _run("real", _real_worker, tmp, procs=12, per_proc=4, pool=24)
+        # Two arms at DIFFERENT configs cannot be tabulated side by side as if
+        # they were one experiment -- that is exactly the splice ADR-020 exists
+        # to forbid. So the head-to-head comparison runs the real store at the
+        # naive arm's own config (pool 12, 6 procs x 6), and the oversubscribed
+        # run is reported separately as its own, harder, case.
+        matched_real = _run("real_matched", _real_worker, tmp,
+                            procs=6, per_proc=6, pool=12)
         naive = _run("naive", _naive_worker, tmp, procs=6, per_proc=6, pool=12)
+        real = _run("real", _real_worker, tmp, procs=12, per_proc=4, pool=24)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -127,6 +134,16 @@ def main() -> int:
                          "nothing; the naive arm shows the same test body DOES "
                          "detect double delivery when it is present (ADR-022)",
         },
+        "head_to_head": {
+            "note": "same pool (12), same processes (6), same request size (6). "
+                    "The ONLY difference is the lease implementation, which is "
+                    "what makes this a controlled comparison.",
+            "config": {"processes": 6, "requested_per_process": 6,
+                       "pool_size": 12},
+            "real_duplicates": matched_real["duplicates"],
+            "naive_duplicates": naive["duplicates"],
+        },
+        "real_matched": matched_real,
         "real": real,
         "naive": naive,
         "verdict": (
@@ -140,6 +157,14 @@ def main() -> int:
     out = ROOT / "engineering" / "raw" / "lease_concurrency.json"
     out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
+    print("  head-to-head (pool 12, 6 procs x 6 -- identical config):")
+    print(f"    real  : handed={matched_real['handed_out']:3d} "
+          f"unique={matched_real['unique_fingerprints']:3d} "
+          f"duplicates={matched_real['duplicates']}")
+    print(f"    naive : handed={naive['handed_out']:3d} "
+          f"unique={naive['unique_fingerprints']:3d} "
+          f"duplicates={naive['duplicates']}")
+    print("  oversubscribed (pool 24, 12 procs x 4 = 48 requested):")
     print(f"  real  : handed={real['handed_out']:3d} "
           f"unique={real['unique_fingerprints']:3d} "
           f"duplicates={real['duplicates']}")
@@ -151,6 +176,8 @@ def main() -> int:
     print(f"  -> {out.relative_to(ROOT)}")
 
     if real["duplicates"] or real["audit_log_violations"]:
+        return 1
+    if matched_real["duplicates"] or matched_real["audit_log_violations"]:
         return 1
     if not report["control_is_effective"]:
         print("  WARNING: the control found no duplicates, so the real arm's 0 "
