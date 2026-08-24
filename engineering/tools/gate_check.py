@@ -363,6 +363,27 @@ def check_tests_tracked_by_git(res: Result) -> None:
             if untracked else f"all {len(on_disk)} test file(s) tracked")
 
 
+def check_makefile_tools_exist(res: Result) -> None:
+    """
+    Every $(TOOLS)/x.py referenced by the Makefile must exist on disk.
+
+    `make sources-audit` invoked reprobe_empty.py for multiple phases after a sync
+    deleted it. Nothing caught this because no gate ever RAN that target, and a
+    Makefile recipe is invisible to the import graph and to pytest. A documented
+    command that cannot execute is a false claim about the project's own tooling.
+    """
+    mk = ROOT / "Makefile"
+    if not mk.exists():
+        res.add("makefile_tools_exist", False, "Makefile missing")
+        return
+    text = mk.read_text(encoding="utf-8")
+    referenced = sorted(set(re.findall(r"\$\(TOOLS\)/([A-Za-z0-9_]+\.py)", text)))
+    missing = [t for t in referenced if not (ROOT / "engineering" / "tools" / t).exists()]
+    res.add("makefile_tools_exist", not missing,
+            f"Makefile references missing tool(s): {', '.join(missing)}"
+            if missing else f"all {len(referenced)} Makefile-referenced tool(s) exist")
+
+
 def check_no_cross_stream_splice(res: Result) -> None:
     """
     ADR-020. The legacy run left TWO records: proxy_details.json (n=102) and
@@ -418,6 +439,7 @@ def main() -> int:
     check_no_cross_stream_splice(res)
     check_h3_negative_control_present(res)
     check_tests_tracked_by_git(res)
+    check_makefile_tools_exist(res)
 
     if args.json:
         print(json.dumps(
