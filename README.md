@@ -22,10 +22,10 @@ A measured rebuild of a legacy proxy scraper.
 
 | | |
 |---|---|
-| Phase | **P07 — SCORING + ENGINE · gate PASSED** · P08 (hand-out API) in progress |
+| Phase | **P08 — HAND-OUT API · gate PASSED** · P09 (scheduler + rate limiting) next |
 | Gate 0 | ✅ PASSED (re-earned twice after sync losses — ADR-010) |
-| Tests | **421 passed** — 412 unit + 9 integration (real concurrency, SIGKILL, negative control) <!--verify:engineering/TASK_STATE.json:tests.passed:421--> |
-| Gate checks | **16/16 pass** (`make doctor`) |
+| Tests | **467 passed** — 450 unit + 17 integration (real concurrency, SIGKILL, negative control) <!--verify:engineering/TASK_STATE.json:tests.passed:467--> |
+| Gate checks | **17/17 pass** (`make doctor`) |
 | Live admission (k=5) | **3 admitted** of 300 probed — 86 tcp_ok → 12 reached gate → 6 with 2+ samples <!--verify:engineering/TASK_STATE.json:baseline_to_beat.v4_live_calibration.admitted:3--> |
 | Defects v4 introduced | **2 found by reading artifacts**, both behind a green suite — [`BUG_LEDGER`](engineering/BUG_LEDGER.md) V4-01, V4-02 |
 | H3 no-double-delivery | **0 duplicates** vs **30** for a read-then-write store, at an *identical* config (pool 12, 6 procs × 6) <!--verify:engineering/raw/lease_concurrency.json:head_to_head.real_duplicates:0--> <!--verify:engineering/raw/lease_concurrency.json:head_to_head.naive_duplicates:30--> |
