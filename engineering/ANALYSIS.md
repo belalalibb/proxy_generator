@@ -189,7 +189,7 @@ what the legacy gate *admitted*.
 |---|---|---|
 | admitted-proxy p95 latency | 15 903 ms (historical) | **≤ 900 ms** (§19) |
 | live rate of delivered proxies | 3.0 % of a stale list | 100 % of delivered (validated at hand-out) |
-| target validation | none (one global target) | per-request `url`, ≤ 90 s freshness |
+| target validation | none (one global target) | per-request `url` + allow-policy; freshness reported against the 900 s recheck horizon, never claimed per-target (ADR-035) |
 | latency samples per proxy | 1 | 5 (p50/p95/jitter) |
 | ready-pool guarantee | none | 10 ready, ≥ 99 % availability |
 | double delivery | unbounded (plain text file) | **0**, atomic lease |
