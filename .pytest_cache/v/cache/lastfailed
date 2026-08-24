@@ -1,3 +1,13 @@
 {
-  "atlas/tests/unit/test_policy.py::test_every_drop_has_a_named_reason[999.1.1.1:80-NOT_AN_IP]": true
+  "atlas/tests/unit/test_policy.py::test_every_drop_has_a_named_reason[999.1.1.1:80-NOT_AN_IP]": true,
+  "atlas/tests/unit/test_engine_MUTANT.py::test_the_cycle_writes_the_discovered_protocol_back_onto_the_source": true,
+  "atlas/tests/unit/test_engine_MUTANT.py::test_a_refused_candidate_reports_tcp_refused_not_a_vaguer_reason": true,
+  "atlas/tests/unit/test_engine_MUTANT.py::test_the_first_failing_stage_names_the_reason": true,
+  "atlas/tests/unit/test_engine_MUTANT.py::test_a_slow_proxy_is_rejected_with_too_slow_p95": true,
+  "atlas/tests/unit/test_engine_MUTANT.py::test_success_ratio_uses_actual_attempts_not_the_planned_k": true,
+  "atlas/tests/unit/test_engine_MUTANT.py::test_an_admitted_proxy_is_ready_graded_and_timestamped": true,
+  "atlas/tests/unit/test_engine_MUTANT.py::test_probed_equals_admitted_plus_rejected": true,
+  "atlas/tests/unit/test_engine_MUTANT.py::test_known_endpoints_are_skipped_not_reprobed": true,
+  "atlas/tests/unit/test_engine_MUTANT.py::test_private_range_candidates_are_dropped_with_a_named_reason": true,
+  "atlas/tests/unit/test_engine_MUTANT.py::test_quality_rate_is_admitted_over_probed_not_raw_volume": true
 }
