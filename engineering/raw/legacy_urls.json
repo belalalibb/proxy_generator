@@ -1,0 +1,1619 @@
+{
+  "task": "P00.T2",
+  "generator": "engineering/tools/extract_legacy_sources.py",
+  "rebuilt_after_sync_loss": true,
+  "deterministic": true,
+  "network_used": false,
+  "generated_at_utc": "2026-08-24T00:18:36Z",
+  "definitions": {
+    "url_literals": "count of source LINES containing http(s)://",
+    "unique_urls": "ast.Constant strings only, LOOSE regex, deduplicated",
+    "fstring_policy": "reported separately, excluded from unique_urls"
+  },
+  "files_scanned": [
+    "v1.py",
+    "v2.py",
+    "v3.py",
+    "bebo.py",
+    "proxychecker.py",
+    "proxy_generator_v2.py"
+  ],
+  "extraction_methods": {
+    "v1.py": "ast",
+    "v2.py": "ast",
+    "v3.py": "ast",
+    "bebo.py": "ast",
+    "proxychecker.py": "ast",
+    "proxy_generator_v2.py": "ast"
+  },
+  "totals": {
+    "url_lines": 257,
+    "constant_matches": 258,
+    "unique_urls": 123,
+    "real_unique_urls": 122,
+    "unique_hosts": 42,
+    "fstring_fragment_urls": 4
+  },
+  "per_file": {
+    "v1.py": {
+      "url_lines": 75,
+      "constant_matches": 75,
+      "fstring_fragments": 2,
+      "unique_urls": 72,
+      "extraction_method": "ast"
+    },
+    "v2.py": {
+      "url_lines": 10,
+      "constant_matches": 10,
+      "fstring_fragments": 0,
+      "unique_urls": 10,
+      "extraction_method": "ast"
+    },
+    "v3.py": {
+      "url_lines": 70,
+      "constant_matches": 70,
+      "fstring_fragments": 2,
+      "unique_urls": 69,
+      "extraction_method": "ast"
+    },
+    "bebo.py": {
+      "url_lines": 3,
+      "constant_matches": 3,
+      "fstring_fragments": 3,
+      "unique_urls": 3,
+      "extraction_method": "ast"
+    },
+    "proxychecker.py": {
+      "url_lines": 5,
+      "constant_matches": 5,
+      "fstring_fragments": 0,
+      "unique_urls": 2,
+      "extraction_method": "ast"
+    },
+    "proxy_generator_v2.py": {
+      "url_lines": 94,
+      "constant_matches": 95,
+      "fstring_fragments": 2,
+      "unique_urls": 93,
+      "extraction_method": "ast"
+    }
+  },
+  "reconciliation": {
+    "documented_url_literals": 257,
+    "regenerated_url_lines": 257,
+    "url_literals_match": true,
+    "documented_unique_urls": 123,
+    "regenerated_unique": 123,
+    "unique_match": true,
+    "documented_real_unique": 122,
+    "regenerated_real_unique": 122,
+    "malformed_literals": [
+      "http://"
+    ],
+    "fstring_fragment_urls_excluded": 4,
+    "explanation": "Both documented figures reproduce exactly under the pinned definitions. url_literals=257 counts source LINES containing a URL (regenerated 257). unique_urls=123 counts ast.Constant strings only, loose-matched (regenerated 123) = 122 real + 1 malformed bare literal ['http://'], which ANALYSIS.md section 2.1 already records as 'ERROR 1 - a malformed literal in the legacy code'. f-string fragments are excluded because joining literal parts fabricates runtime-nonexistent URLs; they are reported separately."
+  },
+  "unique_urls": [
+    "http://",
+    "http://2captcha.com/in.php?key=",
+    "http://2captcha.com/res.php?key=",
+    "http://free-proxy.cz/en/",
+    "http://www.boys-here.com/newtest2/list0.txt",
+    "https://advanced.name/freeproxy",
+    "https://advanced.name/freeproxy?type=https",
+    "https://api.openproxy.space/lists/http",
+    "https://api.openproxylist.xyz/http.txt",
+    "https://api.openproxylist.xyz/https.txt",
+    "https://api.proxyscrape.com/?request=getproxies&proxytype=http&timeout=10000&country=all&ssl=yes&anonymity=all",
+    "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http",
+    "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=https",
+    "https://api.proxyscrape.com/v2/?request=get&protocol=http&timeout=10000&country=all&ssl=yes&anonymity=all",
+    "https://api.proxyscrape.com/v3/free-proxy-list/get?request=displayproxies&proxy_format=protocolipport&format=text",
+    "https://api.telegram.org/bot",
+    "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/all/data.txt",
+    "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt",
+    "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt",
+    "https://databay.com/free-proxy-list",
+    "https://fineproxy.org/free-proxy/",
+    "https://free-proxy-list.net/",
+    "https://free-proxy-list.net/anonymous-proxy.html",
+    "https://free-proxy-list.net/en/ssl-proxy.html",
+    "https://free-proxy-list.net/uk-proxy.html",
+    "https://freeproxylist.org/",
+    "https://geonode.com/free-proxy-list",
+    "https://hasdata.com/free-proxy-list",
+    "https://hide.mn/en/proxy-list/",
+    "https://httpbin.org/ip",
+    "https://iproyal.com/free-proxy-list/",
+    "https://list.proxylistplus.com/SSL-proxy",
+    "https://multiproxy.org/txt_all/proxy.txt",
+    "https://openproxy.space/list/https",
+    "https://openproxylist.com/proxy/",
+    "https://proxy-list.download/api/v1/get?type=http",
+    "https://proxy-list.download/api/v1/get?type=https",
+    "https://proxy-tools.com/proxy/https",
+    "https://proxy5.net/free-proxy",
+    "https://proxybros.com/free-proxy-list/",
+    "https://proxydb.net/",
+    "https://proxydb.net/?protocol=https",
+    "https://proxydb.net/?protocol=https&country=",
+    "https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc&protocols=https",
+    "https://proxyscrape.com/free-proxy-list",
+    "https://proxyspace.pro/http.txt",
+    "https://proxyspace.pro/https.txt",
+    "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/http.txt",
+    "https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/http_proxies.txt",
+    "https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/https_proxies.txt",
+    "https://raw.githubusercontent.com/B4RC0DE-TM/proxy-list/main/HTTP.txt",
+    "https://raw.githubusercontent.com/Bardiafa/Proxy-Starter/main/http.txt",
+    "https://raw.githubusercontent.com/Bardiafa/Proxy-Starter/main/https.txt",
+    "https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/http.txt",
+    "https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/https.txt",
+    "https://raw.githubusercontent.com/Hendrikbgr/Free-Proxy-Repo/master/proxy_list.txt",
+    "https://raw.githubusercontent.com/HyperBeats/proxy-list/main/http.txt",
+    "https://raw.githubusercontent.com/Kitsun3Sec/ProxyList/main/http.txt",
+    "https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt",
+    "https://raw.githubusercontent.com/ObcbO/getproxy/master/http.txt",
+    "https://raw.githubusercontent.com/ObcbO/getproxy/master/https.txt",
+    "https://raw.githubusercontent.com/RX4096/proxy-list/main/online/http.txt",
+    "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt",
+    "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+    "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/https.txt",
+    "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
+    "https://raw.githubusercontent.com/Tsprnay/Proxy-lists/master/proxies/http.txt",
+    "https://raw.githubusercontent.com/Tsprnay/Proxy-lists/master/proxies/https.txt",
+    "https://raw.githubusercontent.com/UptimerBot/proxy-list/main/proxies/http.txt",
+    "https://raw.githubusercontent.com/Vann-Dev/proxy-list/main/proxies/http.txt",
+    "https://raw.githubusercontent.com/Vann-Dev/proxy-list/main/proxies/https.txt",
+    "https://raw.githubusercontent.com/Zaeem20/FREE_PROXIES_LIST/master/http.txt",
+    "https://raw.githubusercontent.com/Zeller-A/Proxy-Scraping/main/http.txt",
+    "https://raw.githubusercontent.com/Zeller-A/Proxy-Scraping/main/https.txt",
+    "https://raw.githubusercontent.com/aslisk/proxyhttps/main/https.txt",
+    "https://raw.githubusercontent.com/berkay-digital/Proxy-Starter/main/http.txt",
+    "https://raw.githubusercontent.com/caliphdev/Proxy-List/master/http.txt",
+    "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
+    "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt",
+    "https://raw.githubusercontent.com/im-razvan/proxy_list/main/http.txt",
+    "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt",
+    "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-https.txt",
+    "https://raw.githubusercontent.com/manuGMG/proxy-365/main/HTTP.txt",
+    "https://raw.githubusercontent.com/mertguvencli/http-proxy-list/main/proxy-list/data.txt",
+    "https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt",
+    "https://raw.githubusercontent.com/mmpx12/proxy-list/master/https.txt",
+    "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
+    "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/http.txt",
+    "https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/http/http.txt",
+    "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt",
+    "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt",
+    "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/https/data.txt",
+    "https://raw.githubusercontent.com/proxy4parsing/proxy-list/main/http.txt",
+    "https://raw.githubusercontent.com/prxchk/proxy-list/main/http.txt",
+    "https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies/http.txt",
+    "https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies_anonymous/http.txt",
+    "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS.txt",
+    "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt",
+    "https://raw.githubusercontent.com/runarbu/ProxyMaid/master/lists/proxies.txt",
+    "https://raw.githubusercontent.com/saisuiu/Lionkings-Http-Proxys-Proxies/main/free.txt",
+    "https://raw.githubusercontent.com/saschazesiger/Free-Proxies/master/proxies/http.txt",
+    "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/http_proxies.txt",
+    "https://raw.githubusercontent.com/tuanminpay/live-proxy/master/http.txt",
+    "https://raw.githubusercontent.com/vakhov/fresh-proxy-list/master/http.txt",
+    "https://raw.githubusercontent.com/yemixzy/proxy-list/main/proxies/http.txt",
+    "https://raw.githubusercontent.com/yoannchb-pro/https-proxies/main/proxies.txt",
+    "https://raw.githubusercontent.com/zevtyardt/proxy-list/main/http.txt",
+    "https://raw.githubusercontent.com/zloi-user/hideip.me/main/http.txt",
+    "https://raw.githubusercontent.com/zloi-user/hideip.me/main/https.txt",
+    "https://spys.me/proxy.txt",
+    "https://spys.one/en/https-ssl-proxy/",
+    "https://www.freeproxy.world/",
+    "https://www.instagram.com",
+    "https://www.media.io/",
+    "https://www.proxies24.com/proxy-list/https-proxies",
+    "https://www.proxy-list.download/HTTP",
+    "https://www.proxy-list.download/HTTPS",
+    "https://www.proxy-list.download/api/v1/get?type=http",
+    "https://www.proxy-list.download/api/v1/get?type=https",
+    "https://www.proxy11.com/api/demoweb/proxy.json?key=free-demo&country=&city=&port=&type=https",
+    "https://www.proxynova.com/proxy-server-list/",
+    "https://www.sslproxies.org/",
+    "https://www.us-proxy.org/"
+  ],
+  "fstring_fragment_urls": [
+    "http://",
+    "http://2captcha.com/in.php?key=&method=userrecaptcha&googlekey=&pageurl=",
+    "http://2captcha.com/res.php?key=&action=get&id=",
+    "https://api.telegram.org/bot/sendMessage"
+  ],
+  "hits": [
+    {
+      "url": "https://api.telegram.org/bot",
+      "file": "bebo.py",
+      "line": 5
+    },
+    {
+      "url": "http://2captcha.com/in.php?key=",
+      "file": "bebo.py",
+      "line": 13
+    },
+    {
+      "url": "http://2captcha.com/res.php?key=",
+      "file": "bebo.py",
+      "line": 23
+    },
+    {
+      "url": "https://www.media.io/",
+      "file": "proxy_generator_v2.py",
+      "line": 41
+    },
+    {
+      "url": "https://www.media.io/",
+      "file": "proxy_generator_v2.py",
+      "line": 42
+    },
+    {
+      "url": "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 63
+    },
+    {
+      "url": "https://raw.githubusercontent.com/mmpx12/proxy-list/master/https.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 64
+    },
+    {
+      "url": "https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 65
+    },
+    {
+      "url": "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 66
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 67
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/https.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 68
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 69
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 70
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 71
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/https/data.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 72
+    },
+    {
+      "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 73
+    },
+    {
+      "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 74
+    },
+    {
+      "url": "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-https.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 75
+    },
+    {
+      "url": "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 76
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 77
+    },
+    {
+      "url": "https://raw.githubusercontent.com/B4RC0DE-TM/proxy-list/main/HTTP.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 78
+    },
+    {
+      "url": "https://raw.githubusercontent.com/HyperBeats/proxy-list/main/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 79
+    },
+    {
+      "url": "https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 80
+    },
+    {
+      "url": "https://raw.githubusercontent.com/RX4096/proxy-list/main/online/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 81
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 82
+    },
+    {
+      "url": "https://raw.githubusercontent.com/UptimerBot/proxy-list/main/proxies/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 83
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Zaeem20/FREE_PROXIES_LIST/master/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 84
+    },
+    {
+      "url": "https://raw.githubusercontent.com/manuGMG/proxy-365/main/HTTP.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 85
+    },
+    {
+      "url": "https://raw.githubusercontent.com/prxchk/proxy-list/main/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 86
+    },
+    {
+      "url": "https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 87
+    },
+    {
+      "url": "https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies_anonymous/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 88
+    },
+    {
+      "url": "https://raw.githubusercontent.com/saschazesiger/Free-Proxies/master/proxies/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 89
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zevtyardt/proxy-list/main/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 90
+    },
+    {
+      "url": "https://raw.githubusercontent.com/vakhov/fresh-proxy-list/master/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 91
+    },
+    {
+      "url": "https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/http/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 92
+    },
+    {
+      "url": "https://raw.githubusercontent.com/runarbu/ProxyMaid/master/lists/proxies.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 93
+    },
+    {
+      "url": "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 94
+    },
+    {
+      "url": "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/http_proxies.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 96
+    },
+    {
+      "url": "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 97
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zloi-user/hideip.me/main/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 98
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zloi-user/hideip.me/main/https.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 99
+    },
+    {
+      "url": "https://raw.githubusercontent.com/im-razvan/proxy_list/main/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 100
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ObcbO/getproxy/master/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 101
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ObcbO/getproxy/master/https.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 102
+    },
+    {
+      "url": "https://raw.githubusercontent.com/yemixzy/proxy-list/main/proxies/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 103
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Bardiafa/Proxy-Starter/main/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 104
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Bardiafa/Proxy-Starter/main/https.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 105
+    },
+    {
+      "url": "https://raw.githubusercontent.com/aslisk/proxyhttps/main/https.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 106
+    },
+    {
+      "url": "https://raw.githubusercontent.com/saisuiu/Lionkings-Http-Proxys-Proxies/main/free.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 107
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Tsprnay/Proxy-lists/master/proxies/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 108
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Tsprnay/Proxy-lists/master/proxies/https.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 109
+    },
+    {
+      "url": "https://raw.githubusercontent.com/yoannchb-pro/https-proxies/main/proxies.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 110
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Vann-Dev/proxy-list/main/proxies/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 111
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Vann-Dev/proxy-list/main/proxies/https.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 112
+    },
+    {
+      "url": "https://raw.githubusercontent.com/berkay-digital/Proxy-Starter/main/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 113
+    },
+    {
+      "url": "https://api.openproxylist.xyz/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 115
+    },
+    {
+      "url": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http",
+      "file": "proxy_generator_v2.py",
+      "line": 116
+    },
+    {
+      "url": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=https",
+      "file": "proxy_generator_v2.py",
+      "line": 117
+    },
+    {
+      "url": "https://api.proxyscrape.com/v3/free-proxy-list/get?request=displayproxies&proxy_format=protocolipport&format=text",
+      "file": "proxy_generator_v2.py",
+      "line": 118
+    },
+    {
+      "url": "https://www.proxy-list.download/api/v1/get?type=http",
+      "file": "proxy_generator_v2.py",
+      "line": 119
+    },
+    {
+      "url": "https://www.proxy-list.download/api/v1/get?type=https",
+      "file": "proxy_generator_v2.py",
+      "line": 120
+    },
+    {
+      "url": "https://proxyspace.pro/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 121
+    },
+    {
+      "url": "https://proxyspace.pro/https.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 122
+    },
+    {
+      "url": "https://spys.me/proxy.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 123
+    },
+    {
+      "url": "https://multiproxy.org/txt_all/proxy.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 124
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/all/data.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 126
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 127
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 128
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/http_proxies.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 130
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/https_proxies.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 131
+    },
+    {
+      "url": "https://raw.githubusercontent.com/caliphdev/Proxy-List/master/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 132
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 133
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/https.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 134
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Hendrikbgr/Free-Proxy-Repo/master/proxy_list.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 135
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Kitsun3Sec/ProxyList/main/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 136
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Zeller-A/Proxy-Scraping/main/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 137
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Zeller-A/Proxy-Scraping/main/https.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 138
+    },
+    {
+      "url": "https://raw.githubusercontent.com/mertguvencli/http-proxy-list/main/proxy-list/data.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 139
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxy4parsing/proxy-list/main/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 140
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tuanminpay/live-proxy/master/http.txt",
+      "file": "proxy_generator_v2.py",
+      "line": 141
+    },
+    {
+      "url": "https://api.proxyscrape.com/?request=getproxies&proxytype=http&timeout=10000&country=all&ssl=yes&anonymity=all",
+      "file": "proxy_generator_v2.py",
+      "line": 142
+    },
+    {
+      "url": "https://free-proxy-list.net/",
+      "file": "proxy_generator_v2.py",
+      "line": 146
+    },
+    {
+      "url": "https://free-proxy-list.net/anonymous-proxy.html",
+      "file": "proxy_generator_v2.py",
+      "line": 147
+    },
+    {
+      "url": "https://www.sslproxies.org/",
+      "file": "proxy_generator_v2.py",
+      "line": 148
+    },
+    {
+      "url": "https://www.us-proxy.org/",
+      "file": "proxy_generator_v2.py",
+      "line": 149
+    },
+    {
+      "url": "https://www.proxy-list.download/HTTPS",
+      "file": "proxy_generator_v2.py",
+      "line": 150
+    },
+    {
+      "url": "https://www.proxy-list.download/HTTP",
+      "file": "proxy_generator_v2.py",
+      "line": 151
+    },
+    {
+      "url": "https://advanced.name/freeproxy",
+      "file": "proxy_generator_v2.py",
+      "line": 152
+    },
+    {
+      "url": "https://advanced.name/freeproxy?type=https",
+      "file": "proxy_generator_v2.py",
+      "line": 153
+    },
+    {
+      "url": "https://geonode.com/free-proxy-list",
+      "file": "proxy_generator_v2.py",
+      "line": 154
+    },
+    {
+      "url": "https://list.proxylistplus.com/SSL-proxy",
+      "file": "proxy_generator_v2.py",
+      "line": 155
+    },
+    {
+      "url": "https://proxybros.com/free-proxy-list/",
+      "file": "proxy_generator_v2.py",
+      "line": 156
+    },
+    {
+      "url": "https://www.freeproxy.world/",
+      "file": "proxy_generator_v2.py",
+      "line": 157
+    },
+    {
+      "url": "https://www.proxynova.com/proxy-server-list/",
+      "file": "proxy_generator_v2.py",
+      "line": 158
+    },
+    {
+      "url": "https://freeproxylist.org/",
+      "file": "proxy_generator_v2.py",
+      "line": 159
+    },
+    {
+      "url": "https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc&protocols=https",
+      "file": "proxy_generator_v2.py",
+      "line": 163
+    },
+    {
+      "url": "http://",
+      "file": "proxy_generator_v2.py",
+      "line": 368
+    },
+    {
+      "url": "http://",
+      "file": "proxy_generator_v2.py",
+      "line": 368
+    },
+    {
+      "url": "http://",
+      "file": "proxychecker.py",
+      "line": 11
+    },
+    {
+      "url": "http://",
+      "file": "proxychecker.py",
+      "line": 12
+    },
+    {
+      "url": "https://httpbin.org/ip",
+      "file": "proxychecker.py",
+      "line": 15
+    },
+    {
+      "url": "http://",
+      "file": "proxychecker.py",
+      "line": 25
+    },
+    {
+      "url": "http://",
+      "file": "proxychecker.py",
+      "line": 28
+    },
+    {
+      "url": "https://www.instagram.com",
+      "file": "v1.py",
+      "line": 29
+    },
+    {
+      "url": "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt",
+      "file": "v1.py",
+      "line": 67
+    },
+    {
+      "url": "https://raw.githubusercontent.com/mmpx12/proxy-list/master/https.txt",
+      "file": "v1.py",
+      "line": 68
+    },
+    {
+      "url": "https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt",
+      "file": "v1.py",
+      "line": 69
+    },
+    {
+      "url": "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
+      "file": "v1.py",
+      "line": 70
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+      "file": "v1.py",
+      "line": 71
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
+      "file": "v1.py",
+      "line": 72
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt",
+      "file": "v1.py",
+      "line": 73
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt",
+      "file": "v1.py",
+      "line": 74
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/https/data.txt",
+      "file": "v1.py",
+      "line": 75
+    },
+    {
+      "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
+      "file": "v1.py",
+      "line": 76
+    },
+    {
+      "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/http.txt",
+      "file": "v1.py",
+      "line": 77
+    },
+    {
+      "url": "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-https.txt",
+      "file": "v1.py",
+      "line": 78
+    },
+    {
+      "url": "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt",
+      "file": "v1.py",
+      "line": 79
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/http.txt",
+      "file": "v1.py",
+      "line": 80
+    },
+    {
+      "url": "https://raw.githubusercontent.com/B4RC0DE-TM/proxy-list/main/HTTP.txt",
+      "file": "v1.py",
+      "line": 81
+    },
+    {
+      "url": "https://raw.githubusercontent.com/HyperBeats/proxy-list/main/http.txt",
+      "file": "v1.py",
+      "line": 82
+    },
+    {
+      "url": "https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt",
+      "file": "v1.py",
+      "line": 83
+    },
+    {
+      "url": "https://raw.githubusercontent.com/RX4096/proxy-list/main/online/http.txt",
+      "file": "v1.py",
+      "line": 84
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt",
+      "file": "v1.py",
+      "line": 85
+    },
+    {
+      "url": "https://raw.githubusercontent.com/UptimerBot/proxy-list/main/proxies/http.txt",
+      "file": "v1.py",
+      "line": 86
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Zaeem20/FREE_PROXIES_LIST/master/http.txt",
+      "file": "v1.py",
+      "line": 87
+    },
+    {
+      "url": "https://raw.githubusercontent.com/manuGMG/proxy-365/main/HTTP.txt",
+      "file": "v1.py",
+      "line": 88
+    },
+    {
+      "url": "https://raw.githubusercontent.com/prxchk/proxy-list/main/http.txt",
+      "file": "v1.py",
+      "line": 89
+    },
+    {
+      "url": "https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies/http.txt",
+      "file": "v1.py",
+      "line": 90
+    },
+    {
+      "url": "https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies_anonymous/http.txt",
+      "file": "v1.py",
+      "line": 91
+    },
+    {
+      "url": "https://raw.githubusercontent.com/saschazesiger/Free-Proxies/master/proxies/http.txt",
+      "file": "v1.py",
+      "line": 92
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zevtyardt/proxy-list/main/http.txt",
+      "file": "v1.py",
+      "line": 93
+    },
+    {
+      "url": "https://raw.githubusercontent.com/vakhov/fresh-proxy-list/master/http.txt",
+      "file": "v1.py",
+      "line": 94
+    },
+    {
+      "url": "https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/http/http.txt",
+      "file": "v1.py",
+      "line": 95
+    },
+    {
+      "url": "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS.txt",
+      "file": "v1.py",
+      "line": 98
+    },
+    {
+      "url": "https://raw.githubusercontent.com/mmpx12/proxy-list/master/https.txt",
+      "file": "v1.py",
+      "line": 99
+    },
+    {
+      "url": "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-https.txt",
+      "file": "v1.py",
+      "line": 100
+    },
+    {
+      "url": "https://api.openproxy.space/lists/http",
+      "file": "v1.py",
+      "line": 103
+    },
+    {
+      "url": "https://api.openproxylist.xyz/http.txt",
+      "file": "v1.py",
+      "line": 104
+    },
+    {
+      "url": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http",
+      "file": "v1.py",
+      "line": 105
+    },
+    {
+      "url": "https://api.proxyscrape.com/v3/free-proxy-list/get?request=displayproxies&proxy_format=protocolipport&format=text",
+      "file": "v1.py",
+      "line": 106
+    },
+    {
+      "url": "https://www.proxy-list.download/api/v1/get?type=http",
+      "file": "v1.py",
+      "line": 107
+    },
+    {
+      "url": "https://www.proxy-list.download/api/v1/get?type=https",
+      "file": "v1.py",
+      "line": 108
+    },
+    {
+      "url": "https://proxy-list.download/api/v1/get?type=http",
+      "file": "v1.py",
+      "line": 109
+    },
+    {
+      "url": "https://proxy-list.download/api/v1/get?type=https",
+      "file": "v1.py",
+      "line": 110
+    },
+    {
+      "url": "https://proxyspace.pro/http.txt",
+      "file": "v1.py",
+      "line": 111
+    },
+    {
+      "url": "https://proxyspace.pro/https.txt",
+      "file": "v1.py",
+      "line": 112
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/all/data.txt",
+      "file": "v1.py",
+      "line": 115
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt",
+      "file": "v1.py",
+      "line": 116
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt",
+      "file": "v1.py",
+      "line": 117
+    },
+    {
+      "url": "https://raw.githubusercontent.com/runarbu/ProxyMaid/master/lists/proxies.txt",
+      "file": "v1.py",
+      "line": 120
+    },
+    {
+      "url": "http://www.boys-here.com/newtest2/list0.txt",
+      "file": "v1.py",
+      "line": 121
+    },
+    {
+      "url": "https://free-proxy-list.net/",
+      "file": "v1.py",
+      "line": 126
+    },
+    {
+      "url": "https://free-proxy-list.net/en/ssl-proxy.html",
+      "file": "v1.py",
+      "line": 127
+    },
+    {
+      "url": "https://proxyscrape.com/free-proxy-list",
+      "file": "v1.py",
+      "line": 128
+    },
+    {
+      "url": "https://advanced.name/freeproxy",
+      "file": "v1.py",
+      "line": 129
+    },
+    {
+      "url": "https://advanced.name/freeproxy?type=https",
+      "file": "v1.py",
+      "line": 130
+    },
+    {
+      "url": "https://hide.mn/en/proxy-list/",
+      "file": "v1.py",
+      "line": 131
+    },
+    {
+      "url": "https://spys.one/en/https-ssl-proxy/",
+      "file": "v1.py",
+      "line": 132
+    },
+    {
+      "url": "https://proxydb.net/",
+      "file": "v1.py",
+      "line": 133
+    },
+    {
+      "url": "https://proxydb.net/?protocol=https",
+      "file": "v1.py",
+      "line": 134
+    },
+    {
+      "url": "https://geonode.com/free-proxy-list",
+      "file": "v1.py",
+      "line": 135
+    },
+    {
+      "url": "https://fineproxy.org/free-proxy/",
+      "file": "v1.py",
+      "line": 136
+    },
+    {
+      "url": "https://proxy-tools.com/proxy/https",
+      "file": "v1.py",
+      "line": 137
+    },
+    {
+      "url": "https://list.proxylistplus.com/SSL-proxy",
+      "file": "v1.py",
+      "line": 138
+    },
+    {
+      "url": "https://proxybros.com/free-proxy-list/",
+      "file": "v1.py",
+      "line": 139
+    },
+    {
+      "url": "https://iproyal.com/free-proxy-list/",
+      "file": "v1.py",
+      "line": 140
+    },
+    {
+      "url": "https://www.freeproxy.world/",
+      "file": "v1.py",
+      "line": 141
+    },
+    {
+      "url": "https://www.proxynova.com/proxy-server-list/",
+      "file": "v1.py",
+      "line": 142
+    },
+    {
+      "url": "https://databay.com/free-proxy-list",
+      "file": "v1.py",
+      "line": 143
+    },
+    {
+      "url": "https://openproxylist.com/proxy/",
+      "file": "v1.py",
+      "line": 144
+    },
+    {
+      "url": "http://free-proxy.cz/en/",
+      "file": "v1.py",
+      "line": 145
+    },
+    {
+      "url": "https://www.sslproxies.org/",
+      "file": "v1.py",
+      "line": 146
+    },
+    {
+      "url": "https://www.us-proxy.org/",
+      "file": "v1.py",
+      "line": 147
+    },
+    {
+      "url": "https://freeproxylist.org/",
+      "file": "v1.py",
+      "line": 148
+    },
+    {
+      "url": "https://proxy5.net/free-proxy",
+      "file": "v1.py",
+      "line": 149
+    },
+    {
+      "url": "https://hasdata.com/free-proxy-list",
+      "file": "v1.py",
+      "line": 150
+    },
+    {
+      "url": "http://",
+      "file": "v1.py",
+      "line": 422
+    },
+    {
+      "url": "http://",
+      "file": "v1.py",
+      "line": 423
+    },
+    {
+      "url": "https://www.proxy-list.download/HTTPS",
+      "file": "v2.py",
+      "line": 24
+    },
+    {
+      "url": "https://proxydb.net/?protocol=https&country=",
+      "file": "v2.py",
+      "line": 29
+    },
+    {
+      "url": "https://free-proxy-list.net/",
+      "file": "v2.py",
+      "line": 34
+    },
+    {
+      "url": "https://api.proxyscrape.com/v2/?request=get&protocol=http&timeout=10000&country=all&ssl=yes&anonymity=all",
+      "file": "v2.py",
+      "line": 39
+    },
+    {
+      "url": "https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc&protocols=https",
+      "file": "v2.py",
+      "line": 44
+    },
+    {
+      "url": "https://www.proxy11.com/api/demoweb/proxy.json?key=free-demo&country=&city=&port=&type=https",
+      "file": "v2.py",
+      "line": 49
+    },
+    {
+      "url": "https://openproxy.space/list/https",
+      "file": "v2.py",
+      "line": 54
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/https.txt",
+      "file": "v2.py",
+      "line": 59
+    },
+    {
+      "url": "https://api.openproxylist.xyz/https.txt",
+      "file": "v2.py",
+      "line": 64
+    },
+    {
+      "url": "https://www.proxies24.com/proxy-list/https-proxies",
+      "file": "v2.py",
+      "line": 69
+    },
+    {
+      "url": "https://www.instagram.com",
+      "file": "v3.py",
+      "line": 30
+    },
+    {
+      "url": "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt",
+      "file": "v3.py",
+      "line": 66
+    },
+    {
+      "url": "https://raw.githubusercontent.com/mmpx12/proxy-list/master/https.txt",
+      "file": "v3.py",
+      "line": 67
+    },
+    {
+      "url": "https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt",
+      "file": "v3.py",
+      "line": 68
+    },
+    {
+      "url": "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
+      "file": "v3.py",
+      "line": 69
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+      "file": "v3.py",
+      "line": 70
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
+      "file": "v3.py",
+      "line": 71
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt",
+      "file": "v3.py",
+      "line": 72
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt",
+      "file": "v3.py",
+      "line": 73
+    },
+    {
+      "url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/https/data.txt",
+      "file": "v3.py",
+      "line": 74
+    },
+    {
+      "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
+      "file": "v3.py",
+      "line": 75
+    },
+    {
+      "url": "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/http.txt",
+      "file": "v3.py",
+      "line": 76
+    },
+    {
+      "url": "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-https.txt",
+      "file": "v3.py",
+      "line": 77
+    },
+    {
+      "url": "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt",
+      "file": "v3.py",
+      "line": 78
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/http.txt",
+      "file": "v3.py",
+      "line": 79
+    },
+    {
+      "url": "https://raw.githubusercontent.com/B4RC0DE-TM/proxy-list/main/HTTP.txt",
+      "file": "v3.py",
+      "line": 80
+    },
+    {
+      "url": "https://raw.githubusercontent.com/HyperBeats/proxy-list/main/http.txt",
+      "file": "v3.py",
+      "line": 81
+    },
+    {
+      "url": "https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt",
+      "file": "v3.py",
+      "line": 82
+    },
+    {
+      "url": "https://raw.githubusercontent.com/RX4096/proxy-list/main/online/http.txt",
+      "file": "v3.py",
+      "line": 83
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt",
+      "file": "v3.py",
+      "line": 84
+    },
+    {
+      "url": "https://raw.githubusercontent.com/UptimerBot/proxy-list/main/proxies/http.txt",
+      "file": "v3.py",
+      "line": 85
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Zaeem20/FREE_PROXIES_LIST/master/http.txt",
+      "file": "v3.py",
+      "line": 86
+    },
+    {
+      "url": "https://raw.githubusercontent.com/manuGMG/proxy-365/main/HTTP.txt",
+      "file": "v3.py",
+      "line": 87
+    },
+    {
+      "url": "https://raw.githubusercontent.com/prxchk/proxy-list/main/http.txt",
+      "file": "v3.py",
+      "line": 88
+    },
+    {
+      "url": "https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies/http.txt",
+      "file": "v3.py",
+      "line": 89
+    },
+    {
+      "url": "https://raw.githubusercontent.com/rdavydov/proxy-list/main/proxies_anonymous/http.txt",
+      "file": "v3.py",
+      "line": 90
+    },
+    {
+      "url": "https://raw.githubusercontent.com/saschazesiger/Free-Proxies/master/proxies/http.txt",
+      "file": "v3.py",
+      "line": 91
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zevtyardt/proxy-list/main/http.txt",
+      "file": "v3.py",
+      "line": 92
+    },
+    {
+      "url": "https://raw.githubusercontent.com/vakhov/fresh-proxy-list/master/http.txt",
+      "file": "v3.py",
+      "line": 93
+    },
+    {
+      "url": "https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/http/http.txt",
+      "file": "v3.py",
+      "line": 94
+    },
+    {
+      "url": "https://raw.githubusercontent.com/runarbu/ProxyMaid/master/lists/proxies.txt",
+      "file": "v3.py",
+      "line": 95
+    },
+    {
+      "url": "https://api.openproxy.space/lists/http",
+      "file": "v3.py",
+      "line": 98
+    },
+    {
+      "url": "https://api.openproxylist.xyz/http.txt",
+      "file": "v3.py",
+      "line": 99
+    },
+    {
+      "url": "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http",
+      "file": "v3.py",
+      "line": 100
+    },
+    {
+      "url": "https://api.proxyscrape.com/v3/free-proxy-list/get?request=displayproxies&proxy_format=protocolipport&format=text",
+      "file": "v3.py",
+      "line": 101
+    },
+    {
+      "url": "https://www.proxy-list.download/api/v1/get?type=http",
+      "file": "v3.py",
+      "line": 102
+    },
+    {
+      "url": "https://www.proxy-list.download/api/v1/get?type=https",
+      "file": "v3.py",
+      "line": 103
+    },
+    {
+      "url": "https://proxyspace.pro/http.txt",
+      "file": "v3.py",
+      "line": 104
+    },
+    {
+      "url": "https://proxyspace.pro/https.txt",
+      "file": "v3.py",
+      "line": 105
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/all/data.txt",
+      "file": "v3.py",
+      "line": 108
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt",
+      "file": "v3.py",
+      "line": 109
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt",
+      "file": "v3.py",
+      "line": 110
+    },
+    {
+      "url": "https://free-proxy-list.net/",
+      "file": "v3.py",
+      "line": 115
+    },
+    {
+      "url": "https://free-proxy-list.net/uk-proxy.html",
+      "file": "v3.py",
+      "line": 116
+    },
+    {
+      "url": "https://free-proxy-list.net/anonymous-proxy.html",
+      "file": "v3.py",
+      "line": 117
+    },
+    {
+      "url": "https://www.sslproxies.org/",
+      "file": "v3.py",
+      "line": 118
+    },
+    {
+      "url": "https://www.us-proxy.org/",
+      "file": "v3.py",
+      "line": 119
+    },
+    {
+      "url": "https://www.proxy-list.download/HTTPS",
+      "file": "v3.py",
+      "line": 120
+    },
+    {
+      "url": "https://www.proxy-list.download/HTTP",
+      "file": "v3.py",
+      "line": 121
+    },
+    {
+      "url": "https://proxydb.net/",
+      "file": "v3.py",
+      "line": 122
+    },
+    {
+      "url": "https://proxydb.net/?protocol=https",
+      "file": "v3.py",
+      "line": 123
+    },
+    {
+      "url": "https://proxyscrape.com/free-proxy-list",
+      "file": "v3.py",
+      "line": 124
+    },
+    {
+      "url": "https://advanced.name/freeproxy",
+      "file": "v3.py",
+      "line": 125
+    },
+    {
+      "url": "https://advanced.name/freeproxy?type=https",
+      "file": "v3.py",
+      "line": 126
+    },
+    {
+      "url": "https://hide.mn/en/proxy-list/",
+      "file": "v3.py",
+      "line": 127
+    },
+    {
+      "url": "https://spys.one/en/https-ssl-proxy/",
+      "file": "v3.py",
+      "line": 128
+    },
+    {
+      "url": "https://geonode.com/free-proxy-list",
+      "file": "v3.py",
+      "line": 129
+    },
+    {
+      "url": "https://fineproxy.org/free-proxy/",
+      "file": "v3.py",
+      "line": 130
+    },
+    {
+      "url": "https://proxy-tools.com/proxy/https",
+      "file": "v3.py",
+      "line": 131
+    },
+    {
+      "url": "https://list.proxylistplus.com/SSL-proxy",
+      "file": "v3.py",
+      "line": 132
+    },
+    {
+      "url": "https://proxybros.com/free-proxy-list/",
+      "file": "v3.py",
+      "line": 133
+    },
+    {
+      "url": "https://iproyal.com/free-proxy-list/",
+      "file": "v3.py",
+      "line": 134
+    },
+    {
+      "url": "https://www.freeproxy.world/",
+      "file": "v3.py",
+      "line": 135
+    },
+    {
+      "url": "https://www.proxynova.com/proxy-server-list/",
+      "file": "v3.py",
+      "line": 136
+    },
+    {
+      "url": "https://databay.com/free-proxy-list",
+      "file": "v3.py",
+      "line": 137
+    },
+    {
+      "url": "https://openproxylist.com/proxy/",
+      "file": "v3.py",
+      "line": 138
+    },
+    {
+      "url": "https://freeproxylist.org/",
+      "file": "v3.py",
+      "line": 139
+    },
+    {
+      "url": "https://proxy5.net/free-proxy",
+      "file": "v3.py",
+      "line": 140
+    },
+    {
+      "url": "http://",
+      "file": "v3.py",
+      "line": 411
+    },
+    {
+      "url": "http://",
+      "file": "v3.py",
+      "line": 412
+    }
+  ],
+  "fstring_fragment_hits": [
+    {
+      "url": "https://api.telegram.org/bot/sendMessage",
+      "file": "bebo.py",
+      "line": 5,
+      "kind": "fstring"
+    },
+    {
+      "url": "http://2captcha.com/in.php?key=&method=userrecaptcha&googlekey=&pageurl=",
+      "file": "bebo.py",
+      "line": 13,
+      "kind": "fstring"
+    },
+    {
+      "url": "http://2captcha.com/res.php?key=&action=get&id=",
+      "file": "bebo.py",
+      "line": 23,
+      "kind": "fstring"
+    },
+    {
+      "url": "http://",
+      "file": "proxy_generator_v2.py",
+      "line": 368,
+      "kind": "fstring"
+    },
+    {
+      "url": "http://",
+      "file": "proxy_generator_v2.py",
+      "line": 368,
+      "kind": "fstring"
+    },
+    {
+      "url": "http://",
+      "file": "v1.py",
+      "line": 422,
+      "kind": "fstring"
+    },
+    {
+      "url": "http://",
+      "file": "v1.py",
+      "line": 423,
+      "kind": "fstring"
+    },
+    {
+      "url": "http://",
+      "file": "v3.py",
+      "line": 411,
+      "kind": "fstring"
+    },
+    {
+      "url": "http://",
+      "file": "v3.py",
+      "line": 412,
+      "kind": "fstring"
+    }
+  ],
+  "urls_per_host": {
+    "raw.githubusercontent.com": 62,
+    "api.proxyscrape.com": 5,
+    "free-proxy-list.net": 4,
+    "www.proxy-list.download": 4,
+    "cdn.jsdelivr.net": 3,
+    "proxydb.net": 3,
+    "2captcha.com": 2,
+    "advanced.name": 2,
+    "api.openproxylist.xyz": 2,
+    "proxy-list.download": 2,
+    "proxyspace.pro": 2,
+    "free-proxy.cz": 1,
+    "www.boys-here.com": 1,
+    "api.openproxy.space": 1,
+    "api.telegram.org": 1,
+    "databay.com": 1,
+    "fineproxy.org": 1,
+    "freeproxylist.org": 1,
+    "geonode.com": 1,
+    "hasdata.com": 1,
+    "hide.mn": 1,
+    "httpbin.org": 1,
+    "iproyal.com": 1,
+    "list.proxylistplus.com": 1,
+    "multiproxy.org": 1,
+    "openproxy.space": 1,
+    "openproxylist.com": 1,
+    "proxy-tools.com": 1,
+    "proxy5.net": 1,
+    "proxybros.com": 1,
+    "proxylist.geonode.com": 1,
+    "proxyscrape.com": 1,
+    "spys.me": 1,
+    "spys.one": 1,
+    "www.freeproxy.world": 1,
+    "www.instagram.com": 1,
+    "www.media.io": 1,
+    "www.proxies24.com": 1,
+    "www.proxy11.com": 1,
+    "www.proxynova.com": 1,
+    "www.sslproxies.org": 1,
+    "www.us-proxy.org": 1
+  }
+}
