@@ -819,3 +819,115 @@ against a **caller-supplied** target at lease time.
   so nothing has written verdicts back onto source rows yet. The capability is
   built; the number on disk has not moved, and I am not reporting it as though
   it had.
+
+---
+
+## P08 · PRE-WORK — two gaps closed before the API was written
+
+Not the API itself. Two prerequisites had to be honest first, because the P08
+hand-out API validates a caller-supplied target using exactly these two pieces:
+the URL splitter (`ADR-030`) and the config loader that supplies the deny-list
+(`ADR-031`). Building the API on top of an unverified splitter would have put the
+security decision on foundations nobody had measured.
+
+### 0 · Recovery: an auto-sync committed a deliberately broken file
+
+A mutation-testing run — checking whether the parity suite actually kills defects
+rather than merely passing — was interrupted between steps. Two things then went
+wrong at once:
+
+* an auto-sync **committed** `url.py` while it held the mutant (`pass  # MUTANT`
+  in place of the IPv6 validation), so `git status` was clean and HEAD was wrong;
+* `/tmp` was cleared between turns, so the backup the restore relied on was gone.
+
+No clean copy existed anywhere in history — `url.py` had exactly one commit, and
+it was the mutated one. The block was reconstructed from the mutation command's
+own recorded replacement text, corroborated by the surviving explanatory comment
+and the still-live `import ipaddress`, then **verified against CPython on 13
+curated bracketed cases before any new work began**.
+
+**Process lesson, now in `next_action`:** never leave a deliberately broken file
+on disk between steps. Mutate **in memory** (`exec` a patched source string) and
+keep the on-disk copy clean. "I will restore it in the next command" assumes both
+that the next command runs and that `/tmp` persists. Neither held.
+
+### 1 · ADR-032 — two real defects the fuzz had never been able to reach
+
+With the file restored, extending the parity fuzz to the **bracketed authority
+shape** found two genuine defects — both in the more-permissive-than-CPython
+direction, which for a deny-list input is the dangerous one:
+
+| | defect | effect |
+|---|---|---|
+| 1 | zone id never validated | `http://[::%aa_%]` → host `'::%aa_%'`; CPython refuses |
+| 2 | fragment swallowed into host | `http://[::a%8e#?b8]` accepted as one literal |
+
+Defect 1 is the instructive one. The code validated `host.split("%", 1)[0]`,
+and a comment explained that the split was *necessary* because `ipaddress`
+rejects RFC 6874 zone ids. That is false, and has been since Python 3.9:
+`IPv6Address('fe80::1%eth0').scope_id == 'eth0'`. So the comment did not merely
+drift from the code — it **asserted a testable falsehood about a dependency**,
+and justified a weaker check with it. Fourth recurrence of the prose-vs-code
+class (ADR-014, ADR-022, ADR-023); the first three were guards matching their own
+documentation, this one was documentation defending a hole.
+
+**Why 50 000 existing fuzz cases missed it:** the general alphabet drew `[` and
+`%`, but the `http://[...]` *shape* is vanishingly rare in uniform random
+strings, so the IPv6 branch was essentially never entered. **Coverage of a line
+is not coverage of a shape.** A bracket-focused generator now constructs it
+directly.
+
+Measured over 400 000 bracket-focused inputs:
+
+| | accepts what CPython refuses | refuses what CPython accepts |
+|---|---|---|
+| before | 34 | 8 |
+| after | **0** | 8 |
+
+The 8 are the safe direction, **predate** this work (verified by re-running the
+original code), and are now pinned by an exact count so a *new* strictness
+divergence cannot hide behind "stricter is fine".
+
+### 2 · ADR-031 — the gate check caught its own author
+
+`make doctor` reported `cited_adrs_exist` FAIL: `adapters/config.py` cited
+**ADR-031, which had never been written**. That reverse-edge check was added in
+P07.T5 precisely to catch code citing decisions that do not exist, and its first
+real catch was my own prior work.
+
+Writing the missing ADR surfaced a second, larger gap. `config.py`'s docstring
+advertises that "failures are loud" — 8 `ConfigError` raise-sites — and **not one
+of them had a test**. The happy path was covered incidentally (`test_target_policy`
+loads the real `config.yaml`), so the suite was green while the advertised safety
+property was pure assertion. Exactly the ADR-014 class: documented ≠ demonstrated.
+
+The case that matters most: `deny_hosts: "example.com"` as a *string*. Python
+iterates a string character by character, so a tolerant loader builds a deny-list
+of **letters** — denying nothing real, while looking populated in any debug dump.
+`test_a_string_deny_list_is_refused_not_iterated` pins it, and injecting the
+tolerant behaviour fails that test.
+
+### Verification
+
+Every fix has teeth proven by **injection**, not by assertion:
+
+| injected defect | tests that fail |
+|---|---|
+| zone id split before validation | 4 |
+| loose bracket character class | 3 |
+| tolerant string `deny_hosts` | 1 |
+
+`make doctor`: **16/16 checks pass**, 421 tests green (412 unit + 9 integration,
+up from 402). ADR-030 and ADR-031 retro-documented; ADR-032 added.
+
+**Honest note:** an intermittent single warning appears in roughly 1 run in 4,
+from integration teardown (SIGKILL child / multiprocessing). It could not be
+reproduced on demand, so it is recorded in `TASK_STATE.tests.note` rather than
+quietly dropped or claimed fixed.
+
+**NEXT:** P08 proper — the hand-out API. Scope re-verified against P05 evidence
+this session: the atomic lease **already exists and is proven** (single
+`BEGIN IMMEDIATE` CAS, H3 under real process concurrency, committed negative
+control, independent `lease_log` audit). Remaining work is only the layer above —
+lease via `StorePort`, validate the caller-supplied target at lease time
+(ADR-007, 90s `target_ttl`), rank with P07 scoring, release/expire on failure.
