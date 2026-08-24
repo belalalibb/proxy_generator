@@ -24,7 +24,7 @@ A measured rebuild of a legacy proxy scraper.
 |---|---|
 | Phase | **P09 — SCHEDULER + RATE LIMITING · in progress** (P08 gate PASSED) · per-host limiting done (ADR-034), TTL reconciliation next |
 | Gate 0 | ✅ PASSED (re-earned twice after sync losses — ADR-010) |
-| Tests | **503 passed** — 486 unit + 17 integration (real concurrency, SIGKILL, negative control) <!--verify:engineering/TASK_STATE.json:tests.passed:503--> |
+| Tests | **507 passed** — 490 unit + 17 integration (real concurrency, SIGKILL, negative control) <!--verify:engineering/TASK_STATE.json:tests.passed:507--> |
 | Gate checks | **18/18 pass** (`make doctor`) <!--verify:engineering/TASK_STATE.json:gate_checks:18--> |
 | Live admission (k=5) | **3 admitted** of 300 probed — 86 tcp_ok → 12 reached gate → 6 with 2+ samples <!--verify:engineering/TASK_STATE.json:baseline_to_beat.v4_live_calibration.admitted:3--> |
 | Defects v4 introduced | **2 found by reading artifacts**, both behind a green suite — [`BUG_LEDGER`](engineering/BUG_LEDGER.md) V4-01, V4-02 |
