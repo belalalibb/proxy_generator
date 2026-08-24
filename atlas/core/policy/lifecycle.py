@@ -112,6 +112,25 @@ class SchedulerPolicy:
     retire_after_consecutive_failures: int = 5
     max_pool_size: int = 50_000
 
+    # ADR-039: how many ABANDONED rechecks a row may accumulate before it is
+    # retired. A SEPARATE bound from `retire_after_consecutive_failures`, because
+    # it counts a different event and neither can substitute for the other:
+    #
+    #   consecutive_failures  -- a probe RAN and returned a verdict we can name
+    #   abandoned_rechecks    -- a probe was claimed and never reported at all
+    #
+    # Measured (`engineering/raw/recheck_bounds.json`): a crashing worker drove 12
+    # claim->reclaim cycles and `consecutive_failures` never left 0, because the
+    # abandon path writes no failure. So the existing retirement ladder could
+    # never advance and the row cycled PROBING -> COOLING -> PROBING forever.
+    #
+    # 3 rather than 5: an abandoned probe costs a full claim lifetime of nothing
+    # happening, so it is a more expensive signal than a fast rejection and is
+    # worth acting on sooner. It is not derived from the failure threshold --
+    # tying them together would mean one config change silently retuned two
+    # different policies.
+    retire_after_abandoned_rechecks: int = 3
+
     # ADR-006 backoff, passed through so the ladder is configurable in one place.
     cooldown_base_s: float = 30.0
     cooldown_cap_s: float = 3600.0
@@ -136,6 +155,14 @@ class SchedulerPolicy:
             )
         if self.max_pool_size < 1:
             raise ValueError(f"max_pool_size must be >= 1, got {self.max_pool_size}")
+        if self.retire_after_abandoned_rechecks < 1:
+            # Zero would retire a row for an abandonment that never happened --
+            # the same pool-emptying typo `retire_after_consecutive_failures`
+            # refuses, by the same reasoning: refused loudly, never clamped.
+            raise ValueError(
+                "retire_after_abandoned_rechecks must be >= 1, got "
+                f"{self.retire_after_abandoned_rechecks}"
+            )
         if self.cooldown_base_s <= 0:
             raise ValueError(
                 f"cooldown_base_s must be > 0, got {self.cooldown_base_s}")
@@ -213,6 +240,19 @@ def decide(proxy: Proxy, policy: SchedulerPolicy, *, now: datetime) -> PoolActio
         # rows too -- a proxy can be READY with a long failure history if it
         # recovered, and once it crosses the threshold it retires regardless of
         # which state it happens to be sitting in.
+        return PoolAction.RETIRE
+
+    if proxy.abandoned_rechecks >= policy.retire_after_abandoned_rechecks:
+        # ADR-039. Alongside the failure threshold and for the same reason:
+        # re-probing a row that has already earned retirement spends a full claim
+        # to re-learn a fact already recorded.
+        #
+        # This branch is what bounds the cycle. Measured without it
+        # (`recheck_bounds.json`): 12 claim->reclaim cycles, `consecutive_failures`
+        # stuck at 0, `RECHECK` returned every single time. The abandon path
+        # records no failure, so NOTHING above this line can ever fire for a
+        # proxy that crashes its probe instead of failing it -- which is why this
+        # cannot be folded into the failure threshold.
         return PoolAction.RETIRE
 
     if proxy.state is ProxyState.READY:
