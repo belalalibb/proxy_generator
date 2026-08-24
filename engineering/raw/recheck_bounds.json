@@ -1,0 +1,164 @@
+{
+  "generated_at": "2026-08-24T22:14:00.687477+00:00",
+  "purpose": "measure the two safety obligations P10 deferred, BEFORE fixing",
+  "probe_lifetime": {
+    "question": "is probe_ms >= the real worst-case time inside a claim?",
+    "evaluate_stages_actually_called": [
+      "tcp_handshake",
+      "discover_protocol",
+      "sample_latency"
+    ],
+    "check_integrity_called_by_evaluate": false,
+    "testable_protocol_rungs": [
+      "http",
+      "https"
+    ],
+    "s2_tcp_ms": 3000,
+    "s3_protocol_ms": 16000,
+    "s4_latency_ms": 40000,
+    "per_probe_worst_ms": 59000,
+    "concurrency": 10,
+    "max_rechecks": 100,
+    "waves": 10,
+    "required_claim_ms": 590000,
+    "current_default_probe_ms": 120000,
+    "default_is_sufficient": false,
+    "shortfall_ms": 470000,
+    "probe_ms_1_accepted": true,
+    "verdict": "UNDERSIZED: the default claim expires while a probe is still legitimately running (120000ms < 590000ms), and probe_ms=1 is accepted outright"
+  },
+  "recheck_attempts": {
+    "question": "can a permanently crashing proxy cycle forever?",
+    "cycles_driven": 12,
+    "claim_reclaim_cycles": 12,
+    "consecutive_failures_after": 0,
+    "total_attempts_after": 0,
+    "final_state": "COOLING",
+    "ever_retired": false,
+    "retire_threshold": 5,
+    "reclaim_touches_failure_counter": false,
+    "trace": [
+      {
+        "cycle": 0,
+        "action": "RECHECK",
+        "claimed": 1,
+        "reclaimed": 1,
+        "state_after": "COOLING",
+        "consecutive_failures": 0,
+        "total_attempts": 0,
+        "reason_code": "PROBE_ABANDONED"
+      },
+      {
+        "cycle": 1,
+        "action": "RECHECK",
+        "claimed": 1,
+        "reclaimed": 1,
+        "state_after": "COOLING",
+        "consecutive_failures": 0,
+        "total_attempts": 0,
+        "reason_code": "PROBE_ABANDONED"
+      },
+      {
+        "cycle": 2,
+        "action": "RECHECK",
+        "claimed": 1,
+        "reclaimed": 1,
+        "state_after": "COOLING",
+        "consecutive_failures": 0,
+        "total_attempts": 0,
+        "reason_code": "PROBE_ABANDONED"
+      },
+      {
+        "cycle": 3,
+        "action": "RECHECK",
+        "claimed": 1,
+        "reclaimed": 1,
+        "state_after": "COOLING",
+        "consecutive_failures": 0,
+        "total_attempts": 0,
+        "reason_code": "PROBE_ABANDONED"
+      },
+      {
+        "cycle": 4,
+        "action": "RECHECK",
+        "claimed": 1,
+        "reclaimed": 1,
+        "state_after": "COOLING",
+        "consecutive_failures": 0,
+        "total_attempts": 0,
+        "reason_code": "PROBE_ABANDONED"
+      },
+      {
+        "cycle": 5,
+        "action": "RECHECK",
+        "claimed": 1,
+        "reclaimed": 1,
+        "state_after": "COOLING",
+        "consecutive_failures": 0,
+        "total_attempts": 0,
+        "reason_code": "PROBE_ABANDONED"
+      },
+      {
+        "cycle": 6,
+        "action": "RECHECK",
+        "claimed": 1,
+        "reclaimed": 1,
+        "state_after": "COOLING",
+        "consecutive_failures": 0,
+        "total_attempts": 0,
+        "reason_code": "PROBE_ABANDONED"
+      },
+      {
+        "cycle": 7,
+        "action": "RECHECK",
+        "claimed": 1,
+        "reclaimed": 1,
+        "state_after": "COOLING",
+        "consecutive_failures": 0,
+        "total_attempts": 0,
+        "reason_code": "PROBE_ABANDONED"
+      },
+      {
+        "cycle": 8,
+        "action": "RECHECK",
+        "claimed": 1,
+        "reclaimed": 1,
+        "state_after": "COOLING",
+        "consecutive_failures": 0,
+        "total_attempts": 0,
+        "reason_code": "PROBE_ABANDONED"
+      },
+      {
+        "cycle": 9,
+        "action": "RECHECK",
+        "claimed": 1,
+        "reclaimed": 1,
+        "state_after": "COOLING",
+        "consecutive_failures": 0,
+        "total_attempts": 0,
+        "reason_code": "PROBE_ABANDONED"
+      },
+      {
+        "cycle": 10,
+        "action": "RECHECK",
+        "claimed": 1,
+        "reclaimed": 1,
+        "state_after": "COOLING",
+        "consecutive_failures": 0,
+        "total_attempts": 0,
+        "reason_code": "PROBE_ABANDONED"
+      },
+      {
+        "cycle": 11,
+        "action": "RECHECK",
+        "claimed": 1,
+        "reclaimed": 1,
+        "state_after": "COOLING",
+        "consecutive_failures": 0,
+        "total_attempts": 0,
+        "reason_code": "PROBE_ABANDONED"
+      }
+    ],
+    "verdict": "UNBOUNDED: the row was claimed and reclaimed 12 times, consecutive_failures stayed at 0, and it never retired -- the abandon path records nothing, so the retirement ladder never advances"
+  }
+}
