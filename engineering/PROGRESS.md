@@ -524,3 +524,91 @@ be populated and judged, but nothing *persists* it.
 **NEXT:** P05 — STORE + LEASE (H3/H8). SQLite WAL, `lease()` as a single
 `BEGIN IMMEDIATE` compare-and-set, atomic `.tmp`+`os.replace` exports. Leasing
 must be proven under **real concurrency**, not asserted.
+
+---
+
+## 2026-08-24 — P05 · the pool persists, and a splice I had written myself
+
+**AR:** الصفر لا يعني شيئًا حتى تُثبت أن أداتك تستطيع رؤية غير الصفر.
+**EN:** A zero means nothing until you prove your instrument can see non-zero.
+
+### STORE + LEASE (H3 / H8) — `atlas/adapters/store_sqlite.py`
+
+SQLite in WAL, `synchronous=FULL`. `lease()` is **one** `BEGIN IMMEDIATE` plus a
+single `UPDATE … RETURNING` whose `WHERE` re-checks `state='READY'`. The write
+lock is taken at `BEGIN`, not on first write — a `DEFERRED` transaction upgrades
+lazily, and that upgrade window *is* the race.
+
+### Why four mechanisms, not one
+
+A correct `lease()` and a broken read-then-write `lease()` are **behaviourally
+identical** in every single-threaded test. Worse, a concurrency test that never
+actually creates contention passes and proves nothing — an ineffective test is
+indistinguishable from a passing one. So:
+
+1. **Real concurrency** — `multiprocessing`/`spawn`, separate processes and
+   connections (threads let the GIL hide the race). One case oversubscribes:
+   48 requested from a pool of 24.
+2. **A committed negative control** — `NaiveStore`, deliberately wrong code whose
+   only job is to be caught.
+3. **An independent audit** — append-only `lease_log` +
+   `double_delivery_violations()`, which reconstructs what happened instead of
+   asking `lease()` to report on itself.
+4. **AST guards** — because the difference is structural, not observable.
+
+Head-to-head, **identical config** (pool 12, 6 procs × 6):
+
+| implementation | handed out | unique | duplicates |
+|---|---|---|---|
+| `SqliteStore.lease` (CAS) | 12 | 12 | **0** |
+| `NaiveStore.lease_naive` | 36 | 6 | **30** |
+
+Oversubscribed (pool 24, 12 procs × 4 = 48 requested): **24 unique, 0 duplicates.**
+
+For H8 the child ends with `os.kill(os.getpid(), SIGKILL)` and the parent asserts
+`returncode == -9`. Signal 9 is uncatchable, so no `finally`, no `atexit`, no
+`__exit__` runs — otherwise the test would be measuring my own shutdown code
+instead of durability.
+
+### Three claims that did not survive re-derivation
+
+`make doctor` was **14/14 green with 204 tests passing** when I resumed. All
+three defects below sat *behind* that green.
+
+**(a) ADR-022's own table was a splice — ADR-020, recurring.** It read "same
+12-proxy pool, 6 processes each requesting 6", but the real arm's `12 / 12 / 0`
+came from the *oversubscribed* run (pool 24, 12 procs) while the naive arm's
+`36 / 6 / 30` came from pool 12. Both rows were real measurements; no single
+experiment produced both. Found by trying to re-derive the table from the
+artifact and discovering the numbers came from two runs. The tool now runs a
+**matched** arm, so the only variable is the implementation.
+
+**(b) `make sources-audit` could not execute.** It invoked
+`engineering/tools/reprobe_empty.py`, deleted by a sync several phases ago. No
+gate caught it because no gate ever *ran* that target — a Makefile recipe is
+invisible to both the import graph and pytest. New check
+`makefile_tools_exist`; teeth proven by injecting a bogus reference (FAIL) then
+restoring (PASS).
+
+**(c) ADR-022 claimed `make doctor` runs the integration tests.** True — but only
+as an unasserted side effect of pytest discovery. One `testpaths` line would have
+silently dropped the H3/H8 evidence while every gate stayed green: the exact
+vacuous-pass shape of ADR-010. `check_test_scope.py` now *measures* the default
+collection (195 unit + 9 integration = 204) inside `make gate`.
+
+The pattern in all three: **the green was real, and the claims behind it were
+not.** A passing suite tells you the assertions you wrote hold — not that they
+mean what your prose says.
+
+### PHASE GATE 5 · **PASSED**
+
+`make doctor` → **15/15 gate checks**, **204 tests** (195 unit + 9 integration).
+
+Invariants: H1 ✅ · H2 ✅ · H4 ✅ · H5 ✅ · H6 ✅ · H7 ✅ (k=1 caveat) ·
+**H3 ✅ NEW** · **H8 ✅ NEW**. All eight now hold, H7 with its caveat recorded.
+
+**NEXT:** P06 — PROBE + LIVE CALIBRATION. The gate's replay is k=1, so it tests
+the *threshold* only; jitter and reliability have never been measured live.
+Build the real `ProbePort` (k=5, integrity checks for `TRANSPARENT_LEAK` /
+`CONTENT_MISMATCH`) and produce the first artifact in which `label_is_verified`
+can become true. Registry currently reports `labels_verified: 0`.
