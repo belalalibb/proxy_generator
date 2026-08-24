@@ -22,6 +22,7 @@ from __future__ import annotations
 import ast
 import json
 import pathlib
+import random
 
 import pytest
 
@@ -37,7 +38,7 @@ from atlas.core.policy.normalize import (
     to_proxies,
 )
 from atlas.core.policy.percentile import (
-    mean_ms, pct_floor, pct_linear, sample_stdev,
+    mean_ms, pct_floor, pct_linear, pct_tail, sample_stdev,
 )
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -95,6 +96,87 @@ def test_the_two_percentile_methods_really_do_differ() -> None:
         "the methods coincide here, so test_percentile_methods_match_the_"
         "baseline_tool would pass vacuously"
     )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ADR-024 — a "95th percentile" that returns the MINIMUM
+# ══════════════════════════════════════════════════════════════════════════════
+def test_floor_rank_returns_the_minimum_at_k2_which_is_why_pct_tail_exists() -> None:
+    """
+    Documents the DEFECT in the frozen legacy estimator, so the reason pct_tail
+    exists cannot be deleted as redundant.
+
+    int((n-1)*0.95) == 0 for n == 2: the "95th percentile" of two samples is the
+    FASTER one. Found via engineering/raw/admission_live_fixed.json, which
+    recorded p95=4100.7 BELOW p50=5880.0 -- impossible for a real percentile.
+    """
+    assert pct_floor([900.0, 9000.0], 95) == 900.0, "the defect is gone; drop pct_tail"
+    assert pct_tail([900.0, 9000.0], 95) == 9000.0
+
+
+def test_the_tail_estimator_never_falls_below_the_median() -> None:
+    """p95 < p50 is arithmetically impossible. The floor rank violates it at k=2."""
+    rng = random.Random(20260824)
+    saw_floor_violation = False
+    for n in range(1, 9):
+        for _ in range(400):
+            xs = [rng.uniform(10.0, 20000.0) for _ in range(n)]
+            assert pct_tail(xs, 95) >= pct_linear(xs, 50) - 1e-9, (n, xs)
+            if pct_floor(xs, 95) < pct_linear(xs, 50) - 1e-9:
+                saw_floor_violation = True
+    assert saw_floor_violation, (
+        "the frozen floor rank never violated the ordering in this sample, so "
+        "this test proves nothing -- check the k=2 case is still generated"
+    )
+
+
+def test_pct_tail_preserves_legacy_parity_for_every_k_above_two() -> None:
+    """
+    The fix must not silently re-open ADR-011. Baseline comparability lives at
+    n=102 and n=118, where the floor index is 95 and 111 -- nowhere near the k=2
+    pathology -- so pct_tail must agree with pct_floor there exactly.
+    """
+    data = legacy_latencies()
+    assert len(data) == LEGACY_N
+    assert pct_tail(data, 95) == pct_floor(data, 95) == LEGACY_P95
+
+    rng = random.Random(11)
+    for n in list(range(3, 40)) + [102, 118]:
+        xs = [rng.uniform(10.0, 20000.0) for _ in range(n)]
+        assert pct_tail(xs, 95) == pct_floor(xs, 95), n
+
+
+def test_a_proxy_measured_over_budget_at_k2_is_not_admitted() -> None:
+    """
+    THE REGRESSION THAT MATTERS. This is a false ADMIT, not a mis-stated number.
+
+    Samples (1400ms, 1600ms) against a 1500ms ceiling: one request was measured
+    OVER budget, but floor-rank p95 reported 1400 and the gate returned
+    OK/USABLE. Jitter is 0.09, far below the 0.5 ceiling, so no other rule
+    catches it -- the gate built to reject the legacy system's slow proxies would
+    have admitted a proxy it had itself measured too slow (H7's failure mode,
+    reintroduced through the estimator instead of the threshold).
+    """
+    policy = AdmissionPolicy()
+    profile = build_profile((1400.0, 1600.0), attempted=2)
+
+    assert profile.p95_ms == 1600.0, "p95 must reflect the slower observation"
+    assert profile.jitter is not None and profile.jitter < policy.max_jitter, (
+        "if jitter caught this, the p95 rule would not be the load-bearing one")
+
+    verdict = decide(profile, policy)
+    assert verdict.reason is ReasonCode.TOO_SLOW_P95
+    assert verdict.grade is Grade.REJECTED
+
+
+def test_a_genuinely_fast_k2_proxy_is_still_admitted() -> None:
+    """
+    Teeth in the other direction: pct_tail must not reject everything at k=2.
+    Without this, returning +inf would pass the test above.
+    """
+    verdict = decide(build_profile((300.0, 420.0), attempted=2), AdmissionPolicy())
+    assert verdict.reason is ReasonCode.OK
+    assert verdict.grade is not Grade.REJECTED
 
 
 def test_stdev_of_one_sample_is_none_not_zero() -> None:
