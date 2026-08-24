@@ -291,7 +291,11 @@ def main() -> int:
     print(f"  ADMITTED      : {t['admitted']}")
     print(f"  rejected      : {t['rejected']}")
     print("  top reasons   :", dict(list(report["rejection_reasons"].items())[:6]))
-    print(f"  -> {out.relative_to(ROOT)}")
+    # relative_to() raises for a path outside ROOT (e.g. --out /tmp/x.json),
+    # which would crash AFTER the report was already written -- losing the
+    # artifact path at the one moment the operator needs it.
+    rel = out.relative_to(ROOT) if out.is_relative_to(ROOT) else out
+    print(f"  -> {rel}")
     return 0
 
 
