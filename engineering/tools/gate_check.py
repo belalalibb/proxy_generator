@@ -100,12 +100,31 @@ def check_declared_evidence(res: Result) -> None:
                     except SyntaxError as exc:
                         bad.append(f"{t['id']} -> {ev} (unparseable: {exc})")
                         continue
-                    defined = {
-                        n.name for n in ast.walk(tree)
-                        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef,
-                                          ast.ClassDef))
-                    }
-                    if symbol not in defined:
+                    # P08: the name set was FLAT, so `Class::method` -- a node id
+                    # pytest itself collects -- was reported "no def/class named",
+                    # the same under-powered-guard failure described above, one
+                    # level down. Qualified names are now resolved by walking the
+                    # nesting, which stays strict: a real method cited under the
+                    # WRONG class still fails, because the qualified path must
+                    # match, not merely the leaf name.
+                    defined: set[str] = set()
+
+                    def _collect(node: ast.AST, prefix: str = "") -> None:
+                        for child in ast.iter_child_nodes(node):
+                            if isinstance(child, (ast.FunctionDef,
+                                                  ast.AsyncFunctionDef,
+                                                  ast.ClassDef)):
+                                qual = f"{prefix}{child.name}"
+                                defined.add(qual)
+                                _collect(child, f"{qual}.")
+
+                    _collect(tree)
+                    # pytest writes Class::method; python writes Class.method.
+                    wanted = symbol.replace("::", ".")
+                    # A bare leaf name stays citable (e.g. a module-level def),
+                    # but only if it is unambiguous at some nesting level.
+                    leaves = {q.rsplit(".", 1)[-1] for q in defined}
+                    if wanted not in defined and wanted not in leaves:
                         bad.append(
                             f"{t['id']} -> {ev} (no def/class named {symbol})")
                 elif path_part.endswith(".md"):
@@ -199,6 +218,25 @@ def check_state_consistency(res: Result) -> None:
             bad.append(f"{t['id']} is {t.get('status')} but {phase} is PASSED")
     res.add("phase_gates_consistent", not bad,
             "; ".join(bad) if bad else "no phase claims PASSED with unfinished tasks")
+
+    # P08: found by a real contradiction surviving a green gate. A sandbox
+    # re-clone reverted TASK_STATE (P08 -> TODO) while README.md, saved by
+    # auto-sync, still read "P08 -- HAND-OUT API - gate PASSED". Every one of the
+    # 17 checks passed on that state, because nothing compared README's PROSE
+    # phase claim against phase_gate_status. The verify: anchors cover NUMBERS
+    # only, so the most reader-visible claim in the repo was the least guarded.
+    readme = ROOT / "README.md"
+    if readme.exists():
+        claim_bad: list[str] = []
+        for m in re.finditer(r"\*\*(P\d\d)\b[^*]*?gate PASSED\*\*",
+                             readme.read_text(encoding="utf-8")):
+            phase, status = m.group(1), gates.get(m.group(1))
+            if status != "PASSED":
+                claim_bad.append(
+                    f"README says {phase} gate PASSED but TASK_STATE says {status}")
+        res.add("readme_phase_claim_matches_state", not claim_bad,
+                "; ".join(claim_bad) if claim_bad
+                else "README phase claims agree with phase_gate_status")
 
 
 def check_adr_claims_are_verifiable(res: Result) -> None:
