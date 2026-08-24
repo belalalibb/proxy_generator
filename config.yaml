@@ -1,0 +1,122 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# ATLAS PROXY FABRIC v4 — configuration
+#
+# EVERY tunable lives here, never in code. The legacy tree hardcoded 257 URL
+# literals, 9 `max_workers` literals and its timeouts inline, so changing any
+# behaviour meant editing Python (engineering/raw/bug_scan.json).
+#
+# Each value below cites the measurement or ADR that justifies it. A number with
+# no justification is a guess, and guesses are what this rebuild exists to remove.
+# ══════════════════════════════════════════════════════════════════════════════
+version: 4
+
+# ── admission gate — THE CENTRAL RULE (ADR-003, H7: LIVE != GOOD) ─────────────
+# The legacy gate was `status == 200 and len(text) > 1000` on ONE sample. From its
+# own recorded run (n=102, engineering/BASELINE.json):
+#     p50 6 359.5 ms | mean 7 145.1 ms | p95 15 903 ms | max 19 035 ms
+#     95.8% of ACCEPTED proxies were slower than 1 500 ms; 56.8% slower than 5 000.
+# Latency was measured 59 times in the legacy tree and compared against a
+# rejecting threshold ZERO times.
+admission:
+  samples_k: 5                  # ADR-003. k=1 is the defect; k=10 doubles cost
+  decide_on: p95                # never `min` (cosmetic), never a single sample
+  max_p95_ms: 1500              # rejects 95.8% of what the legacy gate admitted
+  max_jitter: 0.5               # stdev/p50 -- fast but erratic is not good
+  min_success_ratio: 0.6        # of the k samples
+  stop_after_consecutive_failures: 2   # don't pay 5x for a dead endpoint
+  # Grades are relative to max_p95_ms; calibrated against real data in P06.
+  grades:
+    elite_p95_ms: 500
+    good_p95_ms: 1000
+    usable_p95_ms: 1500
+
+# ── probe pipeline (§7). Cheap stages first, so k=5 is only paid by survivors ──
+probe:
+  tcp_timeout_ms: 3000          # S2 triage; v3.py:393 had this idea
+  per_sample_timeout_ms: 8000   # S4
+  discover_protocol: true       # ADR-005: the source's label is a HINT only
+  protocols_to_try: [http, https, socks5, socks4]
+  check_transparent_leak: true  # S5: a proxy that forwards your IP is worthless
+  verify_tls: true              # legacy disabled TLS in 9 places (B-09). Never here.
+  global_concurrency: 200
+  per_host_concurrency: 8       # legacy used 100-150 threads and caused its own 429s
+
+# ── source fetching (ADR-006) ─────────────────────────────────────────────────
+# Discovered by accident in Phase 0: GeoNode returned 230 067 bytes of valid JSON,
+# then 659 bytes ~2s later, which a naive pass filed TRULY_EMPTY. That 659-byte
+# body was OUR OWN throttling. A single failure must never disable a source.
+sources:
+  registry_path: atlas/data/sources/sources.json
+  fetch_timeout_s: 20
+  max_body_bytes: 8000000
+  global_concurrency: 12
+  per_host_concurrency: 2       # deliberately low; we stop causing our own 429s
+  use_conditional_get: true     # ETag / If-Modified-Since
+  cooldown:
+    base_s: 30                  # delay = base * 2^(consecutive_failures-1)
+    cap_s: 3600                 # capped at 1 hour
+    disable_after_consecutive_failures: 12
+  # A short/throttled body is a DISTINCT reason code, never "empty".
+  throttle_suspect_below_bytes: 2000
+  user_agent: "atlas-v4/1.0 (+https://github.com/belalalibb/proxy_generator)"
+
+# ── storage (ADR-004). SQLite is the source of truth; text files are exports ───
+store:
+  path: atlas/data/atlas.db
+  journal_mode: WAL             # concurrent readers; /stats never blocks leasing
+  busy_timeout_ms: 5000
+  synchronous: NORMAL
+  checkpoint_every_writes: 500
+  exports:
+    dir: atlas/data/exports
+    atomic: true                # .tmp then os.replace(); legacy truncated (B-04)
+    min_grade: USABLE
+
+# ── leasing (H3: NO DOUBLE DELIVERY) ──────────────────────────────────────────
+# proxy.txt had no LEASED state, so two concurrent consumers always got the same
+# line (B-05). Leasing is a single atomic compare-and-set, never read-then-write.
+lease:
+  default_ms: 30000
+  max_ms: 300000
+  reclaim_expired_every_s: 10
+
+# ── scheduler ─────────────────────────────────────────────────────────────────
+scheduler:
+  recheck_ready_after_s: 900    # a proxy admitted an hour ago is not still good
+  discovery_interval_s: 600
+  retire_after_consecutive_failures: 5
+  max_pool_size: 50000
+
+# ── targets (H5 / ADR-007) — THERE IS NO DEFAULT TARGET ───────────────────────
+# The legacy code defaulted to a login-walled social network and probed it
+# thousands of times per run (v1.py:29, v3.py:30). That also conflated TARGET
+# DIFFICULTY with PROXY QUALITY: the 0.68% legacy success rate substantially
+# measured that site's bot defences, not the proxies.
+# `target` is therefore a REQUIRED per-request parameter. Requests without it are
+# an error, by design.
+targets:
+  require_explicit_target: true
+  default_target: null          # MUST stay null. See engineering/SECURITY.md.
+  allow_policy:
+    deny_private_ranges: true
+    deny_hosts:                 # login-walled / bot-hostile third parties
+      - instagram.com
+      - facebook.com
+      - tiktok.com
+    max_requests_per_host_per_min: 60
+
+# ── api ───────────────────────────────────────────────────────────────────────
+api:
+  host: 127.0.0.1
+  port: 8080
+  api_key_env: ATLAS_API_KEY    # from .env, never committed
+  rate_limit_per_min: 120
+
+# ── observability ─────────────────────────────────────────────────────────────
+# Legacy had 23 silent handlers, so no failure was ever diagnosable (B-02).
+obs:
+  log_level: INFO
+  log_format: json
+  log_path: atlas/data/atlas.log
+  require_reason_code: true     # a rejection with no ReasonCode is a bug
+  metrics_enabled: true
