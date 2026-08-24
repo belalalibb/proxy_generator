@@ -615,3 +615,108 @@ def test_the_gate_module_never_uses_min_as_a_statistic() -> None:
     assert not calls, (
         f"admission.py calls min() {len(calls)}x; §8 forbids deciding on min"
     )
+
+
+# ── ADR-028: the SSRF range check was an enumeration with no backstop ─────────
+CGNAT_CASES = [
+    "100.64.0.0", "100.64.1.1", "100.100.100.100", "100.127.255.255",
+]
+
+
+@pytest.mark.parametrize("addr", CGNAT_CASES)
+def test_cgnat_is_refused(addr: str) -> None:
+    """
+    ADR-028. SECURITY.md P5 claimed CGNAT 100.64/10 was rejected "via
+    ipaddress"; it was ACCEPTED, because `ipaddress` reports is_private=False
+    AND is_global=False for RFC 6598 space, so it satisfied none of the
+    specific checks.
+
+    This asserts the named reason, not merely "dropped": a generic refusal
+    would not tell an operator that the range the security policy calls out by
+    name is the one that matched.
+    """
+    cand, reason = normalize_one(f"{addr}:8080")
+    assert cand is None, f"{addr} is CGNAT (RFC 6598) and must not be accepted"
+    assert reason == DropReason.CGNAT_RANGE
+
+
+def test_cgnat_boundaries_are_not_over_refused() -> None:
+    """
+    The addresses either side of 100.64.0.0/10 are ordinary public space.
+
+    Without this, `test_cgnat_is_refused` would still pass if the check refused
+    all of 100.0.0.0/8 -- or everything. A deny rule needs its false-positive
+    direction pinned, which is the ADR-027 lesson (assert the work, not just
+    the ceiling).
+    """
+    for ok in ("100.63.255.255", "100.128.0.0"):
+        cand, reason = normalize_one(f"{ok}:8080")
+        assert cand is not None, f"{ok} is outside 100.64/10 and must be accepted, got {reason}"
+
+
+def test_metadata_endpoint_is_reported_as_link_local() -> None:
+    """
+    169.254.169.254 (cloud metadata, SECURITY.md P5) is link-local AND private.
+    LINK_LOCAL is the specific true statement, so that is what must be reported.
+    """
+    cand, reason = normalize_one("169.254.169.254:80")
+    assert cand is None
+    assert reason == DropReason.LINK_LOCAL
+
+
+def test_no_non_global_address_is_ever_accepted() -> None:
+    """
+    THE CLASS-LEVEL GUARD, and the actual point of ADR-028.
+
+    The defect was not "one range was missing" -- it was that the check
+    enumerated ranges with no backstop, so the next reserved-but-unflagged
+    allocation would walk through too. This enumerates every special-purpose
+    range `ipaddress` can recognise and asserts each is refused, so a future
+    gap fails a test instead of shipping.
+    """
+    import ipaddress
+    specials = [
+        "0.0.0.0", "10.0.0.1", "100.64.1.1", "127.0.0.1", "169.254.1.1",
+        "172.16.0.1", "192.0.0.1", "192.0.2.1", "192.168.1.1", "198.18.0.1",
+        "198.51.100.1", "203.0.113.1", "224.0.0.1", "239.255.255.250",
+        "240.0.0.1", "255.255.255.255",
+    ]
+    accepted = []
+    for addr in specials:
+        cand, _ = normalize_one(f"{addr}:8080")
+        if cand is not None:
+            accepted.append(addr)
+    assert not accepted, (
+        f"non-routable addresses were ACCEPTED as proxy candidates: {accepted}. "
+        "SECURITY.md P5 promises these are refused."
+    )
+    # Vacuity guard: the loop must actually have exercised the address that
+    # motivated the ADR. Without this the test would still pass if `specials`
+    # were emptied by a bad merge.
+    assert "100.64.1.1" in specials and len(specials) >= 16
+
+
+def test_is_global_alone_would_not_be_a_correct_check() -> None:
+    """
+    Proves the DESIGN claim in ADR-028 rather than asserting it in prose: neither
+    `is_global` nor the specific properties subsume the other, so both are needed.
+
+    If someone "simplifies" normalize_one down to `if not ip.is_global`, multicast
+    starts being admitted -- and this test records why that refactor is wrong,
+    measured on the interpreter rather than argued.
+    """
+    import ipaddress
+    # multicast that is_global calls global -> is_global alone would ADMIT these
+    for mcast in ("224.0.0.1", "239.255.255.250"):
+        assert ipaddress.ip_address(mcast).is_global is True
+        assert ipaddress.ip_address(mcast).is_multicast is True
+    # CGNAT that no specific property flags -> specific checks alone MISS it
+    cgnat = ipaddress.ip_address("100.64.1.1")
+    assert cgnat.is_global is False
+    assert not (cgnat.is_private or cgnat.is_loopback or cgnat.is_multicast
+                or cgnat.is_reserved or cgnat.is_link_local
+                or cgnat.is_unspecified)
+    # and normalize_one refuses BOTH kinds
+    for addr in ("224.0.0.1", "239.255.255.250", "100.64.1.1"):
+        cand, _ = normalize_one(f"{addr}:8080")
+        assert cand is None, f"{addr} must be refused"
