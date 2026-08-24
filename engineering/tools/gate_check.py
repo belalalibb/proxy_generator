@@ -83,8 +83,40 @@ def check_declared_evidence(res: Result) -> None:
                 except OSError as exc:
                     bad.append(f"{t['id']} -> {ev} (unreadable: {exc})")
                     continue
-                if f"def {symbol}(" not in text:
-                    bad.append(f"{t['id']} -> {ev} (symbol not defined in file)")
+                # P07: this previously tested only `def {symbol}(`, so a CLASS
+                # (`class ScoringPolicy`) or an ADR heading (`## ADR-026`) could
+                # not be cited as evidence at all -- it reported "not defined"
+                # for symbols plainly present. It failed LOUDLY rather than
+                # silently, so it was an under-powered guard and not a hole; but
+                # a guard that cannot express the evidence people actually have
+                # invites them to cite something vaguer instead.
+                #
+                # Python is now parsed with AST rather than string-matched, which
+                # is also STRICTER than the old substring test: `def foo(` in a
+                # comment or a docstring no longer counts as a definition.
+                if path_part.endswith(".py"):
+                    try:
+                        tree = ast.parse(text)
+                    except SyntaxError as exc:
+                        bad.append(f"{t['id']} -> {ev} (unparseable: {exc})")
+                        continue
+                    defined = {
+                        n.name for n in ast.walk(tree)
+                        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef,
+                                          ast.ClassDef))
+                    }
+                    if symbol not in defined:
+                        bad.append(
+                            f"{t['id']} -> {ev} (no def/class named {symbol})")
+                elif path_part.endswith(".md"):
+                    # A markdown symbol must be a HEADING, not a passing mention,
+                    # or "documented in DECISIONS.md" would be satisfied by the
+                    # ADR merely being named in another ADR's prose.
+                    if not re.search(rf"^#+\s.*{re.escape(symbol)}\b", text,
+                                     flags=re.MULTILINE):
+                        bad.append(f"{t['id']} -> {ev} (no heading for {symbol})")
+                elif symbol not in text:
+                    bad.append(f"{t['id']} -> {ev} (symbol absent)")
     res.add("done_tasks_have_evidence", not bad,
             "missing: " + "; ".join(bad) if bad else
             "every DONE task's evidence exists on disk")
@@ -465,6 +497,55 @@ def check_no_percentile_ordering_violation(res: Result) -> None:
             f"{scanned} measured record(s) satisfy p95 >= p50")
 
 
+def check_cited_adrs_exist(res: Result) -> None:
+    """
+    ADR-027's sibling, earned in P07: every ADR-NNN cited by executable code must
+    actually EXIST in DECISIONS.md.
+
+    Why this direction is new. `check_adr_claims_are_verifiable` walks
+    DECISIONS.md and asks "does this ADR name a way to check it?" -- ADR -> code.
+    Nothing walked the reverse edge. So `atlas/engine/cycle.py` shipped, tested
+    and green, citing **ADR-026 five times** while DECISIONS.md stopped at
+    ADR-025: the engine's central design decision (feeding probe results back
+    onto the source row) existed only as a docstring reference to a document that
+    did not describe it. A reader following the citation found nothing.
+
+    That is the ADR-014 defect with its arrows reversed. ADR-014 was earned when
+    an ADR described code that did not exist; this is code citing an ADR that
+    does not exist. Both are dangling references, and a guard covering only one
+    direction leaves the other free.
+
+    Scans executable code only (atlas/), never the engineering prose, because a
+    ledger legitimately discusses ADR numbers in the past tense.
+    """
+    decisions = ROOT / "engineering" / "DECISIONS.md"
+    if not decisions.exists():
+        res.add("cited_adrs_exist", False, "DECISIONS.md missing")
+        return
+
+    defined = set(re.findall(r"^## (ADR-\d+)", decisions.read_text(encoding="utf-8"),
+                             flags=re.MULTILINE))
+    if not defined:
+        res.add("cited_adrs_exist", False, "no ADR headings parsed from DECISIONS.md")
+        return
+
+    dangling: list[str] = []
+    scanned = 0
+    for py in sorted((ROOT / "atlas").rglob("*.py")):
+        scanned += 1
+        for lineno, line in enumerate(py.read_text(encoding="utf-8").splitlines(), 1):
+            for cited in re.findall(r"ADR-\d+", line):
+                if cited not in defined:
+                    rel = py.relative_to(ROOT)
+                    dangling.append(f"{rel}:{lineno} cites {cited}")
+
+    res.add("cited_adrs_exist", not dangling,
+            f"code cites undocumented ADR(s): {'; '.join(dangling[:5])}"
+            if dangling else
+            f"{scanned} module(s) scanned; every cited ADR is defined "
+            f"({len(defined)} ADRs)")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
@@ -484,6 +565,7 @@ def main() -> int:
     check_tests_tracked_by_git(res)
     check_makefile_tools_exist(res)
     check_no_percentile_ordering_violation(res)
+    check_cited_adrs_exist(res)
 
     if args.json:
         print(json.dumps(
