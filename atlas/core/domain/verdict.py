@@ -8,7 +8,9 @@ against a rejecting threshold **zero times**. What that admitted, from its own
 recorded run (n=102):
 
     p50 6 359.5 ms | mean 7 145.1 ms | p95 15 903 ms | max 19 035 ms
-    95.8% of ACCEPTED proxies were slower than 1 500 ms; 56.8% slower than 5 000 ms.
+    95.1% of ACCEPTED proxies were slower than 1 500 ms; 58.8% slower than 5 000 ms.
+    (All from the n=102 proxy_details.json stream. The n=118 log stream of the
+    same run reads 95.8% / 56.8%; ADR-020 records why mixing them was wrong.)
 
 A 19-second proxy was recorded as a success identical to a 756 ms one. Admission
 here is therefore a graded Verdict with an explicit reason, never a bool.
