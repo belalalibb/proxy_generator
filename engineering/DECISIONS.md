@@ -1340,3 +1340,118 @@ starve past is worth an occasional edit.
 **Verify:** `python3 -m pytest atlas/tests/unit/test_engine.py -q -k max_probes`, and the
 mutation record above is reproducible by inserting an early `continue` into `run_cycle`'s
 source loop: the strengthened test fails, the original passes.
+
+---
+
+## ADR-028 — `is_private` is not "is not routable": CGNAT was accepted while SECURITY.md claimed it was rejected
+
+**Phase:** P08 · **Status:** ACCEPTED
+
+**Context.** `SECURITY.md` §2 row **P5** states that `S1 SYNTAX` rejects
+"loopback, private (RFC1918), link-local, **CGNAT 100.64/10**, multicast and reserved
+ranges via `ipaddress`". The claim names its mechanism, which is what made it checkable —
+and it is **false for CGNAT**. Measured on this interpreter (Python 3.13.13):
+
+| address | `is_private` | `is_global` | caught by any specific property? |
+|---|---|---|---|
+| `10.0.0.1` | True | False | yes (private) |
+| `169.254.169.254` | True | False | yes (link-local) |
+| **`100.64.1.1`** | **False** | **False** | **no — accepted** |
+| `224.0.0.1` | False | **True** | yes (multicast) |
+
+`normalize_one` checks `is_unspecified / is_loopback / is_multicast / is_private /
+is_reserved`. CGNAT (RFC 6598, `100.64.0.0/10`) sets **none** of them, so
+`normalize_one("100.64.1.1:8080")` returned an **accepted candidate**. The SSRF control
+that the security document describes as enforced was not enforced.
+
+Note also that the naive "fix" is wrong in the other direction: `224.0.0.1` and
+`239.255.255.250` report `is_global=True` while being multicast, so **replacing** the
+specific checks with `not is_global` would newly *admit* multicast. Neither test subsumes
+the other; both are required. That is the substance of this ADR — not "add a subnet".
+
+**Decision.** Keep every specific check (each yields the most precise reason a human can
+act on) and add a **final catch-all**: an address that is not `is_global` is refused with
+the new reason `NOT_GLOBALLY_ROUTABLE`. CGNAT additionally gets its own named reason,
+`CGNAT_RANGE`, checked before the catch-all, because "the security policy names this range
+explicitly" deserves a reason code that says so rather than a generic one.
+
+Ordering is part of the contract, exactly as in `admission.py`: most-specific true
+statement first, catch-all last. The catch-all is what makes the *class* closed — the
+defect was not that one range was missing, it was that the check enumerated ranges with no
+backstop, so the next reserved-but-unflagged allocation would have walked through too.
+
+**Alternatives.** *Only add `100.64.0.0/10`* — rejected; that fixes the instance and leaves
+the class open, which is the ADR-023 mistake (fixing the third recurrence of a defect
+instead of the defect). *Replace the specific checks with `not is_global`* — rejected;
+measured above to admit multicast, and it collapses five diagnosable reasons into one.
+*Weaken SECURITY.md to match the code* — rejected; the document states the intended
+control, and the code was wrong.
+
+**Consequence.** Measured blast radius on real data: `proxy.txt` (616 lines) contains **0**
+CGNAT candidates and **0** addresses that only the catch-all would reject, so this admits
+and rejects exactly what it did before on the live corpus — it closes a hole that the
+current data does not happen to exercise. That is stated rather than dressed up as a yield
+improvement: the value is the closed class, not a number that moved.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_policy.py -q -k "cgnat or global or link_local"`
+— **8 selected**, counted rather than estimated. (My first draft of this line said
+`-k "cgnat or routable"` / 6 selected. It selects **5**: `routable` matches no test name,
+and the two tests that carry the word are named `..._is_ever_accepted` and
+`..._is_global_alone_...`. Corrected here because an unverified **Verify:** line is exactly
+what ADR-014 exists to prevent, and P07 already had to fix this same slip once.)
+
+The class-level guard is `test_no_non_global_address_is_ever_accepted`, which enumerates
+every `ipaddress`-recognised special range and asserts each is refused — so a future
+missing range fails a test rather than shipping.
+
+---
+
+## ADR-029 — The hand-out API validates the caller's target, and the allow-policy stops being a comment
+
+**Phase:** P08 · **Status:** ACCEPTED
+
+**Context.** `config.yaml` has carried a `targets.allow_policy` block since P01 —
+`deny_private_ranges`, `deny_hosts: [instagram.com, facebook.com, tiktok.com]`,
+`max_requests_per_host_per_min` — and `SECURITY.md` §3 promises the target "must pass the
+allow-policy". A mechanical search for a reader
+(`grep -rn "allow_policy\|deny_hosts\|deny_private_ranges\|require_explicit_target"
+--include=*.py`) returns **no Python reader at all**. `Target.__post_init__` validates only
+that the URL is non-empty and absolute `http(s)`.
+
+So `Target(url="https://instagram.com")` — the *exact* legacy default that ADR-007
+prohibits and that `MIGRATION_LEDGER.md` files as `RETIRED_PROHIBITED` — is constructible
+today. ADR-007's "no default target" half is real and enforced (there is no default
+anywhere); its "allow-policy-checked" half was documentation.
+
+This is ADR-019's defect class (a captured fact that nothing reads) applied to a *policy*
+rather than to a datum, and it is the third time this shape has appeared: ADR-019 (a
+captured scheme nobody read), ADR-021 (a port filtering on a field the domain could not
+express), and now a policy nobody evaluated.
+
+**Decision.** `atlas/core/policy/target_policy.py` — a **pure** module implementing
+`TargetPolicy` + `check_target()`, returning a named `TargetRefusal` rather than a bool, and
+the hand-out API refuses at lease time. Enforced properties, each traceable to
+SECURITY.md P5/§4:
+
+* scheme ∈ {http, https} — no `file://`, `gopher://`, `ftp://`
+* host is not an IP literal in any non-global range (reuses the ADR-028 predicate, so the
+  SSRF rule has **one** implementation and cannot drift between the candidate path and the
+  target path)
+* host is not a cloud metadata address (`169.254.169.254`, `metadata.google.internal`)
+* host does not match `deny_hosts`, **including subdomains** — `www.instagram.com` and
+  `graph.instagram.com` are refused, while `notinstagram.com` is *not* (suffix matching on
+  label boundaries, not `str.endswith`, which would refuse the latter)
+
+The `max_requests_per_host_per_min` cap is **deliberately not implemented here**: rate
+limiting needs a clock and shared state, so it belongs to the P09 API layer, and pretending
+a pure function enforces it would recreate exactly the "documented but unenforced" defect
+this ADR fixes. It is recorded as P09 scope in `TASK_STATE.json`, not silently dropped.
+
+**Consequence.** A caller must name a target that passes policy; `GET /api/proxies` without
+`url` remains an error by design (ADR-007). The legacy default target is now refused by a
+test rather than by a promise.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_target_policy.py -q` (24 tests), of
+which `test_the_legacy_default_target_is_refused` pins the ADR-007 case and
+`test_a_lookalike_host_is_not_refused` pins the false-positive direction — a deny-list that
+refuses everything would pass the first test alone.
