@@ -1960,8 +1960,10 @@ project keeps finding; it is retained deliberately (below), not by omission.
    cap is a property of the *backoff rule*, which is shared with the source path
    where it does bind (`disable_after=12`, so `n=8` reaches 3840 s → capped).
 
-**Why the store grows a `select_for_recheck()` rather than the scheduler reading
-rows.** The scheduler must find rows whose *derived* eligibility has elapsed.
+**Why the store grows a `select_schedulable()` rather than the scheduler reading
+rows.** (Named `select_for_recheck()` in this ADR as first written; the
+implemented method has always been `select_schedulable` and the prose is
+corrected per ADR-037 decision 5.) The scheduler must find rows whose *derived* eligibility has elapsed.
 Doing that in Python means loading the pool — 50 000 rows at the configured cap —
 to discard almost all of it. The predicate is pushed into SQL, but the *decision*
 stays pure: SQL selects **candidates** by state and age; `SchedulerPolicy` makes
@@ -1978,3 +1980,137 @@ and is left explicitly undone rather than half-done. The gap is named in
 **Verify:** `python3 -m pytest atlas/tests/unit/test_scheduler.py -q` and
 `python3 engineering/tools/measure_pool_lifecycle.py` →
 `engineering/raw/pool_lifecycle.json` (the before/after table above).
+
+---
+
+## ADR-037
+### The guard against unfalsifiable ADRs was itself satisfiable by an unfalsifiable claim
+
+**Status.** Accepted (2026-08-24, P09.T3).
+
+**Context.** On resume, `make doctor` reported `adr_claims_are_verifiable`
+**PASS — 36 ADR(s) checked**, while ADR-036's own `**Verify:**` line read
+`python3 -m pytest atlas/tests/unit/test_scheduler.py` and **that file did not
+exist**. The scheduler and the lifecycle policy — the fix for a defect that
+silently removed a proxy from the pool forever after one failure — had shipped
+with **zero tests**, and the guard whose entire purpose is to catch an ADR that
+describes non-existent work reported no problem.
+
+Reading `check_adr_claims_are_verifiable` explains it in one line:
+
+```python
+has_verify = "**Verify:**" in body
+```
+
+It tests **the presence of the string**, never the existence of what the string
+names. ADR-014 was earned because ADR-012 and ADR-013 were written, committed and
+cited in README while their code did not exist; its rule is *a decision record
+that cannot be falsified is an intention*. The check it produced enforces that an
+ADR **contains the characters** `**Verify:**` — which is satisfied perfectly by a
+citation pointing at nothing.
+
+**How it was actually caught, which matters more than the hole.** Not by reading
+the code. `declared_test_count_matches_collection` failed: *declared 507, pytest
+collects 509*. A two-test disagreement was the visible edge of a missing test
+file and a missing config loader. This is the third time in this project that a
+**numeric** cross-check has caught a **structural** defect that every structural
+check passed (ADR-018's 87-vs-113, BLK-02's 503-vs-507, now 507-vs-509). Counts
+are cheap and they do not care what the prose says.
+
+**A second finding, from the same session.** A platform sync erased the commit
+containing the first attempt at this work — `test_scheduler.py` was untracked at
+the moment the sync ran. `atlas/engine/scheduler.py` and
+`core/policy/lifecycle.py` survived because they had been committed. The existing
+`tests_tracked_by_git` check exists for exactly this reason and is why the loss
+was visible rather than silent; the operational lesson is recorded here because
+it changes sequencing, not code: **commit before running anything long**, since
+an uncommitted file is one sync away from never having existed.
+
+**Why this is the same defect class as ADR-022, ADR-023 and ADR-035.** Each was a
+guard that verified *the description of a thing* rather than *the thing*: ADR-022
+checked that fsync was mentioned near a replace, ADR-023 drifted into verifying
+its own documentation, ADR-035's first test restated the boolean expression it was
+meant to be testing and passed while the mutant survived. This is the fourth
+recurrence, and the pattern is now specific enough to state as a rule: **a guard
+whose subject is text must resolve that text against the filesystem, or it is
+measuring its own vocabulary.**
+
+**Decision.**
+
+1. **A new check, `adr_verify_targets_exist`.** Every `**Verify:**` token that
+   looks repo-relative (contains `/`, ends in a tracked extension) must exist on
+   disk. It is a **separate** check rather than an extension of
+   `adr_claims_are_verifiable`, so the two failure modes stay distinguishable in
+   the gate output: "this ADR names no way to check it" and "this ADR names a way
+   to check it that does not exist" are different defects with different fixes,
+   and collapsing them would make the second look like the first.
+2. **Only the `**Verify:**` section is scanned, and bare basenames are exempt.**
+   Context sections legitimately name deleted legacy files (ADR-001 cites
+   `v1.py`) and superseded snapshots; requiring every mention of a filename to
+   resolve would push path noise into every ADR to catch a defect that has only
+   ever occurred in the pathful form. The check is deliberately narrower than
+   "all filenames must exist".
+3. **Proven on the live defect, not a synthetic one.** With
+   `test_scheduler.py` moved aside — the exact state ADR-036 shipped in — the old
+   check still reports `PASS, 36 ADR(s) checked` and the new one reports
+   `ADR-036 -> atlas/tests/unit/test_scheduler.py`. A synthetic case would prove
+   only that the check *can* fail; this proves it fails on the thing that
+   actually got past it.
+4. **`load_scheduler_policy()` is written, not assumed.** ADR-036 decision 4
+   asserted the four `scheduler.*` keys were "read by `load_scheduler_policy()`
+   in `adapters/config.py`". No such function existed — the ADR-019 defect
+   *inside* the ADR written to fix it. It now exists, and a missing key
+   **raises** rather than defaulting: a loader that substituted its own default
+   would leave `config.yaml` exactly as decorative as ADR-036 found it, since an
+   operator could delete `max_pool_size` and the system would carry on with a
+   number from the source code.
+5. **ADR-036's `select_for_recheck()` is corrected to `select_schedulable()`.**
+   The implemented method has always been `select_schedulable`; the ADR's prose
+   named a method that does not exist. Corrected in place with this note rather
+   than silently, because an ADR that renames its own subject after the fact is
+   indistinguishable from one that never checked.
+
+**The check misfired on its own ADR, and that is recorded rather than quietly
+fixed.** First run after writing this ADR: two FAILs —
+`ADR-037 -> core/policy/lifecycle.py` and `ADR-037 -> adapters/config.py`. Both
+files exist. Two real bugs in the check, found by pointing it at itself:
+
+  * it split on the **first** `**Verify:**`, but this ADR *quotes* that string
+    while describing the hole — so it scanned the whole body instead of the
+    Verify section. Fixed to `rsplit`: the Verify section is the last one.
+  * ADRs write `core/policy/lifecycle.py` as often as
+    `atlas/core/policy/lifecycle.py`. Both name the same real file, so the
+    `atlas/` prefix is now tried before a claim is called dangling. Flagging a
+    file that exists would train the reader to ignore the check, which is worse
+    than the narrowness it buys.
+
+A guard whose first action is to misfire on its own decision record is worth
+knowing about: it is the same *verifies-the-description* family this ADR is
+about, one level up, and it was caught only because the check was run against
+real prose rather than a synthetic fixture.
+
+**A related correction, same session.** `done_tasks_have_evidence` then failed on
+P09.T3: the evidence entries were written as `path -- prose`, while the
+established convention is `path::Symbol`, which the gate RESOLVES inside the
+file. Prose evidence would have been unresolvable — an evidence list that cannot
+be checked is the same defect as a `**Verify:**` line that names nothing.
+
+**A consequence worth recording.** `SchedulerPolicy` mirrors `config.yaml`'s four
+values as dataclass defaults, because `core/` may not read files. That
+duplication is only safe because `test_the_mirrored_defaults_match_the_file`
+fails when it stops matching — the ADR-031 pattern. Without that test the mirror
+would be a fifth copy of the same numbers, free to drift.
+
+**What this does NOT claim.** The `bool`-is-an-`int` rejection in the loader
+(`retire_after_consecutive_failures: yes` would otherwise load as `1` and retire
+every proxy on its first failure) is guarded by a test but has **never been
+observed in a real config file**. It is a defect prevented by construction, not
+one measured in the wild. Likewise the eviction/lease race is exercised against a
+**fake** store here; the real SQL predicate is proven in `test_store.py`.
+
+**Verify:** `python3 engineering/tools/gate_check.py` → `adr_verify_targets_exist`
+(36 targets resolve), and `python3 -m pytest atlas/tests/unit/test_scheduler.py -q`
+→ 65 tests. Mutation evidence: setting `is_terminal` to treat `COOLING` as
+terminal fails 3 tests, including
+`test_cooling_is_not_absorbing_the_negative_control`. Artifact:
+`engineering/raw/pool_lifecycle.json`.
