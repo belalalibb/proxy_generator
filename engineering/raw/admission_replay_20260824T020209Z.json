@@ -1,0 +1,764 @@
+{
+  "generated_at": "2026-08-24T02:02:09.578886+00:00",
+  "input": "proxy_details.json::working_proxies",
+  "question": "how many legacy-ADMITTED proxies would the v4 gate admit?",
+  "method": {
+    "k_used": 1,
+    "why": "the legacy file records ONE sample per proxy",
+    "tests_only": "the p95 latency THRESHOLD",
+    "cannot_test": [
+      "k=5 sampling (ADR-003)",
+      "min_success_ratio (one attempt)",
+      "max_jitter (stdev undefined at n=1)"
+    ],
+    "bias": "GENEROUS to the legacy data: a single sample cannot expose unreliability or jitter, so this is the most flattering reading available",
+    "percentile": "p95 by ADR-011 floor rank, identical to measure_baseline.py, so the figures are comparable"
+  },
+  "policy": {
+    "max_p95_ms": 1500.0,
+    "elite_p95_ms": 500.0,
+    "good_p95_ms": 1000.0,
+    "usable_p95_ms": 1500.0
+  },
+  "legacy_admitted_n": 102,
+  "legacy_distribution": {
+    "p50_ms": 6359.5,
+    "p95_ms": 15903.0,
+    "max_ms": 19035.0,
+    "min_ms": 756.0
+  },
+  "v4_would_admit": 5,
+  "v4_would_reject": 97,
+  "v4_reject_pct": 95.1,
+  "v4_admitted_distribution": {
+    "n": 5,
+    "p50_ms": 1199.0,
+    "p95_ms": 1329.0,
+    "max_ms": 1372.0
+  },
+  "by_reason": {
+    "OK": 5,
+    "TOO_SLOW_P95": 97
+  },
+  "by_grade": {
+    "GOOD": 1,
+    "USABLE": 4,
+    "REJECTED": 97
+  },
+  "per_proxy": [
+    {
+      "proxy": "157.175.147.228:10010",
+      "legacy_response_time_ms": 756.0,
+      "v4_admitted": true,
+      "v4_grade": "GOOD",
+      "v4_reason": "OK"
+    },
+    {
+      "proxy": "40.172.232.213:29214",
+      "legacy_response_time_ms": 1076.0,
+      "v4_admitted": true,
+      "v4_grade": "USABLE",
+      "v4_reason": "OK"
+    },
+    {
+      "proxy": "3.79.73.102:8080",
+      "legacy_response_time_ms": 1199.0,
+      "v4_admitted": true,
+      "v4_grade": "USABLE",
+      "v4_reason": "OK"
+    },
+    {
+      "proxy": "18.188.141.177:8834",
+      "legacy_response_time_ms": 1329.0,
+      "v4_admitted": true,
+      "v4_grade": "USABLE",
+      "v4_reason": "OK"
+    },
+    {
+      "proxy": "147.75.101.247:55555",
+      "legacy_response_time_ms": 1372.0,
+      "v4_admitted": true,
+      "v4_grade": "USABLE",
+      "v4_reason": "OK"
+    },
+    {
+      "proxy": "54.199.199.66:3749",
+      "legacy_response_time_ms": 1706.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "188.132.222.230:8080",
+      "legacy_response_time_ms": 1951.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "38.127.172.160:24171",
+      "legacy_response_time_ms": 2017.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "154.6.161.228:37198",
+      "legacy_response_time_ms": 2312.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "104.129.194.44:10336",
+      "legacy_response_time_ms": 2361.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "152.53.168.53:49661",
+      "legacy_response_time_ms": 2415.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "128.199.253.195:9090",
+      "legacy_response_time_ms": 2587.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "147.75.34.93:9443",
+      "legacy_response_time_ms": 2654.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "102.68.128.216:8080",
+      "legacy_response_time_ms": 2761.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "164.163.42.21:10000",
+      "legacy_response_time_ms": 2782.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "164.163.42.16:10000",
+      "legacy_response_time_ms": 2833.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "152.53.168.53:16371",
+      "legacy_response_time_ms": 2866.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "164.163.42.6:10000",
+      "legacy_response_time_ms": 2917.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "104.129.194.43:9443",
+      "legacy_response_time_ms": 2961.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "116.97.3.251:1005",
+      "legacy_response_time_ms": 3002.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "164.163.42.2:10000",
+      "legacy_response_time_ms": 3094.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "164.163.42.15:10000",
+      "legacy_response_time_ms": 3156.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "152.53.168.53:32145",
+      "legacy_response_time_ms": 3157.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "152.53.171.242:52033",
+      "legacy_response_time_ms": 3160.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "104.129.194.43:11258",
+      "legacy_response_time_ms": 3224.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "52.184.80.192:23128",
+      "legacy_response_time_ms": 3331.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.78.201.242:5001",
+      "legacy_response_time_ms": 3477.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "164.163.42.35:10000",
+      "legacy_response_time_ms": 3526.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "185.200.38.54:8080",
+      "legacy_response_time_ms": 3560.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "38.127.172.79:24171",
+      "legacy_response_time_ms": 3753.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "152.53.168.53:56189",
+      "legacy_response_time_ms": 3776.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "38.127.172.106:24171",
+      "legacy_response_time_ms": 3814.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "152.53.168.53:18807",
+      "legacy_response_time_ms": 3877.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "164.163.42.39:10000",
+      "legacy_response_time_ms": 3912.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "41.254.63.18:8080",
+      "legacy_response_time_ms": 3941.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "65.108.251.40:26262",
+      "legacy_response_time_ms": 4002.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "152.53.168.53:10074",
+      "legacy_response_time_ms": 4133.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "152.53.168.53:44887",
+      "legacy_response_time_ms": 4169.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "152.53.168.53:21841",
+      "legacy_response_time_ms": 4661.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "202.57.25.76:8080",
+      "legacy_response_time_ms": 4733.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "152.53.168.53:55775",
+      "legacy_response_time_ms": 4909.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "152.53.194.55:20223",
+      "legacy_response_time_ms": 4959.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.110.10.198:702",
+      "legacy_response_time_ms": 5050.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "38.253.80.104:999",
+      "legacy_response_time_ms": 5178.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.77.62.134:8080",
+      "legacy_response_time_ms": 5767.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "67.43.236.20:11729",
+      "legacy_response_time_ms": 5795.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "143.208.57.163:999",
+      "legacy_response_time_ms": 5832.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "164.163.42.38:10000",
+      "legacy_response_time_ms": 5958.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "38.65.174.107:999",
+      "legacy_response_time_ms": 5963.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "195.66.189.58:81",
+      "legacy_response_time_ms": 6222.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "149.86.146.222:8080",
+      "legacy_response_time_ms": 6257.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "180.190.240.83:8082",
+      "legacy_response_time_ms": 6462.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "38.127.172.31:24171",
+      "legacy_response_time_ms": 6497.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.160.41.8:8080",
+      "legacy_response_time_ms": 6903.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "190.128.134.66:999",
+      "legacy_response_time_ms": 7196.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "190.130.6.11:8080",
+      "legacy_response_time_ms": 7232.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "158.255.212.55:5566",
+      "legacy_response_time_ms": 7237.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "38.52.220.58:999",
+      "legacy_response_time_ms": 7294.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "181.174.231.26:999",
+      "legacy_response_time_ms": 7522.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "149.86.146.197:8080",
+      "legacy_response_time_ms": 7540.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "116.102.106.101:10002",
+      "legacy_response_time_ms": 7698.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "47.129.253.163:938",
+      "legacy_response_time_ms": 7917.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "126.209.2.2:8081",
+      "legacy_response_time_ms": 8052.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "14.224.174.168:3539",
+      "legacy_response_time_ms": 8082.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "27.147.177.74:58080",
+      "legacy_response_time_ms": 8157.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "175.111.129.154:8080",
+      "legacy_response_time_ms": 8166.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "182.78.42.112:83",
+      "legacy_response_time_ms": 8185.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "117.5.199.191:5101",
+      "legacy_response_time_ms": 8399.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "49.0.33.133:27039",
+      "legacy_response_time_ms": 8571.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "223.204.81.212:8080",
+      "legacy_response_time_ms": 9051.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "102.0.11.152:8080",
+      "legacy_response_time_ms": 9294.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.41.250.97:8080",
+      "legacy_response_time_ms": 9354.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "45.189.108.20:999",
+      "legacy_response_time_ms": 9439.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "180.190.188.183:8082",
+      "legacy_response_time_ms": 9446.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "38.44.17.150:999",
+      "legacy_response_time_ms": 9463.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.162.16.109:8080",
+      "legacy_response_time_ms": 9612.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "181.209.111.84:999",
+      "legacy_response_time_ms": 10000.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "161.49.90.70:1337",
+      "legacy_response_time_ms": 10174.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.159.96.146:3128",
+      "legacy_response_time_ms": 10394.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "164.163.43.102:10000",
+      "legacy_response_time_ms": 10445.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "197.248.57.193:8080",
+      "legacy_response_time_ms": 10609.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "38.156.75.130:8080",
+      "legacy_response_time_ms": 10636.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.159.46.121:82",
+      "legacy_response_time_ms": 10839.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "38.253.80.25:999",
+      "legacy_response_time_ms": 10895.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "190.120.255.167:999",
+      "legacy_response_time_ms": 11042.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "38.51.207.98:999",
+      "legacy_response_time_ms": 11580.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.133.27.159:8085",
+      "legacy_response_time_ms": 11895.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "45.184.103.110:999",
+      "legacy_response_time_ms": 11935.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.251.8.135:3128",
+      "legacy_response_time_ms": 12308.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "186.3.76.228:999",
+      "legacy_response_time_ms": 12467.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.189.197.179:3030",
+      "legacy_response_time_ms": 12518.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.169.189.202:9090",
+      "legacy_response_time_ms": 12783.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "117.5.199.191:5104",
+      "legacy_response_time_ms": 12927.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.153.134.150:8080",
+      "legacy_response_time_ms": 13247.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "200.106.63.218:999",
+      "legacy_response_time_ms": 15751.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "46.10.229.243:8080",
+      "legacy_response_time_ms": 15903.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.177.235.207:83",
+      "legacy_response_time_ms": 16350.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "177.101.86.13:3128",
+      "legacy_response_time_ms": 17664.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "201.88.213.118:8080",
+      "legacy_response_time_ms": 17674.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "103.227.187.13:6080",
+      "legacy_response_time_ms": 17757.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "116.100.250.40:10006",
+      "legacy_response_time_ms": 18999.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    },
+    {
+      "proxy": "183.88.231.188:34599",
+      "legacy_response_time_ms": 19035.0,
+      "v4_admitted": false,
+      "v4_grade": "REJECTED",
+      "v4_reason": "TOO_SLOW_P95"
+    }
+  ]
+}
