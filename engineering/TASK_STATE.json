@@ -1,7 +1,7 @@
 {
   "version": "4.0.0",
-  "updated_at": "2026-08-24T02:37:29Z",
-  "current_phase": "P05_STORE_LEASE",
+  "updated_at": "2026-08-24T03:30:00Z",
+  "current_phase": "P06_PROBE_CALIBRATION",
   "phase_gate_status": {
     "P00": "PASSED",
     "P01": "PASSED",
@@ -9,7 +9,7 @@
     "P03": "PASSED",
     "P04": "PASSED",
     "P05": "PASSED",
-    "P06": "TODO",
+    "P06": "PASSED",
     "P07": "TODO",
     "P08": "TODO",
     "P09": "TODO",
@@ -468,12 +468,92 @@
       ],
       "attempts": 1,
       "notes": "ADR-022's table mixed two configs (real from pool 24/12 procs, naive from pool 12/6 procs) -- the ADR-020 splice, recurring. Added a matched arm. Also: `make sources-audit` referenced reprobe_empty.py, deleted by a sync, so the target could not run; now gated by makefile_tools_exist (teeth proven by injection)."
+    },
+    {
+      "id": "P06.T1",
+      "phase": "P06",
+      "title": "AiohttpProbe implementing ProbePort: TCP triage, protocol ladder, k sampling, integrity",
+      "status": "DONE",
+      "evidence": [
+        "atlas/adapters/probe_aiohttp.py",
+        "atlas/tests/unit/test_probe.py::test_probe_satisfies_the_port",
+        "atlas/tests/unit/test_probe.py::test_k_samples_really_means_k_requests",
+        "atlas/tests/unit/test_probe.py::test_samples_are_sequential_so_p95_is_not_self_inflicted_load"
+      ],
+      "attempts": 1,
+      "notes": "28 probe tests against a real in-process FakeProxy, not mocks. Samples are sequential so p95 is not self-inflicted load; failed samples are returned so success_ratio keeps its denominator."
+    },
+    {
+      "id": "P06.T2",
+      "phase": "P06",
+      "title": "ADR-023: TLS guard rewritten to AST (third recurrence of prose-matching guards)",
+      "status": "DONE",
+      "evidence": [
+        "atlas/tests/unit/test_architecture.py",
+        "atlas/tests/unit/test_probe.py::test_tls_verification_is_on_by_default"
+      ],
+      "attempts": 2,
+      "notes": "The regex guard failed on two lines of its own documentation while missing ssl=self._verify_tls. Now AST-based, teeth proven in both directions AND by real injection into the live adapter."
+    },
+    {
+      "id": "P06.T3",
+      "phase": "P06",
+      "title": "V4-01/ADR-025: a measured cause must outrank an untested rung",
+      "status": "DONE",
+      "evidence": [
+        "atlas/adapters/probe_aiohttp.py",
+        "atlas/tests/unit/test_probe.py::test_a_measured_failure_outranks_an_untestable_socks_rung",
+        "atlas/tests/unit/test_probe.py::test_a_refused_endpoint_is_not_reported_as_untestable_socks",
+        "engineering/raw/superseded/calib_smoke_PREFIX_V4-01.json"
+      ],
+      "attempts": 1,
+      "notes": "SOCKS is last in the ladder, so the untestable placeholder overwrote every real HTTP measurement: 24/24 TCP-OK endpoints reported \"socks4 not testable\", 0 reached the gate. B-02 recurring inside its own fix. After the fix the same sweep surfaced TCP_REFUSED 44 / BAD_STATUS 31 / PROXY_AUTH_REQUIRED 19 and 14 gate-reachers."
+    },
+    {
+      "id": "P06.T4",
+      "phase": "P06",
+      "title": "V4-02/ADR-024: floor-rank p95 returned the MINIMUM at k=2 (false admit)",
+      "status": "DONE",
+      "evidence": [
+        "atlas/core/policy/percentile.py",
+        "atlas/tests/unit/test_policy.py::test_a_proxy_measured_over_budget_at_k2_is_not_admitted",
+        "atlas/tests/unit/test_policy.py::test_the_tail_estimator_never_falls_below_the_median",
+        "atlas/tests/unit/test_policy.py::test_pct_tail_preserves_legacy_parity_for_every_k_above_two",
+        "engineering/raw/superseded/admission_live_PREFIX_V4-02.json"
+      ],
+      "attempts": 1,
+      "notes": "p95=4100.7 printed below p50=5880.0 in a live artifact -- impossible for a real percentile. int((n-1)*0.95)==0 at n=2. NOT cosmetic: samples (1400,1600) vs a 1500ms ceiling were admitted OK/USABLE, jitter 0.09 so no other rule caught it. pct_floor frozen for ADR-011 parity; new pct_tail used by the gate. Teeth: removing the k=2 branch fails exactly 3 tests."
+    },
+    {
+      "id": "P06.T5",
+      "phase": "P06",
+      "title": "Live calibration: retire the H7 k=1 caveat with real k=5 sampling",
+      "status": "DONE",
+      "evidence": [
+        "engineering/tools/calibrate_admission.py",
+        "engineering/raw/admission_live_adr024.json"
+      ],
+      "attempts": 3,
+      "notes": "300 candidates from 14 of 67 enabled registry sources (ADR-002), k=5, TLS verification ON. 86 tcp_ok -> 12 reached gate -> 6 with 2+ samples -> 3 ADMITTED. The k>1 rules fired on live data for the first time: UNRELIABLE 2, TOO_SLOW_P95 2, NOT_MEASURED 5. Two earlier attempts produced the artifacts that exposed V4-01 and V4-02."
+    },
+    {
+      "id": "P06.T6",
+      "phase": "P06",
+      "title": "Gate check reading artifacts: p95 < p50 is arithmetically impossible",
+      "status": "DONE",
+      "evidence": [
+        "engineering/tools/gate_check.py::check_no_percentile_ordering_violation",
+        "engineering/raw/superseded/README.md"
+      ],
+      "attempts": 1,
+      "notes": "Both P06 defects were found by reading an artifact, not by a failing test, so the new check reads artifacts too. Teeth proven by injection (PASS 10 records -> FAIL on inject -> PASS after removal). Pre-fix artifacts are preserved as evidence in raw/superseded/, separated STRUCTURALLY by a directory the glob does not cross rather than by an exclusion list (ADR-023)."
     }
   ],
   "files_changed": [
     "Makefile",
     "README.md",
     "atlas/adapters/http_source.py",
+    "atlas/adapters/probe_aiohttp.py",
     "atlas/adapters/registry.py",
     "atlas/adapters/store_sqlite.py",
     "atlas/core/domain/proxy.py",
@@ -491,6 +571,7 @@
     "atlas/tests/unit/test_domain.py",
     "atlas/tests/unit/test_fetch.py",
     "atlas/tests/unit/test_policy.py",
+    "atlas/tests/unit/test_probe.py",
     "atlas/tests/unit/test_registry.py",
     "atlas/tests/unit/test_store.py",
     "config.yaml",
@@ -505,6 +586,7 @@
     "engineering/SECURITY.md",
     "engineering/SOURCE_INVENTORY.json",
     "engineering/TASK_STATE.json",
+    "engineering/raw/admission_live_adr024.json",
     "engineering/raw/baseline_streams.json",
     "engineering/raw/bug_scan.json",
     "engineering/raw/geonode_body.txt",
@@ -512,7 +594,11 @@
     "engineering/raw/lease_concurrency.json",
     "engineering/raw/legacy_urls.json",
     "engineering/raw/source_probe_20260824T010038Z.json",
+    "engineering/raw/superseded/README.md",
+    "engineering/raw/superseded/admission_live_PREFIX_V4-02.json",
+    "engineering/raw/superseded/calib_smoke_PREFIX_V4-01.json",
     "engineering/tools/build_source_registry.py",
+    "engineering/tools/calibrate_admission.py",
     "engineering/tools/check_test_scope.py",
     "engineering/tools/extract_legacy_sources.py",
     "engineering/tools/gate_check.py",
@@ -526,14 +612,14 @@
     "engineering/tools/verify_units.py"
   ],
   "tests": {
-    "total": 211,
-    "passed": 211,
+    "total": 244,
+    "passed": 244,
     "failed": 0,
-    "breakdown": "202 unit + 9 integration (real concurrency, SIGKILL, negative control). P06 added 7: the TLS guard rewritten to AST with teeth tests in both directions (ADR-023)."
+    "breakdown": "235 unit + 9 integration. P06 added 33 over P05 (28 probe + ADR-024 percentile/false-admit regressions + ADR-023 TLS AST guard)."
   },
   "open_failures": [],
   "blockers": [],
-  "next_action": "P06 -- PROBE + LIVE CALIBRATION (H7 k=1 caveat). The admission gate is pure and proven against the legacy system's own 102 admitted proxies, but that replay is k=1: it tests the p95 THRESHOLD only, because the legacy file records one sample per proxy. Jitter and reliability are exercised by unit tests, never by live measurement. P06 builds the real ProbePort (k=5 sampling, integrity checks for TRANSPARENT_LEAK/CONTENT_MISMATCH), runs it against the 67 ACTIVE sources, and writes the first artifact where label_is_verified can become true for any proxy. Registry currently reports labels_verified=0.",
+  "next_action": "P07 -- SCORING + ENGINE. P06 closed the H7 k=1 caveat with a live k=5 sweep and, in doing so, exposed two v4-introduced defects that a 239-test green suite did not (both found by READING AN ARTIFACT, not by a failing test: see BUG_LEDGER V4-01/V4-02). Next: the scoring function (freshness/reliability/latency terms per B-16) and the engine loop that composes registry -> fetch -> normalize -> probe -> gate -> store, with ADR-006 consecutive-failure cooldown. Two open honesty items to carry forward: (1) TOO_JITTERY has never fired on live data -- unit-tested only; (2) label_is_verified is now achievable but the registry still reports labels_verified=0 because the sweep records verdicts per PROXY, not back onto the SOURCE row. Wiring that back is P07 work.",
   "invariants_verified": {
     "H1_evidence_for_every_claim": true,
     "H2_no_fabricated_numbers": true,
@@ -546,7 +632,7 @@
   },
   "invariant_notes": {
     "H3_no_double_delivery": "EARNED 2026-08-24 (P05). Established by four independent mechanisms, because no single one suffices: (1) real process concurrency via multiprocessing/spawn, one parametrisation oversubscribed (48 requested from a pool of 24) -> 24 unique, 0 duplicates; (2) a COMMITTED negative control, NaiveStore's read-then-write lease, which the same assertion catches at 30 duplicates on an IDENTICAL config (pool 12, 6 procs x 6) where the real store gives 0 -- without this the green result would be indistinguishable from a test that never created contention; (3) an independent append-only lease_log audit, double_delivery_violations(), which examines what happened instead of asking lease() to report on itself; (4) AST guards on structure, since the correct and broken implementations are behaviourally identical single-threaded. Artifact: engineering/raw/lease_concurrency.json.",
-    "H7_live_not_good": "EARNED 2026-08-24 (P04). The gate exists, is pure, and refuses on zero evidence (NOT_MEASURED). Replayed against the legacy system's OWN 102 admitted proxies it rejects 97 (95.1%), all on TOO_SLOW_P95. CAVEAT recorded honestly: that replay is k=1 because the legacy file holds one sample per proxy, so it tests the THRESHOLD only -- k=5 sampling, jitter and reliability are exercised by unit tests, not yet by live measurement. Live calibration is P06.",
+    "H7_live_not_good": "UPGRADED 2026-08-24 (P06): the k=1 caveat is RETIRED. The gate has now been applied to live proxies with real k=5 sampling (engineering/raw/admission_live_adr024.json): 300 probed, 86 tcp_ok, 12 reached the gate, 6 with 2+ samples, 3 ADMITTED. The rules the k=1 replay could not reach fired on real data: UNRELIABLE 2, TOO_SLOW_P95 2, NOT_MEASURED 5. Getting there required fixing two v4 defects the green suite hid: V4-01/ADR-025 (a measured cause overwritten by an untestable-SOCKS note, so 0 proxies reached the gate) and V4-02/ADR-024 (floor-rank p95 returned the MINIMUM at k=2, admitting a proxy measured over budget -- H7's own failure mode reintroduced through the estimator). TOO_JITTERY has still never fired live (0 of 6); it is proven by unit test only, and that is stated rather than papered over.",
     "H8_crash_resume": "EARNED 2026-08-24 (P05). SQLite WAL + synchronous=FULL. A child process writes, prints an ACK, then os.kill(os.getpid(), SIGKILL); the parent asserts returncode == -9 (signal 9 is uncatchable, so no finally/atexit/context manager ran) and then reopens the db and finds every acknowledged row. Exports are .tmp + fsync + os.replace in the SAME directory, with the fsync-before-replace ORDER asserted by AST -- a reader never observes a truncated file.",
     "H1_evidence_for_every_claim": "Re-earned 2026-08-24. Two ADRs were documented without implementation and the README cited unmeasured numbers; caught, recorded in RECONCILIATION.md 5-6, and now enforced by gate_check.adr_claims_are_verifiable (ADR-014)."
   },
@@ -570,6 +656,37 @@
       "survivor_p95_ms": 1329.0,
       "method": "k=1 (all the legacy file carries); tests the p95 threshold only",
       "artifact": "engineering/raw/admission_replay_20260824T020209Z.json"
+    },
+    "v4_live_calibration": {
+      "artifact": "engineering/raw/admission_live_adr024.json",
+      "probed": 300,
+      "tcp_ok": 86,
+      "reached_gate": 12,
+      "with_2plus_samples": 6,
+      "admitted": 3,
+      "k": 5,
+      "tls_verification": "ON",
+      "rejection_reasons": {
+        "TCP_TIMEOUT": 194,
+        "TCP_REFUSED": 43,
+        "BAD_STATUS": 28,
+        "PROXY_AUTH_REQUIRED": 23,
+        "NOT_MEASURED": 5,
+        "UNRELIABLE": 2,
+        "TOO_SLOW_P95": 2
+      },
+      "admitted_p95_ms": [
+        846.5,
+        863.7,
+        940.2
+      ],
+      "method": "k=5 live sampling from 14 of 67 enabled registry sources",
+      "caveats": [
+        "ADR-009 survivorship: candidates that exist TODAY, not the 2025 population.",
+        "A single sweep is point-in-time; source availability varies minute to minute.",
+        "TOO_JITTERY did not fire (0 of 6 multi-sample proxies): unit-tested only.",
+        "SOCKS candidates remain untestable (aiohttp lacks SOCKS) and are reported as such, never as failures."
+      ]
     }
   },
   "source_registry": {
