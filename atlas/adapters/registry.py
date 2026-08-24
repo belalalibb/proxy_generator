@@ -1,0 +1,160 @@
+"""Source registry loader — reads `data/sources/sources.json` (ADR-002).
+
+This adapter is the ONLY code permitted to know where source URLs come from, and
+it reads them from data. No URL literal may appear in any `.py` under `atlas/`
+(enforced by `test_registry.py::test_no_hardcoded_source_urls_in_python`).
+
+Loading is strict by design: a malformed registry raises rather than silently
+yielding fewer sources. A quietly-shrinking source list is exactly the failure
+mode that hid the truncated-fetch bug in ADR-013.
+"""
+from __future__ import annotations
+
+import json
+import pathlib
+from dataclasses import dataclass, field
+from typing import Iterator, Sequence
+
+# Resolved relative to this file so the loader works from any cwd.
+_DEFAULT_REGISTRY = (
+    pathlib.Path(__file__).resolve().parents[1] / "data" / "sources" / "sources.json"
+)
+
+VALID_STATES = frozenset({"ENABLED", "DISABLED"})
+VALID_PARSERS = frozenset({"regex_adjacent", "json_path", "html_table"})
+# `unknown` and `ambiguous` are first-class honest outcomes, not error states.
+VALID_HINTS = frozenset({"http", "https", "socks", "socks4", "socks5", "unknown", "ambiguous"})
+
+
+class RegistryError(ValueError):
+    """Raised when the registry file violates its own contract."""
+
+
+@dataclass(frozen=True, slots=True)
+class SourceRow:
+    """One immutable registry row.
+
+    `labelled_protocol` is a HINT (ADR-005). `label_is_verified` is False until a
+    real probe measures the proxy, which cannot happen before P06.
+    """
+
+    id: str
+    url: str
+    state: str
+    parser: str | None
+    labelled_protocol: str
+    label_derivation: str
+    label_is_verified: bool
+    disabled_reason: str | None = None
+    evidence: dict = field(default_factory=dict)
+
+    @property
+    def enabled(self) -> bool:
+        return self.state == "ENABLED"
+
+    @property
+    def protocol_is_certain(self) -> bool:
+        """False for unknown/ambiguous hints AND for any unverified label."""
+        return self.label_is_verified and self.labelled_protocol not in {"unknown", "ambiguous"}
+
+
+@dataclass(frozen=True, slots=True)
+class Registry:
+    rows: tuple[SourceRow, ...]
+    meta: dict = field(default_factory=dict)
+
+    def __len__(self) -> int:
+        return len(self.rows)
+
+    def __iter__(self) -> Iterator[SourceRow]:
+        return iter(self.rows)
+
+    def enabled(self) -> tuple[SourceRow, ...]:
+        return tuple(r for r in self.rows if r.enabled)
+
+    def disabled(self) -> tuple[SourceRow, ...]:
+        return tuple(r for r in self.rows if not r.enabled)
+
+    def by_parser(self, parser: str) -> tuple[SourceRow, ...]:
+        return tuple(r for r in self.enabled() if r.parser == parser)
+
+    def urls(self) -> tuple[str, ...]:
+        return tuple(r.url for r in self.enabled())
+
+
+def _require(cond: bool, msg: str) -> None:
+    if not cond:
+        raise RegistryError(msg)
+
+
+def load_registry(path: str | pathlib.Path | None = None) -> Registry:
+    """Load and validate the source registry. Raises `RegistryError` on any breach."""
+    p = pathlib.Path(path) if path is not None else _DEFAULT_REGISTRY
+    _require(p.exists(), f"registry not found: {p}")
+
+    try:
+        doc = json.loads(p.read_text())
+    except json.JSONDecodeError as exc:  # pragma: no cover - message clarity only
+        raise RegistryError(f"registry is not valid JSON: {exc}") from exc
+
+    _require(isinstance(doc, dict), "registry root must be an object")
+    _require(doc.get("schema_version") == 1, f"unsupported schema_version: {doc.get('schema_version')}")
+    raw_rows = doc.get("sources")
+    _require(isinstance(raw_rows, list) and raw_rows, "registry has no `sources` array")
+
+    rows: list[SourceRow] = []
+    seen_ids: set[str] = set()
+    seen_urls: set[str] = set()
+
+    for i, r in enumerate(raw_rows):
+        where = f"sources[{i}]"
+        _require(isinstance(r, dict), f"{where} is not an object")
+        for key in ("id", "url", "state", "labelled_protocol", "label_derivation"):
+            _require(bool(r.get(key)), f"{where} missing required field `{key}`")
+
+        rid, url, state = r["id"], r["url"], r["state"]
+        _require(rid not in seen_ids, f"{where} duplicate id: {rid}")
+        _require(url not in seen_urls, f"{where} duplicate url: {url}")
+        seen_ids.add(rid)
+        seen_urls.add(url)
+
+        _require(state in VALID_STATES, f"{where} invalid state: {state}")
+        _require(
+            r["labelled_protocol"] in VALID_HINTS,
+            f"{where} invalid labelled_protocol: {r['labelled_protocol']}",
+        )
+        _require(
+            "label_is_verified" in r and isinstance(r["label_is_verified"], bool),
+            f"{where} label_is_verified must be an explicit bool",
+        )
+
+        parser = r.get("parser")
+        reason = r.get("disabled_reason")
+        if state == "ENABLED":
+            _require(parser in VALID_PARSERS, f"{where} ENABLED needs a valid parser, got {parser!r}")
+        else:
+            # The core P02 contract: a disabled source must say WHY.
+            _require(
+                isinstance(reason, str) and reason.strip() != "",
+                f"{where} DISABLED must name a disabled_reason",
+            )
+
+        rows.append(
+            SourceRow(
+                id=rid,
+                url=url,
+                state=state,
+                parser=parser,
+                labelled_protocol=r["labelled_protocol"],
+                label_derivation=r["label_derivation"],
+                label_is_verified=r["label_is_verified"],
+                disabled_reason=reason,
+                evidence=r.get("evidence", {}) or {},
+            )
+        )
+
+    meta = {k: v for k, v in doc.items() if k != "sources"}
+    return Registry(rows=tuple(rows), meta=meta)
+
+
+__all__: Sequence[str] = ["Registry", "RegistryError", "SourceRow", "load_registry"]
