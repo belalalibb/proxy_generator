@@ -1273,3 +1273,105 @@ and it is named as such rather than counted as done.
 continue`), so a COOLING row whose cooldown has elapsed is selected by
 `select_schedulable`, classified `RECHECK` by `decide()`, and then consumed by
 nobody.
+
+---
+
+## P11 — RECHECK BOUNDS · gate PASSED
+
+Two unbounded quantities ADR-038 left explicitly open, plus the bookkeeping
+reconciliation that resuming exposed.
+
+| | |
+|---|---|
+| `claim_bound()` | the claim lifetime is **derived** from the real `ProbePlan`, never chosen; `probe_ms=None` means "derive it" |
+| `abandoned_rechecks` | incremented **inside** the reclaiming `UPDATE` — atomic with `PROBING -> COOLING`, idempotent by its own `state='PROBING'` predicate |
+| `retire_after_abandoned_rechecks` | a **separate** ladder from `retire_after_consecutive_failures`, because the two count different events |
+| mutations | **15/15 killed**, 0 survivors, across **5** modules |
+| suite | 574 → **655 passed** (629 unit + 26 integration) |
+| gate | **19/19** |
+| ADR | **ADR-039** — the record `cited_adrs_exist` was failing for |
+
+### The measurement that made the fix non-obvious
+
+The old default was not merely unguarded, it was wrong by ~5x:
+
+| measurement | before |
+|---|---|
+| `probe_ms` default | 120 000 ms |
+| required at batch 100 / concurrency 10 | **590 000 ms** |
+| shortfall | **470 000 ms** |
+| `probe_ms=1` accepted | **true** |
+| crash cycles driven | 12 |
+| `consecutive_failures` after 12 | **0** |
+| ever retired | **false** |
+
+The abandon path was not just unbounded — it was *invisible*. Every counter in
+the row read as though nothing had happened, which is why no rule above it in
+`decide()` could ever have fired.
+
+### Raising the literal was rejected as the fix
+
+`required = worst_case_per_probe * ceil(batch / concurrency)`. The wave factor is
+what 120 000 missed: one claim covers the whole batch, but a semaphore admits
+only `concurrency` probes at a time. Hardcoding 590 000 would have been the same
+defect one revision later — the next change to k, a timeout, or the ladder makes
+a hand-picked number silently wrong again. That is the 120 000's entire history.
+
+### The most instructive mistake: a test that would have punished correctness
+
+My first test asserted `required_ms == 590_000` and **failed**. Both tempting
+readings were wrong — not a code bug, not a stale artifact. `claim_bound` prices
+all four ladder rungs (750 000); the artifact measured the two the adapter can
+currently *test*, since aiohttp-socks is absent and the SOCKS rungs cost ~0.
+Pinning the measured number would have converted a deliberate safety margin into
+a regression **the suite demanded**. The test now asserts equality *restricted to
+the measured rungs* and strict excess otherwise.
+
+### Three holes found in the guards themselves
+
+1. Rewriting the retirement predicate `>= ?` → `= ?` left **all 66 tests green**,
+   while `retire_abandoned`'s docstring argued specifically for `>=`. Reachable:
+   lower the threshold in config and every existing row above it becomes
+   permanently unretirable. The ADR-023 pattern — documented reasoning nothing
+   held anyone to.
+2. Two early injections **silently no-oped** on an anchor missing a type
+   annotation. "Guard passed" was indistinguishable from a guard with teeth: an
+   injection that does not land is a false negative that *looks* like a false
+   positive.
+3. `record_failure`'s docstring cited `test_alternating_abandon_and_failure_still_retires`
+   **by name** and that test did not exist — ADR-026's defect class, invisible to
+   `check_adr_claims_are_verifiable` because it only walks ADR→code.
+
+### The artifact under-reported its own coverage
+
+`recheck_mutation.json`'s `modules` field was hand-listed as 2 entries while the
+15 mutations it summarised spanned **5**. `originals` had already been derived
+for exactly this reason (ADR-039); this field was the same defect one line over.
+Now derived from `MUTATIONS`.
+
+### Two documents agreed with each other and both were wrong
+
+Resuming found `TASK_STATE` reverted to the P09 snapshot — the ADR-010 sync
+failure — with **every P10/P11 task row gone** while the code, tests and
+ADR-038/039 sat on disk. `declared_test_count_matches_collection` caught it by
+reaching past both documents to `pytest --collect-only` (574 declared, 655
+collected). Task rows reconstructed from verified on-disk evidence, not from
+memory.
+
+Then `done_tasks_have_evidence` refused my reconstruction twice: I had written
+`claim_for_recheck` (the method is `claim_for_probe`) and put `retire_abandoned`
+in `core/policy/lifecycle.py` (it is a **store** method — the retirement is one
+`UPDATE`, not a pure decision). The gate resolves each symbol *inside* the named
+file, so both were caught before the phase could be claimed. Recorded rather
+than quietly patched.
+
+**Deliberately not done, named rather than counted as done:**
+`scheduler.discovery_interval_s` is still loaded and consulted by no loop — the
+one key of four that drives nothing. `check_integrity` (S5) still has no
+production caller, so `claim_bound` deliberately does not price it. The SOCKS
+rungs still cost ~0 without aiohttp-socks, so the bound is conservative rather
+than exact. And `check_adr_claims_are_verifiable` still walks ADR→code only, so a
+docstring citing a nonexistent test remains invisible to the gate — found by hand
+twice now (ADR-026, and `record_failure` here).
+
+**NEXT:** P12 — full 6-level suite green.
