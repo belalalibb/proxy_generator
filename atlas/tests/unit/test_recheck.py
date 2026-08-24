@@ -733,3 +733,218 @@ class TestMigration:
                 assert store.pool_size() == 0
             finally:
                 store.close()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# P11 / ADR-039 — the two safety bounds P10 deferred.
+#
+# Both were MEASURED before either was fixed (`engineering/raw/recheck_bounds.json`)
+# and both were worse than P10's prose implied:
+#
+#   * probe_ms: worst case 590 000 ms vs a 120 000 ms default -- the guard was
+#     absent AND the value it failed to check was already wrong by ~5x.
+#   * abandoned rechecks: 12 claim->reclaim cycles, `consecutive_failures` never
+#     left 0, never retired. The abandon path recorded NOTHING.
+#
+# Every guard below has a negative control, because this project has twice shipped
+# a guard that could not fail (ADR-012's empty glob, ADR-023's self-verifying
+# docstring). A green assertion is not evidence until it is shown to catch the
+# broken version.
+# ══════════════════════════════════════════════════════════════════════════════
+from atlas.core.ports.probe import (  # noqa: E402
+    PROTOCOL_LADDER, ProbeBound, claim_bound, default_target_timeout_ms,
+)
+
+
+class TestProbeLifetimeBound:
+    """
+    A live probe must not be able to outlive its own PROBING claim.
+    """
+
+    def test_the_bound_is_derived_from_the_real_probe_plan(self):
+        """
+        The bound must be computed from the plan, not restated as a literal.
+
+        Recomputed here from ProbePlan's OWN fields rather than asserted against
+        a hardcoded 59 000. Pinning the literal would make this test a copy of
+        the answer -- ADR-023 exactly: a guard that verifies its own restatement
+        of the code and therefore cannot detect drift.
+        """
+        plan = ProbePlan()
+        t = default_target_timeout_ms()
+        bound = claim_bound(plan, target_timeout_ms=t, batch=1, concurrency=1)
+        expected = (plan.tcp_timeout_ms
+                    + len(PROTOCOL_LADDER) * t
+                    + plan.samples * plan.per_sample_timeout_ms)
+        assert bound.per_probe_ms == expected
+        assert bound.required_ms == expected
+
+    def test_the_bound_grows_with_k(self):
+        """
+        k is ADR-003's whole subject; a bound that ignored it would be decorative.
+        """
+        t = default_target_timeout_ms()
+        k5 = claim_bound(ProbePlan(samples=5), target_timeout_ms=t,
+                         batch=1, concurrency=1)
+        k10 = claim_bound(ProbePlan(samples=10), target_timeout_ms=t,
+                          batch=1, concurrency=1)
+        assert k10.per_probe_ms > k5.per_probe_ms
+        assert (k10.per_probe_ms - k5.per_probe_ms
+                == 5 * ProbePlan().per_sample_timeout_ms)
+
+    def test_the_bound_accounts_for_queueing_behind_the_semaphore(self):
+        """
+        THE FACTOR THE OLD DEFAULT MISSED.
+
+        One claim statement covers the whole batch, but only `concurrency` probes
+        run at once, so the last wave sits inside a claim taken at T. Missing this
+        is what made 120 000 ms wrong by ~5x rather than by a little.
+        """
+        t = default_target_timeout_ms()
+        one = claim_bound(ProbePlan(), target_timeout_ms=t, batch=10,
+                          concurrency=10)
+        ten = claim_bound(ProbePlan(), target_timeout_ms=t, batch=100,
+                          concurrency=10)
+        assert one.waves == 1
+        assert ten.waves == 10
+        assert ten.required_ms == 10 * one.required_ms
+
+    def test_partial_waves_round_up(self):
+        """
+        A batch of 11 at concurrency 10 needs TWO waves. Truncating would
+        under-size the claim for the eleventh row -- the exact off-by-one that
+        makes a bound almost right.
+        """
+        t = default_target_timeout_ms()
+        assert claim_bound(ProbePlan(), target_timeout_ms=t, batch=11,
+                           concurrency=10).waves == 2
+
+    def test_an_undersized_claim_is_refused(self):
+        """
+        THE REGRESSION TEST P11 ASKS FOR.
+
+        The old default is the case that matters: it was ACCEPTED by P10's
+        `>= 1` check while being 470 000 ms short of the real worst case.
+        """
+        with pytest.raises(ValueError, match="shorter than the worst-case probe"):
+            RecheckBudget(probe_ms=120_000)
+
+    def test_the_measured_old_default_is_still_undersized(self):
+        """
+        Ties the refusal above to the artifact, so the number is not folklore.
+        """
+        b = RecheckBudget()
+        assert b.claim_bound().required_ms == 590_000, (
+            "the measured worst case in recheck_bounds.json was 590 000 ms; if "
+            "the probe plan changed, re-measure rather than editing this number"
+        )
+        assert b.probe_ms == 590_000, "the default must BE the bound"
+
+    def test_a_sufficient_claim_is_accepted(self):
+        """
+        The negative-control half of the guard: it must not reject everything.
+
+        A validator that refuses all input would pass the test above while making
+        the recheck unusable -- "the guard fires" and "the guard discriminates"
+        are different claims and both need evidence.
+        """
+        exact = RecheckBudget().claim_bound().required_ms
+        assert RecheckBudget(probe_ms=exact).probe_ms == exact
+        assert RecheckBudget(probe_ms=exact + 1).probe_ms == exact + 1
+
+    def test_the_default_is_derived_not_hardcoded(self):
+        """
+        Change the plan and the default must FOLLOW it, with no edit here.
+
+        This is what makes "no duplicated magic number" testable rather than
+        asserted: a hand-picked default would stay at its old value and fail.
+        """
+        slow = RecheckBudget(plan=ProbePlan(samples=20))
+        assert slow.probe_ms == slow.claim_bound().required_ms
+        assert slow.probe_ms > RecheckBudget().probe_ms
+
+    def test_probe_ms_below_one_is_still_refused(self):
+        """
+        P10's floor is KEPT. A claim of 0 ms has already expired when taken, and
+        that is a distinct kind of nonsense worth its own message.
+        """
+        with pytest.raises(ValueError, match="probe_ms must be >= 1"):
+            RecheckBudget(probe_ms=0, plan=ProbePlan(samples=1, tcp_timeout_ms=1,
+                                                     per_sample_timeout_ms=1),
+                          target_timeout_ms=1, max_rechecks=1, concurrency=1)
+
+    def test_the_adapter_and_the_bound_share_one_ladder(self):
+        """
+        NEGATIVE CONTROL for the duplicated-magic-number requirement.
+
+        If the adapter kept its own ladder, adding a rung would leave the bound
+        short by one target timeout per probe and nothing would say so. This
+        asserts they are the SAME OBJECT, not merely equal.
+        """
+        from atlas.adapters import probe_aiohttp
+        assert probe_aiohttp._PROTOCOL_LADDER is PROTOCOL_LADDER
+
+    def test_an_inconsistent_bound_cannot_be_constructed(self):
+        with pytest.raises(ValueError, match="inconsistent bound"):
+            ProbeBound(per_probe_ms=100, waves=2, required_ms=999)
+
+    def test_the_claim_outlives_a_probe_that_takes_the_worst_case(self):
+        """
+        THE PROPERTY ITSELF, end to end: a probe that runs for the full worst case
+        must still hold its claim when it writes back.
+
+        Not a unit test of arithmetic -- it drives the real store with a clock
+        advanced by exactly the worst case and asserts the write-back still lands.
+        """
+        row = mk("10.0.9.9", state=ProxyState.COOLING, consecutive_failures=1,
+                 last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            budget = RecheckBudget()
+            worst = budget.claim_bound().required_ms
+            store.claim_for_probe((row.fingerprint,), now=NOW,
+                                  probe_ms=budget.probe_ms)
+            # The probe takes the entire worst case, to the millisecond.
+            at_limit = NOW + timedelta(milliseconds=worst)
+            assert store.reclaim_stale_probes(now=at_limit) == 0, (
+                "the claim expired while a probe was still legitimately running"
+            )
+            probed = store.get(row.fingerprint)
+            assert store.complete_probe(
+                probed.record_success(at_limit)
+                     .with_state(ProxyState.READY, reason="OK")
+                     .graded(Grade.GOOD),
+                now=at_limit) is True
+        finally:
+            store.close()
+            tmp.cleanup()
+
+    def test_negative_control_a_short_claim_really_does_get_reclaimed(self):
+        """
+        NEGATIVE CONTROL for the test above: with an undersized claim (the one
+        `RecheckBudget` now refuses), the same probe IS reclaimed mid-flight and
+        the write-back is LOST. This is the defect, demonstrated.
+        """
+        row = mk("10.0.9.10", state=ProxyState.COOLING, consecutive_failures=1,
+                 last_checked=NOW - timedelta(hours=2))
+        store, _, tmp = store_with(row)
+        try:
+            worst = RecheckBudget().claim_bound().required_ms
+            store.claim_for_probe((row.fingerprint,), now=NOW,
+                                  probe_ms=120_000)      # the old default
+            probed = store.get(row.fingerprint)
+            at_limit = NOW + timedelta(milliseconds=worst)
+            assert store.reclaim_stale_probes(now=at_limit) == 1, (
+                "the undersized claim should have been reclaimed mid-probe"
+            )
+            assert store.complete_probe(
+                probed.record_success(at_limit)
+                     .with_state(ProxyState.READY, reason="OK")
+                     .graded(Grade.GOOD),
+                now=at_limit) is False, (
+                "the probe's measurement was silently lost -- and the row is now "
+                "claimable by a second worker, which is the double probe"
+            )
+        finally:
+            store.close()
+            tmp.cleanup()
