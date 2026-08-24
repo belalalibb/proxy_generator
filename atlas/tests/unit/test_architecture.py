@@ -378,22 +378,101 @@ def test_no_captcha_or_bypass_machinery() -> None:
     )
 
 
+def scan_tls_disabled(source: str, label: str = "<src>") -> list[str]:
+    """
+    Report code that actually DISABLES TLS verification (ADR-023).
+
+    This guard used to be line-based, and it matched its own documentation: the
+    sentence "It set verify=False in 9 places (B-09)" -- written to explain why
+    the rule exists -- failed the build, as did the comment "No verify=False
+    switch is exposed". Both were prose *forbidding* the thing.
+
+    That is the third occurrence of one defect class here (P03's offline-guard
+    matched its own banned list; P05's fsync-guard matched a docstring naming
+    fsync). ADR-022 settled the principle: a guard satisfied by a comment
+    describing the behaviour is worse than no guard, because it reports that the
+    mechanism exists. So this reads the AST and considers only constructs that
+    can actually cause an insecure connection:
+
+      * keyword   verify=False / check_hostname=False / ssl=False
+      * attribute ssl.CERT_NONE
+      * call      disable_warnings(...)
+
+    Comments and docstrings are invisible to it by construction, not by an
+    exclusion list.
+    """
+    offenders: list[str] = []
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as exc:
+        return [f"{label}: unparseable ({exc})"]
+
+    insecure_kw = ("verify", "check_hostname", "ssl")
+    for node in ast.walk(tree):
+        if isinstance(node, ast.keyword) and node.arg in insecure_kw:
+            v = node.value
+            if isinstance(v, ast.Constant) and v.value is False:
+                offenders.append(f"{label}:{v.lineno} {node.arg}=False")
+        elif isinstance(node, ast.Attribute) and node.attr == "CERT_NONE":
+            offenders.append(f"{label}:{node.lineno} ssl.CERT_NONE")
+        elif isinstance(node, ast.Call):
+            fn = node.func
+            name = fn.attr if isinstance(fn, ast.Attribute) else getattr(fn, "id", "")
+            if name == "disable_warnings":
+                offenders.append(f"{label}:{node.lineno} disable_warnings()")
+    return offenders
+
+
 def test_no_tls_verification_disabled() -> None:
     """
     Legacy disabled TLS verification in 9 places, making a MITM proxy
     indistinguishable from an honest one (BUG_LEDGER B-09).
     """
-    banned = re.compile(r"verify\s*=\s*False|disable_warnings|CERT_NONE|check_hostname\s*=\s*False")
     offenders: list[str] = []
     for f in _all_atlas_py():
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
-            if banned.search(line) and "noqa: tls-intentional" not in line:
-                offenders.append(f"{f.relative_to(ATLAS)}:{i} {line.strip()[:70]}")
+        if f.name == "test_architecture.py":
+            continue                     # negative controls below name the forms
+        src = f.read_text(encoding="utf-8")
+        if "noqa: tls-intentional" in src:
+            continue                     # a deliberate TLS-failure probe, tagged
+        offenders += scan_tls_disabled(src, str(f.relative_to(ATLAS)))
     assert not offenders, (
         "TLS verification must stay on (BUG_LEDGER B-09). A probe that "
         "deliberately tests TLS failure must be tagged '# noqa: tls-intentional':\n  "
         + "\n  ".join(offenders)
     )
+
+
+@pytest.mark.parametrize("snippet,expected", [
+    ("requests.get(u, verify=False)", 1),
+    ("aiohttp.TCPConnector(ssl=False)", 1),
+    ("ssl_ctx.verify_mode = ssl.CERT_NONE", 1),
+    ("urllib3.disable_warnings()", 1),
+    ("requests.get(u, verify=True)", 0),
+    ("aiohttp.TCPConnector(ssl=self._verify_tls)", 0),
+])
+def test_tls_guard_has_teeth(snippet: str, expected: int) -> None:
+    """
+    ADR-010: a guard that cannot fail is not evidence. Each insecure form must be
+    caught, and the secure forms must NOT be -- otherwise the honest code in
+    probe_aiohttp.py could not pass.
+    """
+    assert len(scan_tls_disabled(snippet)) == expected, snippet
+
+
+def test_tls_guard_ignores_prose_that_forbids_the_thing() -> None:
+    """
+    ADR-023. This is the exact text that broke the previous line-based guard.
+    Documentation explaining a prohibition must not be indistinguishable from
+    committing the violation.
+    """
+    prose = (
+        '"""It set verify=False in 9 places (B-09), making MITM undetectable."""\n'
+        "# No verify=False switch is exposed as a convenience.\n"
+        "# never use ssl.CERT_NONE or disable_warnings() here\n"
+        "x = 1\n"
+    )
+    assert scan_tls_disabled(prose) == []
 
 
 def test_no_default_target_url_constant() -> None:
