@@ -2234,9 +2234,59 @@ it, and that is named as open (P11), not counted as done. And nothing here probe
 the network: `StubEngine` stands in for `DiscoveryEngine.evaluate`, whose real
 probe path is proven in `test_probe.py`.
 
-**Verify:** `python3 -m pytest atlas/tests/unit/test_recheck.py -q` and
-`python3 -m pytest atlas/tests/integration/test_recheck_store.py -q`. Negative
-control: `atlas/tests/unit/naive_recheck.py`, asserted by
-`test_the_naive_writeback_really_does_clobber`. Artifact:
-`engineering/raw/recheck_gap.json` (before/after pair, tool
-`engineering/tools/measure_recheck_gap.py`).
+**The mutation run found a real hole, and a green suite had hidden it.**
+`engineering/tools/mutate_recheck.py` injects seven defects and runs *both*
+suites against each. Six died immediately. One **survived**:
+`lost_writeback_reported_as_applied`, which changes the write-back branch to
+`complete_probe(...) or True` so a *refused* write-back is counted as applied.
+
+The reason it survived is worth more than the fix. Every test in
+`TestAccounting` **constructed a `RecheckReport` by hand** and checked
+`__post_init__`; the mutation keeps `applied + lost_writeback == claimed`
+perfectly self-consistent because it merely moves a row from one counter to the
+other. The identity cannot detect it — the defect is in the code that *decides*
+which counter to increment. That is ADR-035's lesson recurring verbatim: **a test
+that restates the arithmetic instead of driving the real path measures the
+test.** Closed by `test_a_real_lost_writeback_is_counted_by_run_once`, which
+drives a genuinely stolen claim through `run_once` and asserts `lost_writeback ==
+1`, `applied == 0`, `promoted == 0`. Now 7/7 killed
+(`engineering/raw/recheck_mutation.json`).
+
+Also recorded, because *which* suite kills a mutant is the point:
+`writeback_carries_lease_columns` is killed **only** by the integration suite —
+the raw-row assertion in
+`test_a_successful_writeback_does_not_touch_lease_columns` is the sole thing
+pinning it, since a domain object cannot reveal a column that was never written.
+And `read_then_write_claim` (dropping the state predicate from the claiming
+`UPDATE`) dies in both, at 3 tests each.
+
+**A near-fabrication caught in the act, and then made impossible.** Re-running
+`measure_recheck_gap.py` *without* `--after` against the fixed tree silently
+rewrote the `before` block: `store_has_reclaim_method` flipped to `true` and the
+`PROBING WOULD BE ABSORBING` verdict vanished — a pre-fix baseline overwritten
+with post-fix numbers, which would have destroyed the very comparison the ADR
+rests on. It was caught by diffing against the committed artifact and restored
+with `git checkout`. The tool now **refuses** to re-record an existing `before`
+arm (exit 4), because a historical measurement is evidence and evidence is
+append-only. The `--after` arm also had to be repaired before it could be
+trusted: it originally re-ran the *naive* `upsert_many` sequence and so would
+have reported `CLOBBERED` even after the fix, and its first honest run emitted a
+verdict claiming "the claim excluded the leased row" when `lease_granted=0`
+showed the causality was the reverse — the claim won and the *consumer* was
+refused. Both corrected, one variable between the arms, per ADR-020.
+
+Measured pair (`engineering/raw/recheck_gap.json`):
+
+| experiment | before | after |
+|---|---|---|
+| `lease_clobber` | `CLOBBERED` | `NO OVERLAP` (lease refused, claim held) |
+| `double_probe` | same row selected twice | `[]` — second pass skips it |
+| `probing_absorbing` | absorbing, no reclaim exists | returns to `COOLING`, re-enters the ADR-006 ladder |
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_recheck.py -q` (31) and
+`python3 -m pytest atlas/tests/integration/test_recheck_store.py -q` (9).
+Negative control: `atlas/tests/unit/naive_recheck.py`, asserted by
+`test_the_naive_writeback_really_does_clobber`. Mutation:
+`python3 engineering/tools/mutate_recheck.py` → 7/7 killed. Artifacts:
+`engineering/raw/recheck_gap.json` (before/after pair),
+`engineering/raw/recheck_mutation.json`.
