@@ -1,0 +1,25 @@
+{
+  "task": "P00.T5",
+  "generator": "engineering/tools/verify_geonode_parser.py",
+  "rebuilt_after_sync_loss": true,
+  "network_used": false,
+  "evidence": "engineering/raw/geonode_body.txt",
+  "evidence_bytes": 230019,
+  "expected_bytes": 230019,
+  "expected_unique": 500,
+  "by_parser": {
+    "json_path": 500,
+    "regex_adjacent": 0,
+    "html_table": 0
+  },
+  "verdict": "ALIVE_JSON",
+  "unique_candidates": 500,
+  "checks": {
+    "evidence_bytes_match": true,
+    "json_parser_yields_expected": true,
+    "regex_would_have_missed_it": true,
+    "verdict_is_alive_json": true
+  },
+  "passed": true,
+  "why_this_exists": "The same source was filed empty three times from three different causes (regex adjacency, throttled body, truncated read). Validating the parser on stored bytes means a live zero implicates the FETCH, not the source (ADR-013(e))."
+}
