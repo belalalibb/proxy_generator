@@ -2290,3 +2290,153 @@ Negative control: `atlas/tests/unit/naive_recheck.py`, asserted by
 `python3 engineering/tools/mutate_recheck.py` → 7/7 killed. Artifacts:
 `engineering/raw/recheck_gap.json` (before/after pair),
 `engineering/raw/recheck_mutation.json`.
+
+## ADR-039
+### The recheck's two unbounded quantities: a claim shorter than the work it covered, and an abandonment that recorded nothing
+
+**Status.** Accepted (2026-08-24, P11).
+
+**Context.** ADR-038 closed the recheck seam and left two obligations explicitly
+unmet: `probe_ms` was validated only as `>= 1`, and the abandon path
+(`reclaim_stale_probes`) had no counter, so nothing bounded a row that was
+claimed and never reported. Both were measured before either was touched
+(`engineering/tools/measure_recheck_bounds.py` →
+`engineering/raw/recheck_bounds.json`), and both were worse than P10's prose
+implied.
+
+| measurement | before |
+|---|---|
+| stages `evaluate()` actually calls | `tcp_handshake`, `discover_protocol`, `sample_latency` |
+| `check_integrity` called by `evaluate()` | **false** — S5 has no production caller |
+| worst case per probe (2 testable rungs) | **59 000 ms** |
+| required claim at batch 100 / concurrency 10 | **590 000 ms** |
+| `probe_ms` default | **120 000 ms** → short by **470 000 ms** |
+| `probe_ms=1` accepted | **true** |
+| crash cycles driven | **12** |
+| `consecutive_failures` after 12 cycles | **0** |
+| `total_attempts` after 12 cycles | **0** |
+| ever retired | **false** |
+
+Two independent findings, not one. The claim guard was absent *and* the value it
+was failing to check was already wrong by ~5x; the abandon path was not
+merely unbounded, it was *invisible* — every counter in the row read as though
+nothing had happened.
+
+**Decision, part 1: the claim lifetime is derived, never chosen.**
+`claim_bound()` (in `atlas/core/ports/probe.py`, beside the `ProbePlan` it
+prices) is the single definition, and `RecheckBudget.probe_ms=None` means
+"derive it". The wave factor is the part the old default missed: one claim
+statement covers the whole batch, but a semaphore admits only `concurrency`
+probes at a time, so a row in the last wave sits inside a claim taken at T:
+
+    required = worst_case_per_probe * ceil(batch / concurrency)
+
+Raising the literal to 590 000 was rejected as the fix. The next change to k, to
+a timeout, or to the protocol ladder would have made a new hand-picked number
+wrong again, silently — which is the entire history of the 120 000 one.
+`PROTOCOL_LADDER` therefore lives in core and is imported by the adapter, so the
+bound and the code it prices cannot disagree.
+
+**The bound deliberately over-prices, and the test pins the gap.** The artifact
+measured the two rungs the adapter can currently *test* (aiohttp-socks is not
+installed, so the SOCKS rungs cost ~0): 59 000 ms per probe, 590 000 required.
+`claim_bound` prices all four rungs — 75 000 and 750 000 — because the adapter's
+own error message invites aiohttp-socks to be installed, and on that day two
+free rungs silently become two real requests. Overstating a claim's lifetime is
+safe (the claim merely outlives the work); understating it is the defect.
+
+This produced the session's most instructive mistake. My first test asserted
+`required_ms == 590_000` against the live code and **failed**. The tempting
+readings were both wrong: it was neither a code bug nor a stale artifact. Pinning
+the measured number would have quietly converted a deliberate safety margin into
+a regression the suite *demanded*. The test now asserts the code equals the
+measurement **when restricted to the measured rungs**, and strictly exceeds it
+otherwise — catching arithmetic drift while leaving the conservatism free.
+
+**Decision, part 2: the abandonment is counted where it happens.**
+`abandoned_rechecks` is incremented **inside** the reclaiming `UPDATE`, not by a
+follow-up write and not by the caller. The placement is the guarantee: atomic
+with the `PROBING -> COOLING` transition, and idempotent because the
+`state = 'PROBING'` predicate means a second concurrent reclaim matches nothing.
+The caller *cannot* do it — the abandoning worker is dead by definition (H8:
+SIGKILL is uncatchable, which is why the deadline lives in the row at all).
+
+The counter is **consecutive**, cleared by `record_success` *and* by
+`record_failure`: a probe that reported is not abandoning its claim, even if it
+reported bad news. A cumulative counter would retire a healthy long-lived proxy
+for unrelated crashes spread over weeks — a restart policy masquerading as a
+proxy-quality decision.
+
+`retire_after_abandoned_rechecks = 3` is a **separate knob** from
+`retire_after_consecutive_failures`, because the two count different events and
+neither can substitute for the other. Tying them would mean one config change
+silently retuned two policies.
+
+**Two boundary decisions that could each have gone the other way.**
+
+1. *Inclusive expiry.* `reclaim_stale_probes` matches
+   `probe_expires_at <= now`, so a claim is dead **at** its deadline. My first
+   test assumed the opposite, failed, and the tempting response was to widen the
+   comparison to `<` — editing proven code to satisfy a newer test's assumption.
+   What settles it is that `expire_leases`, covered by the H3 concurrency work,
+   already uses `lease_expires_at <= now`. Two deadline mechanisms in one store
+   disagreeing about whether a boundary is inclusive is exactly the kind of
+   near-invisible inconsistency this project keeps finding after the fact, so
+   `test_probe_and_lease_expiry_share_one_boundary_convention` reads both
+   methods' SQL and requires the same operator.
+2. *Retire before plan, after reclaim.* Both halves are load-bearing. After
+   reclaim, because reclaim is what increments the counter, so a row crossing the
+   threshold retires in the same pass that noticed. Before `plan()`, because
+   `select_schedulable` excludes RETIRED — so the row cannot be picked up by this
+   pass. "Cannot bypass the limit through scheduler ordering" holds because of
+   the ordering itself, not a check inside the loop, and
+   `test_retirement_runs_before_planning_so_it_cannot_be_bypassed` asserts it
+   through observable behaviour rather than by reading `run_once`.
+
+**A hole this work found in its own guards.** Rewriting the retirement predicate
+from `>= ?` to `= ?` left **all 66 tests green**, even though
+`retire_abandoned`'s docstring argued specifically for `>=` ("An equality test is
+how a guard silently stops firing"). The reasoning was documented and
+unverified — the ADR-023 pattern, prose describing a guarantee the suite does not
+hold anyone to. The overshoot is reachable: lowering the threshold in config
+leaves existing rows above it, and with `==` every one becomes permanently
+unretirable, re-entering the unbounded loop through a config edit.
+`test_a_row_PAST_the_threshold_still_retires` closes it, and the mutation is now
+committed so it cannot reopen.
+
+**A second-order lesson about the injection method itself.** Two of my early
+injections **silently no-oped** because the anchor string omitted a type
+annotation (`_PROTOCOL_LADDER: tuple[Protocol, ...] = PROTOCOL_LADDER`), and the
+"guard passed" result was indistinguishable from a guard with teeth. An injection
+that does not land is a false negative that *looks* like a false positive. The
+harness now asserts the anchor exists and the text actually changed before
+running pytest; `mutate_recheck.py` already reported unmatched anchors loudly,
+which is why the committed mutations are the authority and ad-hoc `sed` is not.
+Its `originals` dict is now derived from `MUTATIONS` rather than hand-listed,
+because P11 added mutations in three modules the hand-listed version did not
+know about and would have `KeyError`ed on.
+
+**Also fixed here.** `record_failure`'s docstring cited
+`test_alternating_abandon_and_failure_still_retires` **by name** and that test
+did not exist — the ADR-026 defect class (a citation pointing at nothing), which
+`check_adr_claims_are_verifiable` cannot see because it only walks ADR → code,
+not docstring → test. The test now exists and pins the genuinely non-obvious
+case: each ladder is reset by the other, so neither counter advances
+monotonically, and termination actually comes from `consecutive_failures` being
+cleared only by *success*. That is reasoning this project has been wrong about
+before, so it is measured rather than argued.
+
+**Alternatives rejected.** *Raise the 120 000 literal* — same class of defect,
+one revision later. *Fold abandonment into `consecutive_failures`* — the abandon
+path writes no failure, so nothing above it in `decide()` could ever fire; the
+artifact shows exactly this (12 cycles, counter 0). *Increment the counter in
+`RecheckService`* — the worker that abandoned is dead. *Price S5 in the bound* —
+`check_integrity` has no production caller; a bound describing the documented
+pipeline instead of the code is not a bound.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_recheck.py -q` (68) and
+`python3 -m pytest atlas/tests/integration/test_recheck_store.py -q` (9).
+Mutation: `python3 engineering/tools/mutate_recheck.py` → **15/15 killed**
+(7 from ADR-038, 8 added here). Artifacts:
+`engineering/raw/recheck_bounds.json` (the before-measurement),
+`engineering/raw/recheck_mutation.json` (15/15, `working_tree_unchanged`).
