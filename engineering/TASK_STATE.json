@@ -1,7 +1,7 @@
 {
   "version": "4.0.0",
-  "updated_at": "2026-08-24T03:30:00Z",
-  "current_phase": "P06_PROBE_CALIBRATION",
+  "updated_at": "2026-08-24T04:45:00Z",
+  "current_phase": "P07_SCORING_ENGINE",
   "phase_gate_status": {
     "P00": "PASSED",
     "P01": "PASSED",
@@ -10,7 +10,7 @@
     "P04": "PASSED",
     "P05": "PASSED",
     "P06": "PASSED",
-    "P07": "TODO",
+    "P07": "PASSED",
     "P08": "TODO",
     "P09": "TODO",
     "P10": "TODO",
@@ -547,6 +547,67 @@
       ],
       "attempts": 1,
       "notes": "Both P06 defects were found by reading an artifact, not by a failing test, so the new check reads artifacts too. Teeth proven by injection (PASS 10 records -> FAIL on inject -> PASS after removal). Pre-fix artifacts are preserved as evidence in raw/superseded/, separated STRUCTURALLY by a directory the glob does not cross rather than by an exclusion list (ADR-023)."
+    },
+    {
+      "id": "P07.T1",
+      "phase": "P07",
+      "title": "Scoring: four separate terms, absence of evidence scores zero (B-16)",
+      "status": "DONE",
+      "evidence": [
+        "atlas/core/policy/scoring.py::ScoringPolicy",
+        "atlas/core/policy/scoring.py::score_proxy",
+        "atlas/tests/unit/test_scoring.py"
+      ],
+      "attempts": 1,
+      "notes": "latency/reliability/freshness/anonymity kept separate because collapsing any pair loses the distinction that makes the pool rankable -- the legacy pool stored ONE number and could not rank at all. Freshness is the B-16 term: 3.0% live (9/300) measured on proxy.txt. Takes `now` as an argument, so core/ never reads a clock and every decay rule is verifiable without waiting."
+    },
+    {
+      "id": "P07.T2",
+      "phase": "P07",
+      "title": "Engine cycle: registry -> fetch -> normalize -> probe -> gate -> store",
+      "status": "DONE",
+      "evidence": [
+        "atlas/engine/cycle.py::DiscoveryEngine",
+        "atlas/engine/cycle.py::apply_source_result",
+        "atlas/tests/unit/test_engine.py"
+      ],
+      "attempts": 1,
+      "notes": "ADR-006 cooldown as a PURE function (base*2^n capped 1h, disable only after 12 consecutive), so the backoff schedule is verifiable without waiting an hour. CycleReport.__post_init__ asserts every candidate lands in exactly one bucket -- B-02 made structurally impossible rather than tested for."
+    },
+    {
+      "id": "P07.T3",
+      "phase": "P07",
+      "title": "ADR-026: label verification fed back onto the source row",
+      "status": "DONE",
+      "evidence": [
+        "engineering/DECISIONS.md::ADR-026",
+        "atlas/engine/cycle.py::classify_label"
+      ],
+      "attempts": 2,
+      "notes": "FOUND DURING RESUME AUDIT: cycle.py cited ADR-026 five times and DECISIONS.md stopped at ADR-025 -- the engine's central decision existed only as a docstring pointing at nothing. The gate could not see it because check_adr_claims_are_verifiable only walks ADR->code. ADR written; four branches (UNPROVEN/VERIFIED/REFUTED/UNKNOWN_LABEL) each have a test. Verify: -k 'label or refuted' = 4 selected (a plain -k 'label' silently selects only 3, since the REFUTED test is named after the SOCKS-list-called-http.txt symptom)."
+    },
+    {
+      "id": "P07.T4",
+      "phase": "P07",
+      "title": "ADR-027: one-sided bound strengthened; starvation now fails",
+      "status": "DONE",
+      "evidence": [
+        "engineering/DECISIONS.md::ADR-027",
+        "atlas/tests/unit/test_engine.py::test_max_probes_bounds_total_work"
+      ],
+      "attempts": 1,
+      "notes": "`assert probed <= 3` passed for a cycle that probed NOTHING. Proven by mutation: clamp deleted -> FAIL (teeth against over-probing), run_cycle starved -> PASS (blind). Now asserts probed == 3 AND len(probe.sampled) == 3, a second independent witness so a merely self-consistent report cannot pass. Re-verified: starvation mutant FAILs, restore PASSes."
+    },
+    {
+      "id": "P07.T5",
+      "phase": "P07",
+      "title": "Gate check: every ADR cited by code must exist (reverse edge)",
+      "status": "DONE",
+      "evidence": [
+        "engineering/tools/gate_check.py::check_cited_adrs_exist"
+      ],
+      "attempts": 1,
+      "notes": "ADR-014 was earned when an ADR described code that did not exist; P07 found code citing an ADR that did not exist -- the same dangling reference with its arrows reversed. Scans atlas/ only (prose legitimately discusses ADR numbers). Teeth proven by injection: PASS -> FAIL naming cycle.py:33 cites ADR-099 -> PASS after removal."
     }
   ],
   "files_changed": [
@@ -612,14 +673,14 @@
     "engineering/tools/verify_units.py"
   ],
   "tests": {
-    "total": 244,
-    "passed": 244,
+    "total": 300,
+    "passed": 300,
     "failed": 0,
-    "breakdown": "235 unit + 9 integration. P06 added 33 over P05 (28 probe + ADR-024 percentile/false-admit regressions + ADR-023 TLS AST guard)."
+    "breakdown": "291 unit + 9 integration. P07 added 56 over P06 (26 scoring + 30 engine)."
   },
   "open_failures": [],
   "blockers": [],
-  "next_action": "P07 -- SCORING + ENGINE. P06 closed the H7 k=1 caveat with a live k=5 sweep and, in doing so, exposed two v4-introduced defects that a 239-test green suite did not (both found by READING AN ARTIFACT, not by a failing test: see BUG_LEDGER V4-01/V4-02). Next: the scoring function (freshness/reliability/latency terms per B-16) and the engine loop that composes registry -> fetch -> normalize -> probe -> gate -> store, with ADR-006 consecutive-failure cooldown. Two open honesty items to carry forward: (1) TOO_JITTERY has never fired on live data -- unit-tested only; (2) label_is_verified is now achievable but the registry still reports labels_verified=0 because the sweep records verdicts per PROXY, not back onto the SOURCE row. Wiring that back is P07 work.",
+  "next_action": "P08 -- HAND-OUT API ONLY. SCOPE CORRECTION made while resuming: the P08 line in the P07 hand-off said 'atomic lease + API', but the atomic lease ALREADY EXISTS and is proven -- SqliteStore.lease() is a single BEGIN IMMEDIATE compare-and-set (P05.T1), H3 is verified under real process concurrency with a committed negative control (P05.T3), and an independent append-only lease_log + double_delivery_violations() audit exists (P05.T5). Rebuilding it would have violated 'do not restart completed work'. Remaining P08 work is therefore ONLY the layer above: the hand-out API that (a) leases via the existing StorePort, (b) validates the proxy against a CALLER-SUPPLIED target at lease time (ADR-007: no default target ever, and the 90s target_ttl from B-16), (c) ranks candidates with the new P07 scoring, and (d) releases or expires on failure. Do NOT re-implement lease/release/expire_leases. MINOR SCHEMA DEBT observed, not yet fixed: 20 of 47 task records predate the 'phase' key, so any tooling that groups tasks by phase must read the id prefix instead (a naive t['phase'] raises KeyError). CARRIED FORWARD HONESTLY, both re-verified against artifacts this session: TOO_JITTERY has still never fired on live data (0 occurrences in engineering/raw/admission_live_adr024.json, unit-tested only), and labels_verified is still 0 on disk -- classify_label exists and all four branches are tested, but no live sweep has been re-run to write verdicts back onto source rows, so the number has not moved.",
   "invariants_verified": {
     "H1_evidence_for_every_claim": true,
     "H2_no_fabricated_numbers": true,
