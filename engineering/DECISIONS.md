@@ -921,12 +921,24 @@ pathology: **an ineffective one is indistinguishable from a passing one.** If th
 processes never actually overlap, the test reports success and proves nothing.
 
 Measured, on this machine — same test body, same 12-proxy pool, 6 processes each
-requesting 6:
+requesting 6. Both rows come from **one controlled comparison**: identical pool,
+identical process count, identical request size; the *only* variable is the lease
+implementation. (Re-derive with `engineering/tools/measure_lease_concurrency.py`,
+which writes `engineering/raw/lease_concurrency.json`; these two rows are its
+`head_to_head` block.)
 
 | implementation | handed out | unique | duplicates |
 |---|---|---|---|
 | `SqliteStore.lease` (CAS) | 12 | 12 | **0** |
 | `NaiveStore.lease_naive` (read-then-write) | 36 | 6 | **30** |
+
+Separately, and *not* to be tabulated with the above, the real store is also run
+**oversubscribed** — 48 requested by 12 processes from a pool of 24 — where it
+hands out 24 unique, 0 duplicates. That is a different experiment with a
+different config; the first draft of this ADR put the oversubscribed real arm in
+the table beside the naive arm's smaller config, which is precisely the
+conjunction error ADR-020 was written about. Caught here by trying to re-derive
+the table from the artifact and finding the numbers came from two runs.
 
 ### Decision
 
@@ -987,3 +999,82 @@ it reports that the mechanism exists.
   known to be broken.
 
 **Verify:** `python3 -m pytest atlas/tests/integration -q`
+
+---
+
+## ADR-023 — A guard must read code; the third instance of one defect class
+
+**Status:** ACCEPTED · 2026-08-24 · P06 · relates to ADR-010, ADR-012, ADR-022, H1
+
+### Context
+
+`test_no_tls_verification_disabled` (B-09; legacy disabled TLS in 9 places) was a
+line-level regex over every `atlas/**/*.py`:
+
+```python
+banned = re.compile(r"verify\s*=\s*False|disable_warnings|CERT_NONE|...")
+```
+
+The first honest ProbePort implementation failed it — on two lines of its own
+documentation:
+
+| line | text | verdict |
+|---|---|---|
+| 15 | `* It set verify=False in 9 places (B-09), which makes a MITM proxy` | module docstring explaining the defect being avoided |
+| 129 | `# No verify=False switch is exposed as a convenience.` | comment stating the prohibition |
+
+Both were prose **forbidding** the thing the guard exists to forbid. Meanwhile the
+actual security-relevant code — `aiohttp.TCPConnector(ssl=self._verify_tls)` —
+was invisible to the pattern, since a variable named `ssl` set to a variable does
+not match a literal `False`.
+
+**This is the third occurrence of one defect class in this project:**
+
+| phase | guard | matched |
+|---|---|---|
+| P03 | offline-guard | its own list of banned strings |
+| P05 | `export_text` fsync guard | the docstring naming `fsync`/`os.replace` |
+| P06 | TLS guard | prose forbidding `verify=False` |
+
+ADR-012 fixed the *target-host* guard this way, and ADR-022 stated the principle,
+but neither swept the remaining line-based guards. Recurrence three times means
+the earlier fixes were point repairs, not the general lesson.
+
+### Decision
+
+`scan_tls_disabled()` parses the AST and reports only constructs that can cause an
+insecure connection: keyword `verify=`/`check_hostname=`/`ssl=` bound to the
+constant `False`, an `ssl.CERT_NONE` attribute, or a `disable_warnings()` call.
+Comments and docstrings are invisible **by construction** — not by an exclusion
+list, which is itself a thing that can be forgotten.
+
+The guard is proven in both directions, because a guard that cannot fail is not
+evidence (ADR-010):
+
+| snippet | caught |
+|---|---|
+| `requests.get(u, verify=False)` | **yes** |
+| `aiohttp.TCPConnector(ssl=False)` | **yes** |
+| `ssl_ctx.verify_mode = ssl.CERT_NONE` | **yes** |
+| `urllib3.disable_warnings()` | **yes** |
+| `requests.get(u, verify=True)` | no |
+| `aiohttp.TCPConnector(ssl=self._verify_tls)` | no |
+
+`test_tls_guard_ignores_prose_that_forbids_the_thing` pins the exact text that
+broke the old version. And the guard was verified against a **real** injection:
+changing the live adapter to `ssl=False` fails the build at
+`adapters/probe_aiohttp.py:169`, then passes again when reverted. Snippet tests
+alone would not have shown that it works on the real file.
+
+### Consequences
+
+- The guard is now strictly stronger: it catches `ssl=False`, which the regex
+  never could, and stops flagging documentation.
+- **The rule this generalises:** a guard over source code must operate on the
+  *executable* AST. If a guard can be triggered by a sentence describing the
+  defect, it will eventually be triggered by the sentence that documents the fix
+  — and the cheapest way to make the build green is to delete the documentation.
+- Remaining line-based guards are grandfathered only where the pattern cannot
+  appear in prose; each new one must carry teeth tests in both directions.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_architecture.py -q` (29 tests)
