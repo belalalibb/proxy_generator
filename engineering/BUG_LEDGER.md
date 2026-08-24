@@ -293,3 +293,59 @@ state, not from mutable shared ints.
 | `input()` menus | blocks headless operation |
 | `proxy.txt` as mutable state | cannot express LEASED; destroyed by mid-write SIGKILL |
 | `MAX_PROXIES = 15000` truncation | arbitrary cap; v4 bounds work by time/budget, not by a magic constant |
+
+---
+
+# Defects introduced by **v4 itself**, found by measurement
+
+The ledger above catalogues the legacy system's defects. This section records
+defects in the *rewrite* — kept in the same file deliberately, because a ledger
+that only indicts the predecessor is a marketing document.
+
+Both entries below were found by **reading an artifact**, not by a failing test.
+Both were sitting behind a fully green suite.
+
+## V4-01 — A measured cause overwritten by a note about something never tested
+
+**Where:** `atlas/adapters/probe_aiohttp.py`, `discover_protocol`
+**Class:** B-02 (cause lost at the point of discovery), *recurring inside its own fix*
+
+One variable held both "measured failure" and "this rung was untestable". SOCKS
+is last in the ladder, so the untestable placeholder overwrote every real HTTP
+measurement. 24 of 24 endpoints that passed TCP were reported
+`PROTO_MISMATCH: socks4 not testable`; **0 reached the gate.**
+
+**Symptom in artifact:** `engineering/raw/calib_smoke.json` —
+`tcp_ok: 24, reached_gate: 0, PROTO_MISMATCH: 24`.
+
+**Fix:** rank the two facts (`last_tested or untested`). A measurement always
+outranks an untested rung. ADR-025.
+
+**Effect:** real causes appeared — `TCP_REFUSED: 44, BAD_STATUS: 31,
+PROXY_AUTH_REQUIRED: 19, TLS_FAILED: 1` — and 14 proxies reached the gate.
+
+## V4-02 — A "95th percentile" that returned the minimum
+
+**Where:** `atlas/core/policy/percentile.py` / `admission.py`, `build_profile`
+**Class:** new — a statistic borrowed for comparability, reused for decisions
+
+`int((n-1)*0.95) == 0` at `n=2`, so the p95 of two samples was the **faster**
+one. Violated `p95 >= p50` in 4000/4000 randomised trials at n=2, 0/4000 elsewhere.
+
+**Symptom in artifact:** `engineering/raw/admission_live_fixed.json` —
+`samples [7659.2, 4100.7]`, `p50 5880.0`, `p95 4100.7`. A tail below the median.
+
+**Severity: false ADMIT, not a display bug.** Samples `(1400ms, 1600ms)` against
+the 1500 ms ceiling → `OK / USABLE`. Jitter 0.09 and success_ratio 1.0, so no
+other rule intervened. The gate admitted a proxy it had itself measured over
+budget. Invisible to every unit test, all of which use k=5.
+
+**Fix:** `pct_floor` frozen for ADR-011 baseline parity; new `pct_tail` used by
+the gate, identical for k>=3, returns the upper sample at k=2. ADR-024.
+
+**Effect:** `TOO_SLOW_P95` began firing on live data; zero `p95 < p50` records
+remain in `engineering/raw/admission_live_adr024.json`.
+
+**Note on discovery order:** V4-01 was *masking* V4-02. Until real reasons
+surfaced, no proxy ever reached the gate with 2 samples, so the k=2 pathology
+could not be observed. Fixing one defect is what made the next one visible.
