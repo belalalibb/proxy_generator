@@ -9,5 +9,8 @@
   "atlas/tests/unit/test_engine_MUTANT.py::test_probed_equals_admitted_plus_rejected": true,
   "atlas/tests/unit/test_engine_MUTANT.py::test_known_endpoints_are_skipped_not_reprobed": true,
   "atlas/tests/unit/test_engine_MUTANT.py::test_private_range_candidates_are_dropped_with_a_named_reason": true,
-  "atlas/tests/unit/test_engine_MUTANT.py::test_quality_rate_is_admitted_over_probed_not_raw_volume": true
+  "atlas/tests/unit/test_engine_MUTANT.py::test_quality_rate_is_admitted_over_probed_not_raw_volume": true,
+  "atlas/tests/unit/test_architecture.py::test_core_has_no_io_or_network_imports": true,
+  "atlas/tests/unit/test_architecture.py::test_core_imports_are_on_the_allowlist": true,
+  "atlas/tests/unit/test_architecture.py::test_no_default_target_url_constant": true
 }
