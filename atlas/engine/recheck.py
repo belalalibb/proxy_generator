@@ -62,6 +62,32 @@ and it reclaims to `COOLING` rather than `READY`: a probe that never reported is
 not evidence of health, and promoting it would hand out a proxy on a measurement
 that never finished.
 
+THE TWO BOUNDS P10 DEFERRED, AND WHY THEY WERE NOT OPTIONAL (ADR-039)
+
+P10 shipped the claim and the reclaim and then stopped, recording two gaps in
+`next_action` instead of implying they were closed. Both were measured before
+being fixed (`engineering/raw/recheck_bounds.json`), and both were worse than the
+prose suggested:
+
+  1. THE CLAIM WAS SHORTER THAN THE WORK IT COVERED. `probe_ms` was validated as
+     `>= 1`. The real worst case is 59 000 ms per probe (S2 + every protocol rung
+     + k=5 serial samples) and 590 000 ms for the last wave of a 100-row batch at
+     concurrency 10 -- against a 120 000 ms default. So `reclaim_stale_probes`
+     would reclaim rows whose probes were still legitimately running and hand
+     them to a second worker: the DOUBLE PROBE this module exists to prevent,
+     re-entering through the timeout instead of through the missing claim.
+     `RecheckBudget` now validates against `claim_bound()` and derives its
+     default from it, so the number cannot be hand-picked wrong again.
+
+  2. THE ABANDON PATH RECORDED NOTHING. Driving a crashing worker through the
+     real store produced 12 claim -> reclaim cycles with `consecutive_failures`
+     and `total_attempts` both still 0, `decide()` returning RECHECK every time,
+     and no retirement -- forever. `total_attempts` counts probe SAMPLES and
+     `consecutive_failures` counts probes that RETURNED, so neither could ever
+     see an abandonment, and no threshold expressed in them could bound the
+     cycle. `abandoned_rechecks` is the missing counter, incremented inside the
+     reclaim statement itself.
+
 WHAT THIS MODULE DOES NOT DO
 
 It does not decide. `decide()` owns which rows need a recheck and
@@ -80,6 +106,9 @@ from datetime import datetime
 from atlas.core.domain.proxy import Proxy
 from atlas.core.domain.verdict import Grade
 from atlas.core.ports.clock import ClockPort
+from atlas.core.ports.probe import (
+    ProbeBound, ProbePlan, claim_bound, default_target_timeout_ms,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,19 +120,68 @@ class RecheckBudget:
     pass that rechecks fewer rows because the pool is healthy is a smaller pass,
     not a failed one.
 
-    `probe_ms` is the claim's lifetime, and it must exceed the worst-case probe
-    duration or a live probe's claim expires under it and another worker starts
-    the same work. It is validated against nothing here because the probe plan
-    lives elsewhere; the default is deliberately generous for that reason.
+    `probe_ms` is the claim's LIFETIME, and P10 left it validated only as `>= 1`
+    -- a bound on the sign of a number, not on the thing that matters. ADR-039
+    closes that: it is now checked against `claim_bound()`, which prices the real
+    probe plan.
+
+    THE DEFAULT IS COMPUTED, NOT CHOSEN. `probe_ms=None` means "derive it", so
+    the ordinary caller cannot get it wrong and there is no literal to drift.
+    Measured (`engineering/raw/recheck_bounds.json`): the old hand-picked
+    120 000 ms default was short by 470 000 ms at this batch and concurrency --
+    the guard was not merely weak, the value it was failing to check was already
+    wrong by ~5x. Raising the literal was rejected as the fix for exactly that
+    reason: the next change to k, to a timeout, or to the protocol ladder would
+    have made a new hand-picked number wrong again, silently.
     """
     max_rechecks: int = 100
     concurrency: int = 10
-    probe_ms: int = 120_000
+    probe_ms: int | None = None
+    plan: ProbePlan = field(default_factory=ProbePlan)
+    target_timeout_ms: int = field(default_factory=default_target_timeout_ms)
 
     def __post_init__(self) -> None:
-        for name in ("max_rechecks", "concurrency", "probe_ms"):
+        for name in ("max_rechecks", "concurrency"):
             if getattr(self, name) < 1:
                 raise ValueError(f"{name} must be >= 1, got {getattr(self, name)}")
+
+        bound = self.claim_bound()
+        if self.probe_ms is None:
+            # frozen dataclass: object.__setattr__ is the sanctioned way to
+            # finish initialising a derived field.
+            object.__setattr__(self, "probe_ms", bound.required_ms)
+            return
+
+        # KEPT from P10, deliberately. It is subsumed by the bound check below,
+        # but it is the guard that states the floor in its own terms, and a
+        # `probe_ms=0` claim is a distinct kind of nonsense (a claim that has
+        # already expired when it is taken) worth naming separately.
+        if self.probe_ms < 1:
+            raise ValueError(f"probe_ms must be >= 1, got {self.probe_ms}")
+
+        if self.probe_ms < bound.required_ms:
+            raise ValueError(
+                f"probe_ms={self.probe_ms} is shorter than the worst-case probe "
+                f"({bound.required_ms}ms = {bound.per_probe_ms}ms per probe x "
+                f"{bound.waves} wave(s) of {self.concurrency} from a batch of "
+                f"{self.max_rechecks}). A claim shorter than the work it covers "
+                "expires while the probe is still running, so reclaim hands the "
+                "row to a second worker -- the double-probe defect ADR-038 "
+                "closed, returning through the timeout (ADR-039)."
+            )
+
+    def claim_bound(self) -> ProbeBound:
+        """
+        This budget's authoritative claim bound, from the real probe plan.
+
+        Exposed rather than kept private so the number is inspectable at runtime
+        and in tests. A bound that can only be re-derived by rereading the source
+        is one that gets re-derived WRONG, which is the 120 000 ms literal's
+        entire history.
+        """
+        return claim_bound(self.plan, target_timeout_ms=self.target_timeout_ms,
+                           batch=self.max_rechecks,
+                           concurrency=self.concurrency)
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,6 +206,13 @@ class RecheckReport:
     applied: int = 0
     lost_writeback: int = 0
     reclaimed: int = 0
+    # ADR-039: rows retired this pass for repeatedly abandoning their claims.
+    # Reported separately from `reclaimed` because they answer different
+    # questions: `reclaimed` is "how much work was recovered", `retired_abandoned`
+    # is "how much of the pool we have stopped trying to recover". A pass that
+    # reclaims 40 and retires 0 forever is the unbounded cycle this counter makes
+    # visible -- and an operator who cannot see it cannot know the loop is stuck.
+    retired_abandoned: int = 0
     promoted: int = 0
     demoted: int = 0
     by_reason: dict[str, int] = field(default_factory=dict)
@@ -193,10 +278,28 @@ class RecheckService:
 
         reclaimed = self._store.reclaim_stale_probes(now=now)
 
+        # ADR-039. AFTER reclaim, BEFORE plan -- both halves are load-bearing.
+        #
+        # After reclaim: the reclaim above is what INCREMENTS the counter, so a
+        # row that just crossed the threshold is retired in the same pass that
+        # noticed. Retiring first would always act on stale counts and let the
+        # row take one more claim.
+        #
+        # Before plan: `plan()` is what SELECTS rows to re-probe. Retiring first
+        # means a row at the threshold is already `RETIRED` when the candidate
+        # query runs, and `select_schedulable` excludes RETIRED -- so it cannot be
+        # picked up by this pass. That is the "cannot bypass the limit through
+        # scheduler ordering" property, and it holds because of this ordering
+        # rather than because of a check inside the loop.
+        threshold = self._scheduler.policy.retire_after_abandoned_rechecks
+        retired_abandoned = self._store.retire_abandoned(
+            threshold=threshold, now=now)
+
         plan = self._scheduler.plan()
         candidates = self._candidates(plan, budget.max_rechecks)
         if not candidates:
-            return RecheckReport(reclaimed=reclaimed)
+            return RecheckReport(reclaimed=reclaimed,
+                                 retired_abandoned=retired_abandoned)
 
         # ONE claim statement for the whole batch: a per-row claim would take the
         # write lock N times and widen the window in which a consumer can lease a
@@ -238,6 +341,7 @@ class RecheckService:
             applied=applied,
             lost_writeback=lost_writeback,
             reclaimed=reclaimed,
+            retired_abandoned=retired_abandoned,
             promoted=promoted,
             demoted=demoted,
             by_reason=by_reason,
