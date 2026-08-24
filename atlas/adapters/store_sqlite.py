@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS proxies (
     consecutive_failures INTEGER NOT NULL DEFAULT 0,
     total_successes     INTEGER NOT NULL DEFAULT 0,
     total_attempts      INTEGER NOT NULL DEFAULT 0,
+    abandoned_rechecks  INTEGER NOT NULL DEFAULT 0,
     first_seen          TEXT,
     last_checked        TEXT,
     lease_id            TEXT,
@@ -194,7 +195,9 @@ class SqliteStore:
                 self._db.execute("PRAGMA table_info(proxies)").fetchall()}
         if not have:  # brand-new file; SCHEMA just created it complete
             return
-        for column, ddl in (("probe_expires_at", "TEXT"),):
+        for column, ddl in (("probe_expires_at", "TEXT"),
+                            ("abandoned_rechecks",
+                             "INTEGER NOT NULL DEFAULT 0"),):
             if column not in have:
                 self._db.execute(
                     f"ALTER TABLE proxies ADD COLUMN {column} {ddl}")
@@ -242,6 +245,7 @@ class SqliteStore:
             "consecutive_failures": p.consecutive_failures,
             "total_successes": p.total_successes,
             "total_attempts": p.total_attempts,
+            "abandoned_rechecks": p.abandoned_rechecks,
             "first_seen": _iso(p.first_seen),
             "last_checked": _iso(p.last_checked),
             "lease_id": p.lease_id,
@@ -269,6 +273,7 @@ class SqliteStore:
             consecutive_failures=r["consecutive_failures"],
             total_successes=r["total_successes"],
             total_attempts=r["total_attempts"],
+            abandoned_rechecks=r["abandoned_rechecks"],
             first_seen=_parse_dt(r["first_seen"]),
             last_checked=_parse_dt(r["last_checked"]),
             lease_id=r["lease_id"],
@@ -281,14 +286,14 @@ class SqliteStore:
             fingerprint, host, port, protocol, labelled_protocol, anonymity,
             state, grade, samples_ms, p50_ms, p95_ms, mean_ms, stdev_ms,
             success_ratio, source_id, country, consecutive_failures,
-            total_successes, total_attempts, first_seen, last_checked,
-            lease_id, reason_code
+            total_successes, total_attempts, abandoned_rechecks, first_seen,
+            last_checked, lease_id, reason_code
         ) VALUES (
             :fingerprint, :host, :port, :protocol, :labelled_protocol, :anonymity,
             :state, :grade, :samples_ms, :p50_ms, :p95_ms, :mean_ms, :stdev_ms,
             :success_ratio, :source_id, :country, :consecutive_failures,
-            :total_successes, :total_attempts, :first_seen, :last_checked,
-            :lease_id, :reason_code
+            :total_successes, :total_attempts, :abandoned_rechecks, :first_seen,
+            :last_checked, :lease_id, :reason_code
         )
         ON CONFLICT(fingerprint) DO UPDATE SET
             protocol=excluded.protocol,
@@ -307,6 +312,7 @@ class SqliteStore:
             consecutive_failures=excluded.consecutive_failures,
             total_successes=excluded.total_successes,
             total_attempts=excluded.total_attempts,
+            abandoned_rechecks=excluded.abandoned_rechecks,
             last_checked=excluded.last_checked,
             lease_id=excluded.lease_id,
             reason_code=excluded.reason_code
@@ -526,6 +532,33 @@ class SqliteStore:
         A NULL `probe_expires_at` counts as expired: it means a row was left
         PROBING by a version that recorded no deadline (see `_migrate`), and the
         safe reading of "no deadline" is "reclaim it", never "wait forever".
+
+        IT ALSO COUNTS THE ABANDONMENT (ADR-039).
+
+        `abandoned_rechecks = abandoned_rechecks + 1` is in THIS statement, not
+        in a follow-up write, and that placement is the whole guarantee:
+
+          * ATOMIC WITH THE TRANSITION. The counter and the `PROBING -> COOLING`
+            move are one UPDATE inside one `BEGIN IMMEDIATE`, so a crash between
+            them is not a reachable state. A separate increment would be a
+            read-modify-write that loses count under concurrency -- and the row
+            being reclaimed belongs to a process that has ALREADY crashed, so
+            there is nobody left to retry it.
+
+          * COUNTED ONCE PER ABANDONMENT. The `state = 'PROBING'` predicate is
+            what makes it idempotent: the first reclaim moves the row out of
+            PROBING, so a second concurrent reclaim matches nothing and the
+            counter cannot be advanced twice for one claim.
+
+        Incremented HERE rather than by the caller because this is the only place
+        that knows an abandonment actually happened. `RecheckService` cannot know:
+        the abandoning worker is dead by definition (H8 -- SIGKILL is uncatchable,
+        which is why the deadline lives in the row at all).
+
+        Measured before this line existed (`engineering/raw/recheck_bounds.json`):
+        12 claim->reclaim cycles, `consecutive_failures` and `total_attempts` both
+        still 0, `decide()` returning RECHECK every time, the row never retiring.
+        The abandon path recorded nothing, so no threshold could see it.
         """
         self._db.execute("BEGIN IMMEDIATE")
         try:
@@ -534,12 +567,66 @@ class SqliteStore:
                 UPDATE proxies
                    SET state = 'COOLING',
                        probe_expires_at = NULL,
+                       abandoned_rechecks = abandoned_rechecks + 1,
                        reason_code = 'PROBE_ABANDONED'
                  WHERE state = 'PROBING'
                    AND (probe_expires_at IS NULL OR probe_expires_at <= ?)
                 RETURNING fingerprint
                 """,
                 (_iso(now),),
+            ).fetchall()
+            self._db.execute("COMMIT")
+        except Exception:
+            self._db.execute("ROLLBACK")
+            raise
+        self._after_write(len(rows))
+        return len(rows)
+
+    def retire_abandoned(self, *, threshold: int, now: datetime) -> int:
+        """
+        Retire rows that have abandoned `threshold` rechecks. Count retired.
+
+        A CAS statement rather than `upsert_many`, for the reason ADR-038 learned
+        the hard way: `upsert_many` writes `state` and `lease_id` from an
+        in-memory snapshot, and an unconditional write is how the recheck path
+        erased a live lease. Retirement driven by a counter the STORE owns should
+        not make a round trip through Python to be written back -- the row is the
+        only authority on its own count, and reading it out only to write it back
+        reintroduces the read-modify-write window.
+
+        `state IN ('DISCOVERED','COOLING','READY')` excludes:
+
+          * `LEASED` -- belongs to a consumer and to H3. `Proxy.retired()` REFUSES
+            a leased row; this statement enforces the same rule in SQL so the
+            guarantee does not depend on which path performs the retirement.
+          * `PROBING` -- a probe is in flight and its write-back is still coming.
+            Retiring underneath it would make `complete_probe` silently no-op
+            (its `WHERE state='PROBING'` would no longer match), turning a
+            measured result into a lost one.
+          * `RETIRED` -- already terminal; re-retiring would rewrite reason_code
+            and inflate the count with rows that were retired passes ago.
+
+        `>=` not `==`: a row that somehow passed the threshold (a lowered config
+        value, a concurrent increment) must still retire. An equality test is how
+        a guard silently stops firing.
+        """
+        if threshold < 1:
+            raise ValueError(f"threshold must be >= 1, got {threshold}")
+        self._db.execute("BEGIN IMMEDIATE")
+        try:
+            rows = self._db.execute(
+                """
+                UPDATE proxies
+                   SET state = 'RETIRED',
+                       lease_id = NULL,
+                       probe_expires_at = NULL,
+                       last_checked = ?,
+                       reason_code = 'RETIRED_ABANDONED_RECHECKS'
+                 WHERE state IN ('DISCOVERED', 'COOLING', 'READY')
+                   AND abandoned_rechecks >= ?
+                RETURNING fingerprint
+                """,
+                (_iso(now), int(threshold)),
             ).fetchall()
             self._db.execute("COMMIT")
         except Exception:
@@ -593,6 +680,7 @@ class SqliteStore:
                        consecutive_failures = :consecutive_failures,
                        total_successes = :total_successes,
                        total_attempts = :total_attempts,
+                       abandoned_rechecks = :abandoned_rechecks,
                        last_checked = :last_checked,
                        reason_code = :reason_code,
                        probe_expires_at = NULL
