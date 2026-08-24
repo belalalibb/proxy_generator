@@ -23,12 +23,26 @@ from enum import Enum
 
 
 class ParserKind(str, Enum):
-    """Closed, declarative set (ADR-002). A bespoke site needs a new KIND, explicitly."""
-    LINE_IPPORT = "line_ipport"     # "1.2.3.4:8080" per line -- the common case
-    JSON_PATH = "json_path"         # ip/port under separate keys (GeoNode: 500)
-    CSV_COLUMNS = "csv_columns"
-    HTML_TABLE = "html_table"       # ip/port in separate <td> (recovered 6 sources)
-    REGEX = "regex"                 # last resort, pattern supplied in parser_args
+    """
+    Closed, declarative set (ADR-002) -- and deliberately limited to the parsers
+    that ACTUALLY EXIST in atlas.core.parsing.
+
+    ADR-017. This enum previously read LINE_IPPORT / JSON_PATH / CSV_COLUMNS /
+    HTML_TABLE / REGEX. Three of those five were speculation: no parser
+    implemented csv_columns or regex, and nothing in the registry ever used
+    line_ipport. Meanwhile the registry that P02 generated from measured probe
+    results labels 59 of its 67 ENABLED rows `regex_adjacent` -- a value this
+    enum could not represent at all.
+
+    Nothing had converted a registry row into a Source yet, so the mismatch was
+    invisible: two vocabularies for one concept, neither validated against the
+    other. Now the enum names exactly what was measured and implemented, and
+    `test_parsing.py::test_every_parser_kind_has_an_implementation` fails if a
+    member is ever added without a parser behind it.
+    """
+    REGEX_ADJACENT = "regex_adjacent"   # ip:port adjacent -- the legacy strategy, 59 rows
+    JSON_PATH = "json_path"             # ip/port under separate keys (GeoNode: 500)
+    HTML_TABLE = "html_table"           # ip/port in separate <td> (recovered 6 sources)
 
 
 class SourceState(str, Enum):
