@@ -281,8 +281,13 @@ def check_declared_test_count_matches_collection(res: Result) -> None:
                 f"cannot read tests.passed ({type(exc).__name__})")
         return
 
+    # Collect the WHOLE tests tree, not just unit/. This check previously named
+    # `atlas/tests/unit/` explicitly, which meant an entire test directory could
+    # be added -- or LOST to a sync, the ADR-010 failure -- without the declared
+    # count ever disagreeing. A guard that only looks where it already expects
+    # tests cannot detect tests going missing somewhere else.
     proc = subprocess.run(
-        [sys.executable, "-m", "pytest", "atlas/tests/unit/", "--collect-only", "-q"],
+        [sys.executable, "-m", "pytest", "atlas/tests/", "--collect-only", "-q"],
         cwd=ROOT, capture_output=True, text=True,
     )
     m = re.search(r"(\d+)\s+tests? collected", proc.stdout)
@@ -295,6 +300,67 @@ def check_declared_test_count_matches_collection(res: Result) -> None:
     res.add("declared_test_count_matches_collection", ok,
             f"declared {declared}, pytest collects {collected}"
             + ("" if ok else " -- update TASK_STATE and README together"))
+
+
+def check_h3_negative_control_present(res: Result) -> None:
+    """
+    ADR-022. The H3 concurrency proof depends on a NEGATIVE CONTROL: a deliberately
+    read-then-write store that the same test body must catch.
+
+    Without it, a green concurrency test is ambiguous -- it may mean leasing is
+    atomic, or it may mean the processes never actually raced. Since the control is
+    the thing that distinguishes those two readings, its disappearance would
+    silently downgrade the H3 evidence from 'proven' to 'not contradicted', and
+    every test would still pass.
+
+    Checked here rather than only in pytest because a sync loss removes the FILE,
+    and a test that no longer exists cannot report that it is missing.
+    """
+    control = ROOT / "atlas" / "tests" / "integration" / "naive_store.py"
+    suite = ROOT / "atlas" / "tests" / "integration" / "test_store_lease.py"
+    missing = [str(p.relative_to(ROOT)) for p in (control, suite) if not p.exists()]
+    if missing:
+        res.add("h3_negative_control_present", False,
+                f"MISSING (H3 proof is void): {', '.join(missing)}")
+        return
+
+    body = suite.read_text(encoding="utf-8")
+    # the control must be USED, not merely present
+    uses = "NaiveStore" in body and "lease_naive" in body
+    asserts_it_fails = "duplicates > 0" in body
+    kills = "SIGKILL" in body and "returncode == -signal.SIGKILL" in body
+    problems = []
+    if not uses:
+        problems.append("the naive store is never exercised")
+    if not asserts_it_fails:
+        problems.append("nothing asserts the naive store IS caught")
+    if not kills:
+        problems.append("H8 does not assert death by SIGKILL")
+    res.add("h3_negative_control_present", not problems,
+            "; ".join(problems) if problems
+            else "negative control present, exercised, and asserted to fail")
+
+
+def check_tests_tracked_by_git(res: Result) -> None:
+    """
+    ADR-010 again. Three separate syncs have deleted files in this project. Tools
+    are already checked; test FILES were not, and an untracked test directory is
+    the most dangerous thing to lose -- the suite simply gets smaller and stays
+    green.
+    """
+    test_root = ROOT / "atlas" / "tests"
+    on_disk = {
+        str(p.relative_to(ROOT))
+        for p in test_root.rglob("*.py")
+        if "__pycache__" not in str(p)
+    }
+    proc = subprocess.run(["git", "ls-files", "atlas/tests"], cwd=ROOT,
+                          capture_output=True, text=True)
+    tracked = {ln.strip() for ln in proc.stdout.splitlines() if ln.strip()}
+    untracked = sorted(on_disk - tracked)
+    res.add("tests_tracked_by_git", not untracked,
+            f"UNTRACKED (a sync will drop these): {', '.join(untracked)}"
+            if untracked else f"all {len(on_disk)} test file(s) tracked")
 
 
 def check_no_cross_stream_splice(res: Result) -> None:
@@ -350,6 +416,8 @@ def main() -> int:
     check_readme_claims(res)
     check_declared_test_count_matches_collection(res)
     check_no_cross_stream_splice(res)
+    check_h3_negative_control_present(res)
+    check_tests_tracked_by_git(res)
 
     if args.json:
         print(json.dumps(
