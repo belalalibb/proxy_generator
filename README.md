@@ -5,9 +5,13 @@ A measured rebuild of a legacy proxy scraper.
 > **The one number that justifies this project.** The legacy system measured
 > latency **59 times** and compared it against a rejecting threshold **zero
 > times**. From its own recorded run it therefore admitted proxies with a
-> **p50 of 6 359.5 ms and a p95 of 15 903 ms** (n=102), where **95.8 %** of
+> **p50 of 6 359.5 ms and a p95 of 15 903 ms** (n=102), where **95.1 %** of
 > *accepted* proxies were slower than 1 500 ms. A 19-second proxy was recorded as
 > a success identical to a 756 ms one.
+> <!--verify:engineering/raw/baseline_streams.json:streams.0.over_1500ms_pct:95.1-->
+>
+> *(The often-quoted 95.8 % is the same run's **n=118 log** stream, not this
+> n=102 one — see ADR-020. Both are real; mixing them is not.)*
 >
 > **`LIVE ≠ GOOD`.** That is the defect this rebuild exists to fix.
 > Evidence: [`engineering/BASELINE.json`](engineering/BASELINE.json).
@@ -18,10 +22,11 @@ A measured rebuild of a legacy proxy scraper.
 
 | | |
 |---|---|
-| Phase | **P01 — ARCHITECTURE · gate PASSED** |
+| Phase | **P04 — POOL + ADMISSION GATE · gate PASSED** |
 | Gate 0 | ✅ PASSED (re-earned twice after sync losses — ADR-010) |
-| Tests | **113 passed** — 22 architecture/fitness + 36 domain + 29 registry + 26 fetch/parsing <!--verify:engineering/TASK_STATE.json:tests.passed:113--> |
-| Gate checks | **10/10 pass** (`make doctor`) |
+| Tests | **162 passed** — 22 architecture/fitness + 36 domain + 29 registry + 26 fetch/parsing + 49 policy/admission <!--verify:engineering/TASK_STATE.json:tests.passed:162--> |
+| Gate checks | **12/12 pass** (`make doctor`) |
+| Legacy proxies the v4 gate rejects | **97 of 102** (95.1 %) <!--verify:engineering/TASK_STATE.json:baseline_to_beat.v4_gate_replay.v4_reject_pct:95.1--> |
 | Sources | **67 ACTIVE** of 120 probed (range 67–69, see below) <!--verify:engineering/TASK_STATE.json:source_registry.active:67--> |
 | Candidates | **502 189** unique from one sweep <!--verify:engineering/TASK_STATE.json:source_registry.unique_candidates:502189--> |
 
