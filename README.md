@@ -22,7 +22,7 @@ A measured rebuild of a legacy proxy scraper.
 
 | | |
 |---|---|
-| Phase | **P12 — FULL 6-LEVEL SUITE · gate PASSED** · the level-6 E2E suite (real `SqliteStore`, no fakes) caught **V4-03**: intake dedup keyed on the fingerprint re-probed 8/10 known endpoints on cycle 2 — fixed per ADR-040 (endpoint-keyed `get_by_endpoint`). Next: P13 |
+| Phase | **P13 — 17-STEP LIVE TRANSCRIPT · gate PASSED** · the operating pipeline (steps derived from the code per ADR-041) ran against the live network: 17/17 steps OK, 1 proxy admitted of 40 probed (2.5 %, inside the 3–12 % band), SIGKILL-crash consistent. Next: P14 |
 | Gate 0 | ✅ PASSED (re-earned twice after sync losses — ADR-010) |
 | Tests | **661 passed** — 630 unit + 31 integration (level-6 E2E on a real store, real concurrency, SIGKILL, negative controls) <!--verify:engineering/TASK_STATE.json:tests.passed:661--> |
 | Recheck mutations | **15/15 killed**, 0 survivors, across 5 modules <!--verify:engineering/raw/recheck_mutation.json:killed:15--> <!--verify:engineering/raw/recheck_mutation.json:survivors:0--> |

@@ -1413,3 +1413,32 @@ against bare coroutines; RFC-5737 fixture IPs dropped by the real normalizer
 (630 unit + 31 integration).
 
 **NEXT:** P13 — 17-step E2E live transcript.
+
+---
+
+## P13 — 17-STEP E2E LIVE TRANSCRIPT (gate PASSED)
+
+The P13 gate names a "17-step E2E live transcript", but the enumeration of the
+17 steps survived nowhere on disk — a sync-loss casualty (ADR-010). Rather than
+invent a list from memory (the exact failure ADR-010 forbids), the steps were
+**derived from the operating pipeline as it exists in code** and recorded as
+**ADR-041**. `engineering/tools/live_transcript.py` then executes them against
+the REAL adapters over the live network and writes one measured record per step.
+
+`--dry-run` asserts all 17 steps resolve to real, importable callables with NO
+network, so a step list that drifts from the code fails loudly instead of
+narrating a system that no longer exists (the ADR-014 class, one level up).
+
+Measured run `live_transcript_20260827T225147Z.json` (17/17 OK): 6 sources
+fetched live → 41 candidates → 40 probed (TCP → protocol discovery → k=5
+sampling) → **1 admitted (2.5 %, inside the 3–12 % target band)** → persisted
+with reason codes (36 TCP_TIMEOUT, 2 TCP_REFUSED, 1 BAD_STATUS) → 1 atomic
+lease granted, proven as a LEASED row, released → SIGKILLed child holding a
+lease: WAL rollback + 0 double-delivery violations. The gate was never tuned
+for the demo — admitted=1 against example.com is honest free-proxy reality.
+
+Trap the run caught itself: `journal_mode` is a `@property`, not a method
+(TypeError on the first live run, fixed before claiming the phase).
+
+**NEXT:** P14 — FINAL_AUDIT.md + SCORECARD.md ≥ 90 vs the historical n=102
+baseline.
