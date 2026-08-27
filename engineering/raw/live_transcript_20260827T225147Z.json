@@ -1,0 +1,229 @@
+{
+ "task": "P13",
+ "generator": "engineering/tools/live_transcript.py",
+ "adr": "ADR-041",
+ "network_used": true,
+ "target": "https://example.com",
+ "budget": {
+  "max_sources": 6,
+  "max_probes": 40
+ },
+ "measured_at_utc": "20260827T225147Z",
+ "steps_ok": 17,
+ "steps": [
+  {
+   "step": 1,
+   "name": "load config.yaml (all tunables; unknown keys refused)",
+   "ok": true,
+   "measured": {
+    "config": "config.yaml",
+    "recheck_ready_after_s": 900.0,
+    "deny_hosts": [
+     "facebook.com",
+     "instagram.com",
+     "tiktok.com"
+    ]
+   },
+   "note": "",
+   "at_utc": "2026-08-27T22:51:16.254488+00:00"
+  },
+  {
+   "step": 2,
+   "name": "load the source registry (ADR-002: sources are data)",
+   "ok": true,
+   "measured": {
+    "total": 122,
+    "enabled": 69,
+    "fetchable": 69
+   },
+   "note": "",
+   "at_utc": "2026-08-27T22:51:16.256581+00:00"
+  },
+  {
+   "step": 3,
+   "name": "enforce: there is no default target (ADR-007)",
+   "ok": true,
+   "measured": {
+    "default_target_is_absent": true
+   },
+   "note": "a None target handed out would be a refusal, not a substitution",
+   "at_utc": "2026-08-27T22:51:16.264769+00:00"
+  },
+  {
+   "step": 4,
+   "name": "open the SQLite store + WAL (ADR-004)",
+   "ok": true,
+   "measured": {
+    "journal_mode": "WAL",
+    "db": "tmpfs live.db"
+   },
+   "note": "",
+   "at_utc": "2026-08-27T22:51:16.266187+00:00"
+  },
+  {
+   "step": 5,
+   "name": "sweep expired leases + reclaim stale probes (ADR-039)",
+   "ok": true,
+   "measured": {
+    "expired_leases": 0,
+    "reclaimed_probes": 0
+   },
+   "note": "zero on a fresh store is the correct measurement",
+   "at_utc": "2026-08-27T22:51:16.266499+00:00"
+  },
+  {
+   "step": 6,
+   "name": "plan the scheduler over the store",
+   "ok": true,
+   "measured": {
+    "pool_size": 0,
+    "recheck": 0,
+    "evict": 0
+   },
+   "note": "",
+   "at_utc": "2026-08-27T22:51:16.266680+00:00"
+  },
+  {
+   "step": 7,
+   "name": "discovery cycle: fetch ENABLED sources (live network)",
+   "ok": true,
+   "measured": {
+    "sources_fetched": 4,
+    "candidates_seen": 41,
+    "elapsed_s": 30.9
+   },
+   "note": "",
+   "at_utc": "2026-08-27T22:51:47.168092+00:00"
+  },
+  {
+   "step": 8,
+   "name": "normalize candidates (private/loopback/reserved dropped)",
+   "ok": true,
+   "measured": {
+    "accepted": 40,
+    "dropped_by_reason": {
+     "UNSPECIFIED": 1
+    }
+   },
+   "note": "the normalizer is the production one; drops are typed, not silent",
+   "at_utc": "2026-08-27T22:51:47.168200+00:00"
+  },
+  {
+   "step": 9,
+   "name": "dedup against the pool by endpoint (ADR-040)",
+   "ok": true,
+   "measured": {
+    "already_known_deduped": 0
+   },
+   "note": "endpoint-keyed (ADR-040); 0 on a fresh store is correct",
+   "at_utc": "2026-08-27T22:51:47.168244+00:00"
+  },
+  {
+   "step": 10,
+   "name": "probe fresh candidates: TCP -> protocol -> k=5 sampling",
+   "ok": true,
+   "measured": {
+    "probed": 40,
+    "tcp_refused": 2,
+    "rejected_by_reason": {
+     "BAD_STATUS": 1,
+     "TCP_TIMEOUT": 36,
+     "TCP_REFUSED": 2
+    }
+   },
+   "note": "TCP triage -> empirical protocol discovery -> k=5 sampling",
+   "at_utc": "2026-08-27T22:51:47.168279+00:00"
+  },
+  {
+   "step": 11,
+   "name": "admission gate on p95 of k samples (ADR-003)",
+   "ok": true,
+   "measured": {
+    "admitted": 1,
+    "probed": 40,
+    "admission_rate": 0.025
+   },
+   "note": "admitted=0 is a measurement of free-proxy reality, not a failure",
+   "at_utc": "2026-08-27T22:51:47.168321+00:00"
+  },
+  {
+   "step": 12,
+   "name": "persist every verdict with reason codes (B-02)",
+   "ok": true,
+   "measured": {
+    "stored": 40,
+    "by_state": {
+     "COOLING": 39,
+     "READY": 1
+    }
+   },
+   "note": "",
+   "at_utc": "2026-08-27T22:51:47.168654+00:00"
+  },
+  {
+   "step": 13,
+   "name": "serve N proxies via atomic lease (H3)",
+   "ok": true,
+   "measured": {
+    "requested": 3,
+    "granted": 1,
+    "refusal": null
+   },
+   "note": "",
+   "at_utc": "2026-08-27T22:51:47.170854+00:00"
+  },
+  {
+   "step": 14,
+   "name": "prove the leases as LEASED rows in the store",
+   "ok": true,
+   "measured": {
+    "leased_rows": 1
+   },
+   "note": "",
+   "at_utc": "2026-08-27T22:51:47.171042+00:00"
+  },
+  {
+   "step": 15,
+   "name": "release accounting: one lease -> one release",
+   "ok": true,
+   "measured": {
+    "leased_after_release": 0,
+    "ready_after_release": 1
+   },
+   "note": "",
+   "at_utc": "2026-08-27T22:51:47.171696+00:00"
+  },
+  {
+   "step": 16,
+   "name": "crash recovery: SIGKILL a leasing child, pool stays consistent",
+   "ok": true,
+   "measured": {
+    "child_died_by_sigkill": true,
+    "child_returncode": -9,
+    "leased_before_kill": 1,
+    "double_delivery_violations": 0,
+    "pool_size_after": 40
+   },
+   "note": "child holds a write transaction when it dies; WAL rolls it back, no row is lost or double-held. If the pool admitted nothing in step 11, the child leases 0 rows and this step proves store durability, not lease reclaim -- recorded, not dressed up.",
+   "at_utc": "2026-08-27T22:51:47.307423+00:00"
+  },
+  {
+   "step": 17,
+   "name": "observability: counts by state + rejections by reason",
+   "ok": true,
+   "measured": {
+    "by_state": {
+     "COOLING": 39,
+     "LEASED": 1
+    },
+    "rejected_by_reason": {
+     "BAD_STATUS": 1,
+     "TCP_TIMEOUT": 36,
+     "TCP_REFUSED": 2
+    }
+   },
+   "note": "no silent paths: every rejection above carries a reason code",
+   "at_utc": "2026-08-27T22:51:47.307645+00:00"
+  }
+ ]
+}

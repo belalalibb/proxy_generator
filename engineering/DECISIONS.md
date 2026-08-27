@@ -2501,3 +2501,57 @@ is not the contract: responsibility 2 is.
 `test_a_second_cycle_dedupes_against_the_real_store` now measures
 `probed == 0` on cycle two against the real store — the assertion that failed
 at 8 before this decision.
+
+## ADR-041 — The 17 operating steps are derived from the assembled pipeline, not invented
+
+**Status.** Accepted (P13).
+
+**Context.** RESUME_PROMPT.md names "17-step E2E live transcript" as the P13
+gate, but the enumeration of the 17 steps survives nowhere on disk. The most
+plausible loss is a documented sync/re-clone event (the ADR-010 failure mode
+that already cost P10/P11 task rows). Two options: invent 17 steps, or derive
+them from the system that actually exists. Inventing them would violate the
+project's own first rule — never claim completion without artifacts, never
+fabricate. The architecture defines the operating sequence; the transcript
+must prove it, not narrate it.
+
+**Decision.** The 17 steps ARE the operating pipeline, counted from the code:
+
+1. load config.yaml (all tunables; loader refuses unknown keys)
+2. load the source registry (ADR-002: sources are data, never Python)
+3. enforce there is no default target (ADR-007, H5)
+4. open the SQLite store + WAL (ADR-004: the store is the source of truth)
+5. sweep expired leases + reclaim stale probes (ADR-039, H8)
+6. plan the scheduler over the store (PoolScheduler.plan)
+7. run one discovery cycle over ENABLED sources (fetch -> parse)
+8. normalize candidates (drops private/loopback/reserved/non-global)
+9. dedup against the pool by endpoint (ADR-040, not fingerprint — V4-03)
+10. probe fresh candidates: TCP triage -> protocol discovery -> k=5 sampling
+11. admission gate on p95 of k samples (ADR-003: LIVE != GOOD)
+12. persist every verdict + source stats with reason codes (ADR-002/B-02)
+13. serve N proxies to a caller via atomic lease (H3: no double delivery)
+14. prove the leases in the store as LEASED rows (compare-and-set)
+15. release/consumed accounting (one lease -> one consumption)
+16. crash-recovery invariant: after SIGKILL, no proxy is lost or double-held
+17. observability: pool counts by state + rejections by reason (no silence)
+
+**Consequences.** The transcript tool
+(`engineering/tools/live_transcript.py`) executes these steps against the REAL
+adapters (real registry, real SqliteStore+WAL, real lease) over the LIVE
+network with a caller-supplied target, and writes
+`engineering/raw/live_transcript_<UTC>.json` — one record per step with its
+measured outcome, never a hand-written line. If the code changes, the step
+list is re-derived from the code, and the transcript re-run; the tool asserts
+at start that each step it is about to perform maps to a real symbol it can
+call, so a drifted step list fails loudly instead of narrating a system that
+no longer exists (the ADR-014 defect class, one level up).
+
+**Alternatives rejected.** *Reconstruct the original 17 from memory* — memory
+is exactly what ADR-010 forbids trusting, and a reconstructed list is
+unverifiable against anything. *Skip P13 and let P14's audit subsume it* —
+the audit scores the system; the transcript is the runnable proof that the
+operating pipeline is what the docs claim, which is a different fact.
+
+**Verify:** `python3 engineering/tools/live_transcript.py --dry-run` (asserts
+all 17 steps resolve to real callables without network) and the artifact
+`engineering/raw/live_transcript_<UTC>.json` produced by a real run.
