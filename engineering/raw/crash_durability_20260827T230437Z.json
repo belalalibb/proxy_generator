@@ -1,0 +1,146 @@
+{
+  "task": "P14.T1",
+  "generator": "engineering/tools/crash_durability.py",
+  "invariant": "H8: a SIGKILL after an acknowledged+checkpointed write loses nothing",
+  "why_this_exists": "the phase plan promised SIGKILL x10 durability and no artifact on disk carried that evidence; produced now rather than restated from memory (ADR-010)",
+  "method": {
+    "rounds": 10,
+    "child": "spawn'd python: SqliteStore.upsert_many(N) -> checkpoint() -> print ACKED -> os.kill(self, SIGKILL)",
+    "parent_assertions": [
+      "child printed ACKED (write was acknowledged before the kill)",
+      "child returncode == -9 (died BY SIGKILL, not a clean exit)",
+      "a FRESH process recovers exactly N rows (none lost, none extra)"
+    ],
+    "batch_sizes": "base 300, +50 per round, so a size-specific WAL boundary defect cannot hide behind one fixed size",
+    "complements": [
+      "atlas/tests/integration/test_store_lease.py (single-shot H8 + concurrency proofs, in the suite since P08)",
+      "engineering/raw/live_transcript_20260827T225147Z.json step 16 (SIGKILL of a LEASING child on the live pipeline)"
+    ]
+  },
+  "measured_at_utc": "20260827T230437Z",
+  "rounds_passed": 10,
+  "rounds_total": 10,
+  "result": "10/10",
+  "rounds_detail": [
+    {
+      "round": 1,
+      "batch_size": 300,
+      "child_acked_write": true,
+      "child_died_by_sigkill": true,
+      "child_returncode": -9,
+      "recovered_rows": 300,
+      "recovery_error": null,
+      "child_wall_s": 0.139,
+      "recovery_wall_s": 0.085,
+      "ok": true
+    },
+    {
+      "round": 2,
+      "batch_size": 350,
+      "child_acked_write": true,
+      "child_died_by_sigkill": true,
+      "child_returncode": -9,
+      "recovered_rows": 350,
+      "recovery_error": null,
+      "child_wall_s": 0.142,
+      "recovery_wall_s": 0.002,
+      "ok": true
+    },
+    {
+      "round": 3,
+      "batch_size": 400,
+      "child_acked_write": true,
+      "child_died_by_sigkill": true,
+      "child_returncode": -9,
+      "recovered_rows": 400,
+      "recovery_error": null,
+      "child_wall_s": 0.099,
+      "recovery_wall_s": 0.002,
+      "ok": true
+    },
+    {
+      "round": 4,
+      "batch_size": 450,
+      "child_acked_write": true,
+      "child_died_by_sigkill": true,
+      "child_returncode": -9,
+      "recovered_rows": 450,
+      "recovery_error": null,
+      "child_wall_s": 0.081,
+      "recovery_wall_s": 0.002,
+      "ok": true
+    },
+    {
+      "round": 5,
+      "batch_size": 500,
+      "child_acked_write": true,
+      "child_died_by_sigkill": true,
+      "child_returncode": -9,
+      "recovered_rows": 500,
+      "recovery_error": null,
+      "child_wall_s": 0.083,
+      "recovery_wall_s": 0.002,
+      "ok": true
+    },
+    {
+      "round": 6,
+      "batch_size": 550,
+      "child_acked_write": true,
+      "child_died_by_sigkill": true,
+      "child_returncode": -9,
+      "recovered_rows": 550,
+      "recovery_error": null,
+      "child_wall_s": 0.086,
+      "recovery_wall_s": 0.003,
+      "ok": true
+    },
+    {
+      "round": 7,
+      "batch_size": 600,
+      "child_acked_write": true,
+      "child_died_by_sigkill": true,
+      "child_returncode": -9,
+      "recovered_rows": 600,
+      "recovery_error": null,
+      "child_wall_s": 0.09,
+      "recovery_wall_s": 0.002,
+      "ok": true
+    },
+    {
+      "round": 8,
+      "batch_size": 650,
+      "child_acked_write": true,
+      "child_died_by_sigkill": true,
+      "child_returncode": -9,
+      "recovered_rows": 650,
+      "recovery_error": null,
+      "child_wall_s": 0.091,
+      "recovery_wall_s": 0.001,
+      "ok": true
+    },
+    {
+      "round": 9,
+      "batch_size": 700,
+      "child_acked_write": true,
+      "child_died_by_sigkill": true,
+      "child_returncode": -9,
+      "recovered_rows": 700,
+      "recovery_error": null,
+      "child_wall_s": 0.116,
+      "recovery_wall_s": 0.003,
+      "ok": true
+    },
+    {
+      "round": 10,
+      "batch_size": 750,
+      "child_acked_write": true,
+      "child_died_by_sigkill": true,
+      "child_returncode": -9,
+      "recovered_rows": 750,
+      "recovery_error": null,
+      "child_wall_s": 0.151,
+      "recovery_wall_s": 0.003,
+      "ok": true
+    }
+  ]
+}
