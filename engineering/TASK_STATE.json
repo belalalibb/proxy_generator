@@ -1,6 +1,6 @@
 {
  "version": "4.0.0",
- "updated_at": "2026-08-27T22:16:20Z",
+ "updated_at": "2026-08-27T22:27:25Z",
  "current_phase": "P13_LIVE_TRANSCRIPT",
  "phase_gate_status": {
   "P00": "PASSED",
@@ -842,6 +842,21 @@
    ],
    "attempts": 1,
    "notes": "REAL DEFECT, same seam class as V4-01/V4-02: unit tests could not see it because FakeStore.get and SqliteStore.get encoded the SAME wrong assumption (fingerprint identity == endpoint identity). fingerprint = sha256(endpoint|protocol); intake candidates are Protocol.UNKNOWN, stored rows carry the DISCOVERED protocol, so get(candidate.fingerprint) never matched and cycle 2 re-probed 8 of 10 known endpoints. Only the 2 TCP-refused rows were skipped -- rejected BEFORE discovery, stored under UNKNOWN, accidentally matching the intake key. Fix: store.get_by_endpoint(host, port) returns every stored row for that host:port across ALL protocols; process_source dedups on it. The fingerprint stays PRIMARY KEY for the lease protocol (H3) -- it was only ever wrong as a DEDUP key. FakeStore in test_engine.py was rewritten to hold real Proxy rows so the fake can no longer encode the defect. Verified: cycle 2 probes 0, skipped_known == 10, at unit AND real-store integration level."
+  },
+  {
+   "id": "P12.T3",
+   "phase": "P12",
+   "title": "Extend the source registry with 2 new free providers (pubproxy.com API, proxyhub.me) under ADR-002 discipline",
+   "status": "DONE",
+   "evidence": [
+    "engineering/tools/extend_source_registry.py::main",
+    "engineering/raw/source_probe_20260827T222532Z.json",
+    "engineering/tools/build_source_registry.py",
+    "atlas/data/sources/sources.json",
+    "atlas/tests/unit/test_registry.py::test_enabled_count_equals_snapshot_active"
+   ],
+   "attempts": 1,
+   "notes": "User asked for 2 more free providers. Selection was by LIVE probing, not by list-reading: 9 candidate endpoints fetched directly (proxyscan.io 301->404 at whoer.io, proxylist.to 404, dpangestuw 404, hidemy 403, freeproxylist.cc 404, proxydaily.net connect-timeout -- all rejected; pubproxy.com 200 + parseable candidates, proxyhub.me 200 + 20 table rows -- accepted). Both hosts verified ABSENT from legacy_urls.json before merging, so this extends rather than duplicates. Discipline kept: new DATED snapshot written (pinned one never overwritten, ADR-010); builder and the registry test re-pointed to it IN THE SAME commit so the gate never saw them disagree; verify_units.py deliberately left on the ORIGINAL snapshot because it proves the historical ADR-015 unit defect from THAT evidence. Registry rebuilt offline-deterministic: 122 total, 69 ENABLED, ENABLED==snapshot ACTIVE asserted by the builder AND by test_enabled_count_equals_snapshot_active."
   }
  ],
  "files_changed": [
@@ -912,7 +927,9 @@
   "engineering/raw/handout_mutation.json",
   "atlas/tests/integration/test_e2e_stack.py",
   "atlas/engine/cycle.py",
-  "atlas/tests/unit/test_engine.py"
+  "atlas/tests/unit/test_engine.py",
+  "engineering/tools/extend_source_registry.py",
+  "engineering/raw/source_probe_20260827T222532Z.json"
  ],
  "tests": {
   "total": 661,
@@ -1009,18 +1026,18 @@
   }
  },
  "source_registry": {
-  "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
-  "urls_probed": 120,
-  "active": 67,
-  "alive_regex": 59,
-  "alive_html_table": 7,
+  "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
+  "urls_probed": 122,
+  "active": 69,
+  "alive_regex": 60,
+  "alive_html_table": 8,
   "alive_json": 1,
   "dead": 37,
   "truly_empty": 14,
   "throttled_or_short": 2,
-  "unique_candidates": 502189,
-  "point_in_time_variance": "Two sweeps 5 minutes apart gave ACTIVE 69 then 67 (candidates 504193 then 502189). The delta is upstream availability (transient 502/429/432/507), NOT a code change. Live source counts are a RANGE, not a constant: ACTIVE 67-69 on 2026-08-24. Both snapshots kept.",
-  "note": "ADR-013 fetch fix (iter_chunked to EOF) raised candidates from 74895 to ~502-504k on the same 120 URLs. short_read is only evaluated for identity-encoded responses: aiohttp auto-decompresses, so Content-Length is the COMPRESSED size for 83 of 120 URLs and is not comparable to the decoded body length."
+  "unique_candidates": 502211,
+  "point_in_time_variance": "Two sweeps 5 minutes apart gave ACTIVE 69 then 67 (candidates 504193 then 502189). The delta is upstream availability, NOT a code change. On 2026-08-27 the registry was EXTENDED: 2 new provider URLs (pubproxy.com API, proxyhub.me) probed live by extend_source_registry.py and merged into source_probe_20260827T222532Z.json -- 120 rows carried verbatim with their original fetched_at_utc, 2 rows fresh. Both new rows ENABLED: pubproxy ALIVE (2 candidates), proxyhub ALIVE_HTML_TABLE (20).",
+  "note": "ADR-013 fetch fix (iter_chunked to EOF) raised candidates from 74895 to ~502-504k on the original 120 URLs. short_read is only evaluated for identity-encoded responses. unique_candidates 502211 mixes two moments by design (per-row fetched_at_utc); the one-sweep figure 502189 from 2026-08-24 stays in source_probe_20260824T010038Z.json, which is kept."
  },
  "superseded_files": {
   "note": "Lost to platform syncs and NOT rebuilt as separate tools. Their function was absorbed, so recreating them would be duplicate code pretending to be evidence.",
@@ -1032,24 +1049,24 @@
  },
  "registry": {
   "path": "atlas/data/sources/sources.json",
-  "total": 120,
-  "enabled": 67,
+  "total": 122,
+  "enabled": 69,
   "disabled": 53,
   "by_parser": {
-   "regex_adjacent": 59,
-   "html_table": 7,
+   "regex_adjacent": 60,
+   "html_table": 8,
    "json_path": 1
   },
   "by_protocol_hint": {
    "unknown": 38,
+   "http": 50,
    "https": 32,
-   "http": 48,
    "ambiguous": 1,
    "socks5": 1
   },
   "deterministic": "byte-identical on rebuild (verified via diff)",
   "labels_verified": 0,
-  "note": "ENABLED==67 asserted equal to snapshot ACTIVE by test, so the registry cannot silently invent or lose sources. No label_is_verified is true: zero proxies probed yet."
+  "note": "ENABLED==69 asserted against snapshot ACTIVE==69 at build time. Extended from 120->122 sources on 2026-08-27 (P12 follow-up)."
  },
  "gate_checks": 19,
  "h3_measurement": {

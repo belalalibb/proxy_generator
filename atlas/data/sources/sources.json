@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "generator": "engineering/tools/build_source_registry.py",
-  "generated_from_snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
-  "snapshot_measured_at_utc": "20260824T010038Z",
+  "generated_from_snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
+  "snapshot_measured_at_utc": "20260827T222532Z",
   "network_used": false,
   "deterministic": true,
   "honesty_notes": [
@@ -11,18 +11,18 @@
     "State reflects ONE point in time (see snapshot). A DISABLED row is not proof a source is permanently dead: ACTIVE varied 67-69 across two sweeps 5 minutes apart."
   ],
   "counts": {
-    "total": 120,
-    "enabled": 67,
+    "total": 122,
+    "enabled": 69,
     "disabled": 53,
     "by_parser": {
-      "regex_adjacent": 59,
-      "html_table": 7,
+      "regex_adjacent": 60,
+      "html_table": 8,
       "json_path": 1
     },
     "by_protocol_hint": {
       "unknown": 38,
+      "http": 50,
       "https": 32,
-      "http": 48,
       "ambiguous": 1,
       "socks5": 1
     },
@@ -39,12 +39,30 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
         "body_bytes": 51212,
         "fetched_at_utc": "2026-08-24T01:00:05.906288+00:00"
+      }
+    },
+    {
+      "id": "pubproxy-com-api-proxy-limit",
+      "url": "http://pubproxy.com/api/proxy?limit=20&format=txt&type=http",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "regex_adjacent",
+      "labelled_protocol": "http",
+      "label_derivation": "query_param:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
+        "verdict": "ALIVE",
+        "http_status": 200,
+        "unique_candidates": 2,
+        "body_bytes": 36,
+        "fetched_at_utc": "2026-08-27T22:25:30.501345+00:00"
       }
     },
     {
@@ -57,7 +75,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 16,
@@ -75,7 +93,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
@@ -93,7 +111,7 @@
       "label_derivation": "query_param:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
@@ -111,7 +129,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 521,
         "unique_candidates": 0,
@@ -129,7 +147,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 5778,
@@ -147,7 +165,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 3522,
@@ -165,7 +183,7 @@
       "label_derivation": "query_param:http+ssl_filter_ignored",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 154,
@@ -183,7 +201,7 @@
       "label_derivation": "query_param:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 432,
         "unique_candidates": 0,
@@ -201,7 +219,7 @@
       "label_derivation": "query_param:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 1437,
@@ -219,7 +237,7 @@
       "label_derivation": "query_param:http+ssl_filter_ignored",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "THROTTLED_OR_SHORT",
         "http_status": 200,
         "unique_candidates": 0,
@@ -237,7 +255,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 1446,
@@ -255,7 +273,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -273,7 +291,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 2474,
@@ -291,7 +309,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 676,
@@ -309,7 +327,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 1369,
@@ -327,7 +345,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 20,
@@ -345,7 +363,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 1,
@@ -363,7 +381,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 300,
@@ -381,7 +399,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 200,
@@ -399,7 +417,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 100,
@@ -417,7 +435,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 100,
@@ -435,7 +453,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
@@ -453,7 +471,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE_HTML_TABLE",
         "http_status": 200,
         "unique_candidates": 100,
@@ -471,7 +489,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
@@ -489,7 +507,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE_HTML_TABLE",
         "http_status": 200,
         "unique_candidates": 64,
@@ -507,7 +525,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "THROTTLED_OR_SHORT",
         "http_status": 200,
         "unique_candidates": 0,
@@ -525,7 +543,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 403,
         "unique_candidates": 0,
@@ -543,7 +561,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 507,
         "unique_candidates": 0,
@@ -561,7 +579,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
@@ -579,7 +597,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 521,
         "unique_candidates": 0,
@@ -597,7 +615,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
@@ -615,7 +633,7 @@
       "label_derivation": "query_param:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 429,
         "unique_candidates": 0,
@@ -633,7 +651,7 @@
       "label_derivation": "query_param:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 429,
         "unique_candidates": 0,
@@ -651,7 +669,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
@@ -669,7 +687,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
@@ -687,7 +705,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE_HTML_TABLE",
         "http_status": 200,
         "unique_candidates": 28,
@@ -705,7 +723,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE_HTML_TABLE",
         "http_status": 200,
         "unique_candidates": 9,
@@ -723,7 +741,7 @@
       "label_derivation": "query_param:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE_HTML_TABLE",
         "http_status": 200,
         "unique_candidates": 6,
@@ -741,12 +759,30 @@
       "label_derivation": "query_param:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE_HTML_TABLE",
         "http_status": 200,
         "unique_candidates": 6,
         "body_bytes": 40809,
         "fetched_at_utc": "2026-08-24T01:00:09.338067+00:00"
+      }
+    },
+    {
+      "id": "proxyhub-me-en-all-http",
+      "url": "https://proxyhub.me/en/all-http-proxy-list.html",
+      "state": "ENABLED",
+      "disabled_reason": null,
+      "parser": "html_table",
+      "labelled_protocol": "http",
+      "label_derivation": "path_token:http",
+      "label_is_verified": false,
+      "evidence": {
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
+        "verdict": "ALIVE_HTML_TABLE",
+        "http_status": 200,
+        "unique_candidates": 20,
+        "body_bytes": 95389,
+        "fetched_at_utc": "2026-08-27T22:25:31.609690+00:00"
       }
     },
     {
@@ -759,7 +795,7 @@
       "label_derivation": "query_param:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE_JSON",
         "http_status": 200,
         "unique_candidates": 500,
@@ -777,7 +813,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
@@ -795,7 +831,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 3592,
@@ -813,7 +849,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 192,
@@ -831,7 +867,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 841,
@@ -849,7 +885,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 3479,
@@ -867,7 +903,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 54,
@@ -885,7 +921,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 3185,
@@ -903,7 +939,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -921,7 +957,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -939,7 +975,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 59602,
@@ -957,7 +993,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 2996,
@@ -975,7 +1011,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 684,
@@ -993,7 +1029,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1011,7 +1047,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1029,7 +1065,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 101618,
@@ -1047,7 +1083,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1065,7 +1101,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1083,7 +1119,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1101,7 +1137,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 40,
@@ -1119,7 +1155,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 2853,
@@ -1137,7 +1173,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1155,7 +1191,7 @@
       "label_derivation": "conflicting_path_tokens:http,socks",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 2200,
@@ -1173,7 +1209,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 144173,
@@ -1191,7 +1227,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 52785,
@@ -1209,7 +1245,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1227,7 +1263,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 897,
@@ -1245,7 +1281,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 100,
@@ -1263,7 +1299,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 173,
@@ -1281,7 +1317,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1299,7 +1335,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1317,7 +1353,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 2917,
@@ -1335,7 +1371,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1353,7 +1389,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1371,7 +1407,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 400,
@@ -1389,7 +1425,7 @@
       "label_derivation": "path_token:socks5",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 142,
@@ -1407,7 +1443,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 268,
@@ -1425,7 +1461,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 1801,
@@ -1443,7 +1479,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 2161,
@@ -1461,7 +1497,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1479,7 +1515,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1497,7 +1533,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1515,7 +1551,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1533,7 +1569,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 336,
@@ -1551,7 +1587,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1569,7 +1605,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1587,7 +1623,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 2470,
@@ -1605,7 +1641,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 729,
@@ -1623,7 +1659,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 1361,
@@ -1641,7 +1677,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 19031,
@@ -1659,7 +1695,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 58,
@@ -1677,7 +1713,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 554,
@@ -1695,7 +1731,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 190,
@@ -1713,7 +1749,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 86,
@@ -1731,7 +1767,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 86,
@@ -1749,7 +1785,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
@@ -1767,7 +1803,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 1000,
@@ -1785,7 +1821,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1803,7 +1839,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 930,
@@ -1821,7 +1857,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 7569,
@@ -1839,7 +1875,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 524,
@@ -1857,7 +1893,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1875,7 +1911,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -1893,7 +1929,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 59595,
@@ -1911,7 +1947,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 125,
@@ -1929,7 +1965,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 1336,
@@ -1947,7 +1983,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 400,
@@ -1965,7 +2001,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 403,
         "unique_candidates": 0,
@@ -1983,7 +2019,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE_HTML_TABLE",
         "http_status": 200,
         "unique_candidates": 50,
@@ -2001,7 +2037,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
@@ -2019,7 +2055,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
@@ -2037,7 +2073,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 526,
         "unique_candidates": 0,
@@ -2055,7 +2091,7 @@
       "label_derivation": "path_token:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 502,
         "unique_candidates": 0,
@@ -2073,7 +2109,7 @@
       "label_derivation": "path_token:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 502,
         "unique_candidates": 0,
@@ -2091,7 +2127,7 @@
       "label_derivation": "query_param:http",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 502,
         "unique_candidates": 0,
@@ -2109,7 +2145,7 @@
       "label_derivation": "query_param:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 502,
         "unique_candidates": 0,
@@ -2127,7 +2163,7 @@
       "label_derivation": "query_param:https",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "DEAD",
         "http_status": 404,
         "unique_candidates": 0,
@@ -2145,7 +2181,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "TRULY_EMPTY",
         "http_status": 200,
         "unique_candidates": 0,
@@ -2163,7 +2199,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 100,
@@ -2181,7 +2217,7 @@
       "label_derivation": "no_token_in_url",
       "label_is_verified": false,
       "evidence": {
-        "snapshot": "engineering/raw/source_probe_20260824T010038Z.json",
+        "snapshot": "engineering/raw/source_probe_20260827T222532Z.json",
         "verdict": "ALIVE",
         "http_status": 200,
         "unique_candidates": 200,

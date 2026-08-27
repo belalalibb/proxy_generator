@@ -32,8 +32,8 @@ A measured rebuild of a legacy proxy scraper.
 | H3 no-double-delivery | **0 duplicates** vs **30** for a read-then-write store, at an *identical* config (pool 12, 6 procs × 6) <!--verify:engineering/raw/lease_concurrency.json:head_to_head.real_duplicates:0--> <!--verify:engineering/raw/lease_concurrency.json:head_to_head.naive_duplicates:30--> |
 | H3 under oversubscription | **24 of 24** handed out exactly once, 48 requested by 12 processes <!--verify:engineering/raw/lease_concurrency.json:real.unique_fingerprints:24--> |
 | Legacy proxies the v4 gate rejects | **97 of 102** (95.1 %) <!--verify:engineering/TASK_STATE.json:baseline_to_beat.v4_gate_replay.v4_reject_pct:95.1--> |
-| Sources | **67 ACTIVE** of 120 probed (range 67–69, see below) <!--verify:engineering/TASK_STATE.json:source_registry.active:67--> |
-| Candidates | **502 189** unique from one sweep <!--verify:engineering/TASK_STATE.json:source_registry.unique_candidates:502189--> |
+| Sources | **69 ACTIVE** of 122 probed (extended 2026-08-27: +pubproxy.com, +proxyhub.me; see below) <!--verify:engineering/TASK_STATE.json:source_registry.active:69--> |
+| Candidates | **502 211** unique across the merged snapshot (120 rows @2026-08-24 + 2 rows @2026-08-27, per-row timestamps) <!--verify:engineering/TASK_STATE.json:source_registry.unique_candidates:502211--> |
 
 Live state: `make state` · Full log: [`engineering/PROGRESS.md`](engineering/PROGRESS.md)
 

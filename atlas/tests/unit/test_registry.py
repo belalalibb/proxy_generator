@@ -25,7 +25,7 @@ from atlas.adapters.registry import (
 
 ATLAS = pathlib.Path(__file__).resolve().parents[2]
 REGISTRY_PATH = ATLAS / "data" / "sources" / "sources.json"
-SNAPSHOT = ATLAS.parent / "engineering" / "raw" / "source_probe_20260824T010038Z.json"
+SNAPSHOT = ATLAS.parent / "engineering" / "raw" / "source_probe_20260827T222532Z.json"
 
 
 # --------------------------------------------------------------------------- #

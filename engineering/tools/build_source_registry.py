@@ -19,7 +19,7 @@ import sys
 from collections import Counter
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SNAPSHOT = ROOT / "engineering" / "raw" / "source_probe_20260824T010038Z.json"
+SNAPSHOT = ROOT / "engineering" / "raw" / "source_probe_20260827T222532Z.json"
 OUT = ROOT / "atlas" / "data" / "sources" / "sources.json"
 
 # Verdicts that mean "this URL yielded parseable proxy candidates".
