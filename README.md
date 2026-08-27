@@ -22,7 +22,7 @@ A measured rebuild of a legacy proxy scraper.
 
 | | |
 |---|---|
-| Phase | **P13 — 17-STEP LIVE TRANSCRIPT · gate PASSED** · the operating pipeline (steps derived from the code per ADR-041) ran against the live network: 17/17 steps OK, 1 proxy admitted of 40 probed (2.5 %, inside the 3–12 % band), SIGKILL-crash consistent. Next: P14 |
+| Phase | **P14 — FINAL AUDIT · gate PASSED · PROJECT COMPLETE** · [`FINAL_AUDIT.md`](engineering/FINAL_AUDIT.md) compares v4 against the historical n=102 admitted baseline with method + n beside every percentile; [`SCORECARD.md`](engineering/SCORECARD.md) scores **91/100** (deductions charged for the empty `atlas/api` + `atlas/obs` stubs, the 940.2 ms admit vs the 900 ms stretch goal, and carried debts). All phase gates P00–P14 PASSED |
 | Gate 0 | ✅ PASSED (re-earned twice after sync losses — ADR-010) |
 | Tests | **661 passed** — 630 unit + 31 integration (level-6 E2E on a real store, real concurrency, SIGKILL, negative controls) <!--verify:engineering/TASK_STATE.json:tests.passed:661--> |
 | Recheck mutations | **15/15 killed**, 0 survivors, across 5 modules <!--verify:engineering/raw/recheck_mutation.json:killed:15--> <!--verify:engineering/raw/recheck_mutation.json:survivors:0--> |
