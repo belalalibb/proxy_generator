@@ -1,6 +1,6 @@
 {
  "version": "4.0.0",
- "updated_at": "2026-08-27T22:27:25Z",
+ "updated_at": "2026-08-27T22:29:57Z",
  "current_phase": "P13_LIVE_TRANSCRIPT",
  "phase_gate_status": {
   "P00": "PASSED",
@@ -853,10 +853,11 @@
     "engineering/raw/source_probe_20260827T222532Z.json",
     "engineering/tools/build_source_registry.py",
     "atlas/data/sources/sources.json",
-    "atlas/tests/unit/test_registry.py::test_enabled_count_equals_snapshot_active"
+    "atlas/tests/unit/test_registry.py::test_enabled_count_equals_snapshot_active",
+    "atlas/tests/unit/test_fetch.py::test_registry_parser_values_are_all_representable_in_the_domain"
    ],
    "attempts": 1,
-   "notes": "User asked for 2 more free providers. Selection was by LIVE probing, not by list-reading: 9 candidate endpoints fetched directly (proxyscan.io 301->404 at whoer.io, proxylist.to 404, dpangestuw 404, hidemy 403, freeproxylist.cc 404, proxydaily.net connect-timeout -- all rejected; pubproxy.com 200 + parseable candidates, proxyhub.me 200 + 20 table rows -- accepted). Both hosts verified ABSENT from legacy_urls.json before merging, so this extends rather than duplicates. Discipline kept: new DATED snapshot written (pinned one never overwritten, ADR-010); builder and the registry test re-pointed to it IN THE SAME commit so the gate never saw them disagree; verify_units.py deliberately left on the ORIGINAL snapshot because it proves the historical ADR-015 unit defect from THAT evidence. Registry rebuilt offline-deterministic: 122 total, 69 ENABLED, ENABLED==snapshot ACTIVE asserted by the builder AND by test_enabled_count_equals_snapshot_active."
+   "notes": "User asked for 2 more free providers. Selection was by LIVE probing, not by list-reading: 9 candidate endpoints fetched directly (proxyscan.io 301->404 at whoer.io, proxylist.to 404, dpangestuw 404, hidemy 403, freeproxylist.cc 404, proxydaily.net connect-timeout -- all rejected; pubproxy.com 200 + parseable candidates, proxyhub.me 200 + 20 table rows -- accepted). Both hosts verified ABSENT from legacy_urls.json before merging, so this extends rather than duplicates. Discipline kept: new DATED snapshot written (pinned one never overwritten, ADR-010); builder and the registry test re-pointed to it IN THE SAME commit so the gate never saw them disagree; verify_units.py deliberately left on the ORIGINAL snapshot because it proves the historical ADR-015 unit defect from THAT evidence. Registry rebuilt offline-deterministic: 122 total, 69 ENABLED, ENABLED==snapshot ACTIVE asserted by the builder AND by test_enabled_count_equals_snapshot_active. KNOCK-ON, caught by make doctor within minutes: test_fetch.py test_registry_parser_values_are_all_representable_in_the_domain pinned == 67 (the one place the count was hand-written outside TASK_STATE/README, invisible to the verify anchors). Updated to 69 with a provenance comment. Lesson recorded: any future registry extension must grep for the OLD enabled count across atlas/tests, not only the gate-checked documents."
   }
  ],
  "files_changed": [

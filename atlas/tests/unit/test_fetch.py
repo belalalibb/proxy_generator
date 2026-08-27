@@ -67,7 +67,11 @@ def test_registry_parser_values_are_all_representable_in_the_domain() -> None:
     """The end-to-end version of the same bug: every ENABLED row must convert."""
     reg = load_registry()
     srcs = fetchable_sources(reg)
-    assert len(srcs) == len(reg.enabled()) == 67
+    # Pinned count, not just self-consistency: a source that silently stops
+    # converting would pass `len(srcs) == len(reg.enabled())` only if the DROP
+    # happened in the registry too. 67 was the 2026-08-24 snapshot; extended to
+    # 69 on 2026-08-27 (+pubproxy.com, +proxyhub.me -- see P12.T3).
+    assert len(srcs) == len(reg.enabled()) == 69
     assert all(s.is_fetchable for s in srcs)
 
 
