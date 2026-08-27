@@ -2440,3 +2440,64 @@ Mutation: `python3 engineering/tools/mutate_recheck.py` → **15/15 killed**
 (7 from ADR-038, 8 added here). Artifacts:
 `engineering/raw/recheck_bounds.json` (the before-measurement),
 `engineering/raw/recheck_mutation.json` (15/15, `working_tree_unchanged`).
+
+## ADR-040
+### Intake dedup keys on the endpoint, never the fingerprint — the V4-03 defect the level-6 suite was built to catch
+
+**Status.** Accepted (2026-08-27, P12).
+
+**Context.** A proxy's fingerprint is `endpoint|protocol` — deliberately,
+because the same host:port reachable over HTTP and SOCKS5 are genuinely
+different proxies, and collapsing them would corrupt H3's no-double-delivery
+identity. But `process_source` used that same fingerprint as the DEDUP key:
+
+    if self._store.get(candidate.fingerprint) is not None:
+        known += 1
+
+A freshly parsed candidate carries `protocol=UNKNOWN`; a stored row carries the
+protocol the probe DISCOVERED. `sha256("45.10.20.1:8080|unknown")` and
+`sha256("45.10.20.1:8080|http")` are different strings, so the lookup never
+matched, `known` stayed 0, and **every admitted proxy was re-probed on every
+cycle** — full k=5 cost paid for a fact already recorded. That is
+responsibility 2 of the engine ("never re-probe what the pool already holds")
+silently disabled, and the legacy defect it exists against: the 649 404
+unattributable GitHub candidates of ANALYSIS.md §5 were paid full probe cost
+precisely because nothing could recognise an endpoint already held.
+
+**How it was found.** Not by a failing unit test — by the **level-6 E2E test**
+(P12) running two consecutive cycles against the REAL sqlite store: cycle 1
+probed 10, cycle 2 probed **8** of the same 10 again. Only the 2 TCP-refused
+candidates were skipped, and only because they are rejected BEFORE protocol
+discovery, so their stored fingerprint still contains `unknown` and the lookup
+accidentally matches. Every level-1..5 test was green throughout, because the
+unit suite's `FakeStore` held raw fingerprint strings and the skip test seeded
+a `protocol=UNKNOWN` row — the fake encoded the same wrong assumption as the
+code, which is exactly why seam defects need a real-stack test (the V4-01 /
+V4-02 lesson of P06, recurring as designed).
+
+**Decision.** Dedup at intake keys on the endpoint ALONE. `SqliteStore` gains
+`get_by_endpoint(host, port) -> tuple[Proxy, ...]` — one indexed query on
+existing NOT NULL columns, no schema change — returning every stored row for
+that endpoint across all protocols. `process_source` consults it and skips the
+candidate if ANY row exists for that endpoint. The fingerprint remains the
+PRIMARY KEY unchanged: H3's identity semantics (same endpoint, two protocols =
+two proxies) are untouched; only the intake question "do we know anything about
+this host:port?" changed keys. `_StoreLike` and the unit-suite `FakeStore`
+grow the method; the fake now stores real Proxy rows instead of bare
+fingerprint strings, because a fake that only knew fingerprints could not
+express the fixed behaviour at all.
+
+**Alternatives rejected.** *Dedup on a second fingerprint with UNKNOWN forced*
+— computes a hash the store cannot index by and still assumes the stored row's
+protocol; an endpoint query asks exactly the question being answered. *Store
+candidates as UNKNOWN and upsert later* — collides with H3's primary key the
+moment a protocol is discovered, resurrecting the clobber ADR-038 closed.
+*Re-probe anyway, it is cheap* — k=5 at 8s timeouts is not cheap, and "cheap"
+is not the contract: responsibility 2 is.
+
+**Verify:** `python3 -m pytest atlas/tests/unit/test_engine.py -q -k "known or DISCOVERED"`
+(2: the original skip test plus the discovered-protocol regression) and
+`python3 -m pytest atlas/tests/integration/test_e2e_stack.py -q` (5), where
+`test_a_second_cycle_dedupes_against_the_real_store` now measures
+`probed == 0` on cycle two against the real store — the assertion that failed
+at 8 before this decision.

@@ -22,13 +22,13 @@ A measured rebuild of a legacy proxy scraper.
 
 | | |
 |---|---|
-| Phase | **P11 — RECHECK BOUNDS · gate PASSED** · the claim lifetime is now *derived* from the real probe plan, and recheck abandonment is counted inside the reclaiming `UPDATE` (ADR-039). Next: P12 |
+| Phase | **P12 — FULL 6-LEVEL SUITE · gate PASSED** · the level-6 E2E suite (real `SqliteStore`, no fakes) caught **V4-03**: intake dedup keyed on the fingerprint re-probed 8/10 known endpoints on cycle 2 — fixed per ADR-040 (endpoint-keyed `get_by_endpoint`). Next: P13 |
 | Gate 0 | ✅ PASSED (re-earned twice after sync losses — ADR-010) |
-| Tests | **655 passed** — 629 unit + 26 integration (real concurrency, SIGKILL, negative controls) <!--verify:engineering/TASK_STATE.json:tests.passed:655--> |
+| Tests | **661 passed** — 630 unit + 31 integration (level-6 E2E on a real store, real concurrency, SIGKILL, negative controls) <!--verify:engineering/TASK_STATE.json:tests.passed:661--> |
 | Recheck mutations | **15/15 killed**, 0 survivors, across 5 modules <!--verify:engineering/raw/recheck_mutation.json:killed:15--> <!--verify:engineering/raw/recheck_mutation.json:survivors:0--> |
 | Gate checks | **19/19 pass** (`make doctor`) <!--verify:engineering/TASK_STATE.json:gate_checks:19--> |
 | Live admission (k=5) | **3 admitted** of 300 probed — 86 tcp_ok → 12 reached gate → 6 with 2+ samples <!--verify:engineering/TASK_STATE.json:baseline_to_beat.v4_live_calibration.admitted:3--> |
-| Defects v4 introduced | **2 found by reading artifacts**, both behind a green suite — [`BUG_LEDGER`](engineering/BUG_LEDGER.md) V4-01, V4-02 |
+| Defects v4 introduced | **3 found by reading artifacts / level-6 suite**, all behind a green unit suite — [`BUG_LEDGER`](engineering/BUG_LEDGER.md) V4-01, V4-02, V4-03 |
 | H3 no-double-delivery | **0 duplicates** vs **30** for a read-then-write store, at an *identical* config (pool 12, 6 procs × 6) <!--verify:engineering/raw/lease_concurrency.json:head_to_head.real_duplicates:0--> <!--verify:engineering/raw/lease_concurrency.json:head_to_head.naive_duplicates:30--> |
 | H3 under oversubscription | **24 of 24** handed out exactly once, 48 requested by 12 processes <!--verify:engineering/raw/lease_concurrency.json:real.unique_fingerprints:24--> |
 | Legacy proxies the v4 gate rejects | **97 of 102** (95.1 %) <!--verify:engineering/TASK_STATE.json:baseline_to_beat.v4_gate_replay.v4_reject_pct:95.1--> |
@@ -136,6 +136,7 @@ Recorded in [`engineering/SECURITY.md`](engineering/SECURITY.md) and ADR-007:
 2. **No default target.** `GET /api/proxies` without an explicit `url` is an
    error by design, so the operator always names what they are probing. This also
    removes the legacy conflation of *target difficulty* with *proxy quality*: the
+   0.68 % legacy success rate substanti: the
    0.68 % legacy success rate substantially measured one site's bot defences.
 
 ---

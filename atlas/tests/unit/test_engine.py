@@ -100,19 +100,34 @@ class FakeSourcePort:
 
 
 class FakeStore:
-    """In-memory StorePort subset. Records what it was asked to persist."""
+    """In-memory StorePort subset. Records what it was asked to persist.
 
-    def __init__(self, known: tuple[str, ...] = ()) -> None:
-        self._known = set(known)
+    ADR-040: dedup at intake now goes through `get_by_endpoint`, because a
+    stored row's fingerprint carries the DISCOVERED protocol while a freshly
+    parsed candidate is protocol=UNKNOWN -- fingerprint lookup never matched
+    and every admitted proxy was re-probed every cycle (V4-03). The fake holds
+    REAL Proxy rows so both lookups resolve against the same data, the way the
+    sqlite store does; a fake that only knew fingerprints could not express
+    the fixed behaviour at all.
+    """
+
+    def __init__(self, known: tuple[Proxy, ...] = ()) -> None:
+        self._rows = {p.fingerprint: p for p in known}
         self.upserted: list[Proxy] = []
 
     def get(self, fingerprint: str) -> Proxy | None:
-        if fingerprint in self._known:
-            return Proxy(endpoint=Endpoint(host="45.62.100.1", port=1))
-        return None
+        return self._rows.get(fingerprint)
+
+    def get_by_endpoint(self, host: str, port: int) -> tuple[Proxy, ...]:
+        return tuple(
+            p for p in self._rows.values()
+            if p.endpoint.host == host and p.endpoint.port == port
+        )
 
     def upsert_many(self, proxies: tuple[Proxy, ...]) -> int:
         self.upserted.extend(proxies)
+        for p in proxies:
+            self._rows[p.fingerprint] = p
         return len(proxies)
 
 
@@ -437,11 +452,35 @@ async def test_known_endpoints_are_skipped_not_reprobed():
     probe = ScriptedProbe({"45.62.100.2:80": {"samples": [200.0] * 5}})
     eng = engine(probe, FakeSourcePort({"s1": okfetch(
         "s1", ("45.62.100.1:80", "45.62.100.2:80"))}),
-        FakeStore(known=(known.fingerprint,)))
+        FakeStore(known=(known,)))
     report, _ = await eng.run_cycle((mksource(),))
     assert report.skipped_known == 1
     assert report.probed == 1
     assert probe.sampled == ["45.62.100.2:80"]
+
+
+@runs_async
+async def test_a_probed_row_is_known_under_its_DISCOVERED_protocol():
+    """
+    ADR-040 / V4-03 regression. The stored row carries the protocol the probe
+    DISCOVERED (http), but the next cycle's candidate is protocol=UNKNOWN.
+    A fingerprint-keyed dedup compares `ep|unknown` against `ep|http`, never
+    matches, and re-probes every admitted proxy on every cycle -- the defect
+    the level-6 E2E suite caught against the REAL sqlite store. Endpoint-keyed
+    dedup must skip it regardless.
+    """
+    stored = Proxy(endpoint=Endpoint(host="45.62.100.1", port=80),
+                   protocol=Protocol.HTTP,  # discovered, NOT unknown
+                   state=ProxyState.READY)
+    probe = ScriptedProbe({})
+    eng = engine(probe, FakeSourcePort({"s1": okfetch(
+        "s1", ("45.62.100.1:80",))}), FakeStore(known=(stored,)))
+    report, _ = await eng.run_cycle((mksource(),))
+    assert report.skipped_known == 1
+    assert report.probed == 0, (
+        "a row probed under a discovered protocol must be skipped next cycle"
+    )
+    assert probe.sampled == []
 
 
 @runs_async

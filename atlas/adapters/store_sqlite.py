@@ -359,6 +359,26 @@ class SqliteStore:
         ).fetchone()
         return self._from_row(r) if r else None
 
+    def get_by_endpoint(self, host: str, port: int) -> tuple[Proxy, ...]:
+        """Every stored row for this host:port, across ALL protocols (ADR-040).
+
+        A row's fingerprint is `endpoint|protocol` -- deliberately, because the
+        same host:port reachable over HTTP and SOCKS5 are genuinely different
+        proxies. But that makes fingerprint the WRONG dedup key at intake: a
+        freshly parsed candidate carries `protocol=UNKNOWN`, while a stored row
+        carries the DISCOVERED protocol, so `get(candidate.fingerprint)` never
+        matches it and every admitted proxy is re-probed on every cycle -- the
+        exact defect (V4-03) the level-6 E2E test was built to catch, and did.
+
+        Dedup must therefore key on the endpoint alone. Returns a tuple because
+        several protocols may legitimately share one endpoint.
+        """
+        rows = self._db.execute(
+            "SELECT * FROM proxies WHERE host = ? AND port = ?",
+            (host, int(port)),
+        ).fetchall()
+        return tuple(self._from_row(r) for r in rows)
+
     def _count_all(self) -> int:
         return int(self._db.execute("SELECT COUNT(*) FROM proxies").fetchone()[0])
 

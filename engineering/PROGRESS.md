@@ -1375,3 +1375,41 @@ docstring citing a nonexistent test remains invisible to the gate — found by h
 twice now (ADR-026, and `record_failure` here).
 
 **NEXT:** P12 — full 6-level suite green.
+
+---
+
+## P12 — FULL 6-LEVEL SUITE (gate PASSED)
+
+The level-6 suite (`atlas/tests/integration/test_e2e_stack.py`, 5 tests) wires
+DiscoveryEngine + SqliteStore + HandoutService + PoolScheduler together against
+a **real** database with **no fakes** — the first level to do so end to end.
+
+**It earned its keep on the first green run: V4-03.** Cycle 2 of a two-cycle
+run re-probed **8 of 10** already-known endpoints instead of 0. Root cause:
+`fingerprint = sha256(endpoint|protocol)` — intake candidates arrive as
+`Protocol.UNKNOWN`, stored rows carry the *discovered* protocol, so
+`get(candidate.fingerprint)` never matched and dedup silently never fired.
+Only the 2 TCP-refused rows were skipped (rejected before discovery, stored
+under UNKNOWN, accidentally matching the intake key). The unit suite could
+never see this: `FakeStore.get` and `SqliteStore.get` encoded the **same**
+wrong assumption. A fake that encodes the defect passes forever — the ADR-010
+lesson recurring at a new seam, and the exact defect class V4-01/V4-02 belong
+to. Fix per **ADR-040**: dedup keys on the endpoint via
+`store.get_by_endpoint(host, port)`; the fingerprint stays PRIMARY KEY for the
+lease protocol (H3). Recorded in `BUG_LEDGER.md` as V4-03; regression pinned at
+unit level (`test_a_probed_row_is_known_under_its_DISCOVERED_protocol`, with
+`FakeStore` rewritten to hold real `Proxy` rows so it cannot re-encode the
+assumption) and at integration level
+(`test_a_second_cycle_dedupes_against_the_real_store`).
+
+Three traps recorded for the next writer (details in TASK_STATE P12.T1 notes):
+pytest-asyncio absent → `runs_async` + `__signature__` forwarding + a meta-test
+against bare coroutines; RFC-5737 fixture IPs dropped by the real normalizer
+(the P07 lesson); interface facts read from source, not assumed
+(`plan()` has no `now`, `CycleReport` has no `seen`, `last_reason` not
+`last_verdict`).
+
+`make doctor`: 19/19 checks, **661 collected = declared = passed**
+(630 unit + 31 integration).
+
+**NEXT:** P13 — 17-step E2E live transcript.

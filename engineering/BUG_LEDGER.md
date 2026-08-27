@@ -360,3 +360,36 @@ remain in `engineering/raw/admission_live_adr024.json`.
 **Note on discovery order:** V4-01 was *masking* V4-02. Until real reasons
 surfaced, no proxy ever reached the gate with 2 samples, so the k=2 pathology
 could not be observed. Fixing one defect is what made the next one visible.
+
+## V4-03 — Intake dedup keyed on a fact that changes during the cycle
+
+**Where:** `atlas/engine/cycle.py`, `process_source` dedup path
+**Class:** new — a seam defect (unit-test-invisible), same class as V4-01/V4-02
+
+`Proxy.fingerprint = sha256(endpoint|protocol)`. At intake every candidate is
+`Protocol.UNKNOWN`; after empirical discovery the stored row carries the
+*discovered* protocol (`http`, ...). The dedup check
+`store.get(candidate.fingerprint)` therefore compared
+`endpoint|UNKNOWN` against stored `endpoint|http` — **never equal** — so every
+re-listed endpoint was treated as new and re-probed on every cycle.
+
+**Symptom in artifact:** the level-6 E2E suite
+(`atlas/tests/integration/test_e2e_stack.py`), built in P12 for exactly this
+purpose: cycle 2 of a two-cycle run **re-probed 8 of 10** already-known
+endpoints instead of 0. Only the 2 TCP-refused rows were skipped, because they
+are rejected *before* discovery and are stored under `UNKNOWN`, accidentally
+matching the intake key.
+
+**Why unit tests missed it:** `FakeStore.get()` and the production
+`SqliteStore.get()` encoded the same wrong assumption — fingerprint identity is
+endpoint identity. A fake that encodes the defect passes the test suite
+forever. This is the ADR-010 lesson recurring at a different seam.
+
+**Fix:** dedup keys on the **endpoint**, never the fingerprint —
+`store.get_by_endpoint(host, port)` returns every stored row for that
+`host:port` across all protocols (ADR-040). The fingerprint stays the PRIMARY
+KEY for the lease protocol (H3); it was only ever wrong as a *dedup* key.
+
+**Effect:** cycle 2 probes 0, `skipped_known == 10`. Regression pinned by
+`test_a_probed_row_is_known_under_its_DISCOVERED_protocol` (unit) and
+`test_a_second_cycle_dedupes_against_the_real_store` (integration, real store).

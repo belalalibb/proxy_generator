@@ -168,6 +168,7 @@ class CycleReport:
 class _StoreLike(TypingProtocol):
     """The subset of StorePort the engine needs. Structural, so fakes fit."""
     def get(self, fingerprint: str) -> Proxy | None: ...
+    def get_by_endpoint(self, host: str, port: int) -> tuple[Proxy, ...]: ...
     def upsert_many(self, proxies: tuple[Proxy, ...]) -> int: ...
 
 
@@ -396,7 +397,13 @@ class DiscoveryEngine:
             )
             # Skip what the pool already holds: re-probing a known endpoint pays
             # full k=5 cost for a fact already recorded (responsibility 2).
-            if self._store.get(candidate.fingerprint) is not None:
+            # ADR-040: dedup keys on the ENDPOINT, not the fingerprint. The
+            # fingerprint includes the DISCOVERED protocol while a freshly
+            # parsed candidate is protocol=UNKNOWN, so get(fingerprint) never
+            # matched a stored probed row and every admitted proxy was re-probed
+            # on every cycle (V4-03, caught by the level-6 E2E test).
+            if self._store.get_by_endpoint(candidate.endpoint.host,
+                                           candidate.endpoint.port):
                 known += 1
                 continue
             fresh.append(candidate)
